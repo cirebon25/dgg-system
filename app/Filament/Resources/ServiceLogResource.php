@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 use App\Filament\Resources\ServiceLogResource\Pages;
 use App\Models\ServiceLog;
 use App\Models\Machine;
@@ -78,18 +79,97 @@ class ServiceLogResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('tanggal')->date('d/m/Y')->sortable(),
-                Tables\Columns\TextColumn::make('machine.serial_number')->label('SN'),
-                Tables\Columns\TextColumn::make('tipe_kunjungan')->badge(),
-                Tables\Columns\TextColumn::make('usage_color')->label('Pakai Color'),
-                Tables\Columns\TextColumn::make('usage_bw')->label('Pakai BW'),
-                Tables\Columns\TextColumn::make('technician.nama_technician')->label('Teknisi'),
-            ])
-            ->filters([
-                Tables\Filters\SelectFilter::make('machine_id')->relationship('machine', 'serial_number'),
-            ]);
+    return $table
+        ->columns([
+            Tables\Columns\TextColumn::make('tanggal')
+                ->date('d M Y')
+                ->sortable(),
+
+            // MENAMPILKAN NAMA CUSTOMER (Lewat relasi Mesin -> Penempatan)
+            Tables\Columns\TextColumn::make('machine.deployments.customer.nama_customer')
+                ->label('Customer')
+                ->placeholder('Unit Gudang')
+                ->searchable(),
+
+            Tables\Columns\TextColumn::make('machine.serial_number')
+                ->label('SN Mesin')
+                ->searchable(),
+
+            Tables\Columns\TextColumn::make('tipe_kunjungan')
+                ->badge()
+                ->color(fn ($state) => match ($state) {
+                    'RN' => 'success', 'RM' => 'info', 'CM' => 'danger',
+                    'TN' => 'warning', 'JK' => 'orange', 'RR' => 'gray', 'L' => 'slate',
+                    default => 'gray'
+                }),
+
+            // MENAMPILKAN COUNTER AKHIR (Data yang diinput saat servis)
+            Tables\Columns\TextColumn::make('counter_color')
+                ->label('C-Color Akhir')
+                ->numeric()
+                ->toggleable(),
+
+            Tables\Columns\TextColumn::make('counter_bw')
+                ->label('C-BW Akhir')
+                ->numeric()
+                ->toggleable(),
+
+            // MENAMPILKAN PEMAKAIAN (Selisih)
+            Tables\Columns\TextColumn::make('usage_color')
+                ->label('Pakai Color')
+                ->description(fn ($record) => $record->usage_color . " lbr")
+                ->label('Usage C')
+                ->color('primary'),
+
+            Tables\Columns\TextColumn::make('usage_bw')
+                ->label('Pakai BW')
+                ->description(fn ($record) => $record->usage_bw . " lbr")
+                ->label('Usage BW'),
+
+            // DETAIL LAINNYA (Sparepart & Perbaikan)
+            Tables\Columns\TextColumn::make('sparepart.nama_sparepart')
+                ->label('Sparepart')
+                ->placeholder('-'),
+            
+            Tables\Columns\TextColumn::make('perbaikan')
+                ->label('Tindakan')
+                ->limit(20) // Supaya tabel tidak terlalu lebar
+                ->tooltip(fn ($record) => $record->perbaikan),
+
+            Tables\Columns\TextColumn::make('technician.nama_technician')
+                ->label('Teknisi'),
+        ])
+        ->filters([
+            Tables\Filters\SelectFilter::make('machine_id')
+                ->relationship('machine', 'serial_number')
+                ->label('Cek Per Mesin'),
+        ])
+        ->actions([
+            Tables\Actions\EditAction::make(),
+        ])
+        ->bulkActions([
+            Tables\Actions\BulkActionGroup::make([
+            Tables\Actions\DeleteBulkAction::make(),
+            
+            // 1. Tombol Excel (Arsip Digital)
+            ExportBulkAction::make()
+                ->label('Download Excel')
+                ->color('success'),
+
+            // 2. Tombol Cetak Laporan (Arsip Fisik/Print)
+            Tables\Actions\BulkAction::make('print_report')
+                ->label('Cetak Laporan (Print)')
+                ->icon('heroicon-o-printer')
+                ->color('info')
+                ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                    // Ambil ID semua baris yang dicentang
+                    $ids = $records->pluck('id')->implode(',');
+                    // Buka halaman cetak di tab baru
+                    return redirect()->to(route('print.service.bulk', ['ids' => $ids]));
+                })
+                ->openUrlInNewTab(),
+            ]),
+        ]);
     }
 
     public static function getPages(): array

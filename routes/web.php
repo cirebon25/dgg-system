@@ -16,3 +16,14 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/print-service-bulk', function (Illuminate\Http\Request $request) {
+    // Ambil ID yang dikirim dari tombol centang di Filament
+    $ids = explode(',', $request->ids);
+    $records = App\Models\ServiceLog::with(['machine', 'technician', 'sparepart'])
+                ->whereIn('id', $ids)
+                ->orderBy('tanggal', 'asc')
+                ->get();
+
+    return view('print-service-bulk', compact('records'));
+})->name('print.service.bulk')->middleware('auth');

@@ -11,13 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-    Schema::create('spareparts', function (Blueprint $table) {
-        $table->id();
-        $table->string('nama_sparepart');
-        $table->integer('stok')->default(0);
-        $table->decimal('harga_beli', 15, 2)->nullable(); // Opsional buat audit
-        $table->timestamps();
-    });
+        Schema::table('service_logs', function (Blueprint $table) {
+            //
+        });
     }
 
     /**
@@ -25,6 +21,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('spareparts');
+        Schema::table('service_logs', function (Blueprint $table) {
+            $table->foreignId('sparepart_id')->nullable()->constrained()->onDelete('set null');
+            $table->integer('jumlah_sparepart')->default(0);
+         });
     }
 };
