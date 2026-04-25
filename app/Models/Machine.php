@@ -12,4 +12,9 @@ class Machine extends Model
         'status',
         'keterangan_awal'
     ];
+
+    public function deployments()
+    {
+    return $this->hasMany(Deployment::class);
+    }
 }

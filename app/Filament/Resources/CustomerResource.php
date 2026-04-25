@@ -42,23 +42,44 @@ class CustomerResource extends Resource
         ]);
 }
 
-    public static function table(Table $table): Table
+   public static function table(Table $table): Table
     {
-        return $table
-            ->columns([
-                //
-            ])
-            ->filters([
-                //
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+    return $table
+        ->columns([
+            // Menampilkan Nama Rayon (mengambil dari tabel Rayon)
+            Tables\Columns\TextColumn::make('rayon.nama_rayon')
+                ->label('Rayon')
+                ->sortable()
+                ->searchable(),
+
+            // Menampilkan Nama Customer
+            Tables\Columns\TextColumn::make('nama_customer')
+                ->label('Nama Customer')
+                ->searchable()
+                ->sortable(),
+
+            // Menampilkan Kota
+            Tables\Columns\TextColumn::make('kota')
+                ->label('Kota')
+                ->searchable(),
+
+            // Menampilkan Tanggal Dibuat
+            Tables\Columns\TextColumn::make('created_at')
+                ->label('Tgl Input')
+                ->dateTime('d/m/Y')
+                ->sortable(),
+        ])
+        ->filters([
+            // Anda bisa menambah filter di sini nanti
+        ])
+        ->actions([
+            Tables\Actions\EditAction::make(), // Agar tombol Edit muncul
+        ])
+        ->bulkActions([
+            Tables\Actions\BulkActionGroup::make([
+                Tables\Actions\DeleteBulkAction::make(),
+            ]),
+        ]);
     }
 
     public static function getRelations(): array
