@@ -13,4 +13,9 @@ class Customer extends Model
     {
         return $this->belongsTo(Rayon::class);
     }
+
+    public function deployments()
+    {
+    return $this->hasMany(Deployment::class);
+    }
 }
