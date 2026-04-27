@@ -17,9 +17,6 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-// ... baris kode di atas tetap sama ...
-use App\Filament\Widgets\StatsOverview;
-use App\Filament\Widgets\StockAlert;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -29,10 +26,9 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login() // Memastikan halaman login aktif
             ->colors([
                 'primary' => Color::Amber,
-                'orange' => Color::Orange,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
@@ -41,20 +37,24 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                // Cukup tulis satu-satu saja di sini, Boss:
                 Widgets\AccountWidget::class,
-                StockAlert::class,    // Menampilkan peringatan stok tipis
-                StatsOverview::class, // Menampilkan total mesin, customer, & usage
-                
-                // Pastikan file widget di bawah ini sudah Anda buat/ada filenya:
-                \App\Filament\Widgets\LatestDeployments::class, 
-                \App\Filament\Widgets\DeploymentChart::class,
+                \App\Filament\Widgets\StatsOverview::class, // Tambahkan ini
+                \App\Filament\Widgets\StockAlert::class,    // Dan ini
             ])
             ->middleware([
-                // ... middleware tetap sama ...
+                EncryptCookies::class,
+                AddQueuedCookiesToResponse::class,
+                StartSession::class,
+                AuthenticateSession::class,
+                ShareErrorsFromSession::class,
+                VerifyCsrfToken::class,
+                SubstituteBindings::class,
+                DisableBladeIconComponents::class,
+                DispatchServingFilamentEvent::class,
             ])
             ->authMiddleware([
-                Authenticate::class,
-            ]);
+                Authenticate::class, // Menggunakan middleware milik Filament
+            ])
+            ->authGuard('web');
     }
 }
