@@ -29,31 +29,27 @@ class ServiceLogResource extends Resource
                             ->required()
                             ->searchable()
                             ->preload()
-                            ->reactive() // Supaya counter lalu muncul otomatis saat SN dipilih
+                            ->reactive()
                             ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                // MENCARI COUNTER TERAKHIR
-                                $lastLog = ServiceLog::where('machine_id', $state)
-                                    ->latest('tanggal')
-                                    ->first();
-
+                                $lastLog = ServiceLog::where('machine_id', $state)->latest('tanggal')->first();
                                 if ($lastLog) {
                                     $set('bw_lalu', $lastLog->counter_bw);
                                     $set('color_lalu', $lastLog->counter_color);
-                                } else {
-                                    $set('bw_lalu', 0);
-                                    $set('color_lalu', 0);
                                 }
                             }),
                         
                         Forms\Components\Select::make('tipe_kunjungan')
                             ->options([
-                                'RN' => 'RN (Routine)', 'CM' => 'CM (Corrective)', 
-                                'RM' => 'RM (Repair)', 'RR' => 'RR (Return)', 
-                                'JK' => 'JK (Jaga Kandang)', 'L' => 'L (Lain-lain)',
+                                'RN' => 'RN (Routine) - Hijau',
+                                'CM' => 'CM (Corrective) - Merah',
+                                'RM' => 'RM (Repair) - Biru',
+                                'RR' => 'RR (Return) - Coklat',
+                                'JK' => 'JK (Jaga Kandang) - Ungu',
+                                'L' => 'L (Lain-lain) - Abu',
                             ])->required(),
 
                         Forms\Components\DatePicker::make('tanggal')
-                            ->label('Tanggal Service')
+                            ->label('Tanggal Kunjungan')
                             ->default(now())
                             ->required(),
 
@@ -65,40 +61,30 @@ class ServiceLogResource extends Resource
 
                 Forms\Components\Section::make('Pencatatan Counter')
                     ->schema([
-                        // BW Section
-                        Forms\Components\TextInput::make('bw_lalu')
-                            ->label('BW Bulan Lalu')->numeric()->readOnly()
-                            ->helperText('Otomatis dari data servis terakhir'),
-                        Forms\Components\TextInput::make('counter_bw')
-                            ->label('BW Bulan Ini')->numeric()->required()->reactive()
+                        Forms\Components\TextInput::make('bw_lalu')->label('BW Lalu')->numeric()->readOnly(),
+                        Forms\Components\TextInput::make('counter_bw')->label('BW Sekarang')->numeric()->required()->reactive()
                             ->afterStateUpdated(fn ($state, $get, $set) => $set('usage_bw', (int)$state - (int)$get('bw_lalu'))),
-                        Forms\Components\TextInput::make('usage_bw')
-                            ->label('Total Pemakaian BW')->numeric()->readOnly(),
+                        Forms\Components\TextInput::make('usage_bw')->label('Total Pakai BW')->numeric()->readOnly(),
 
-                        // Color Section
-                        Forms\Components\TextInput::make('color_lalu')
-                            ->label('Color Bulan Lalu')->numeric()->readOnly(),
-                        Forms\Components\TextInput::make('counter_color')
-                            ->label('Color Bulan Ini')->numeric()->reactive()
+                        Forms\Components\TextInput::make('color_lalu')->label('Color Lalu')->numeric()->readOnly(),
+                        Forms\Components\TextInput::make('counter_color')->label('Color Sekarang')->numeric()->reactive()
                             ->afterStateUpdated(fn ($state, $get, $set) => $set('usage_color', (int)$state - (int)$get('color_lalu'))),
-                        Forms\Components\TextInput::make('usage_color')
-                            ->label('Total Pemakaian Color')->numeric()->readOnly(),
+                        Forms\Components\TextInput::make('usage_color')->label('Total Pakai Color')->numeric()->readOnly(),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Detail Perbaikan & Teknisi')
+                Forms\Components\Section::make('Detail Teknisi & Perbaikan')
                     ->schema([
                         Forms\Components\Textarea::make('kerusakan')->required(),
                         Forms\Components\Textarea::make('perbaikan')->required(),
                         
-                        // DUA NAMA TEKNISI
                         Forms\Components\Select::make('technician_id')
                             ->relationship('technician', 'nama_technician')
-                            ->label('Teknisi Utama (Wajib)')
+                            ->label('Teknisi 1 (Utama)')
                             ->required(),
                         
                         Forms\Components\TextInput::make('nama_teknisi_manual')
-                            ->label('Teknisi Partner (Manual)')
-                            ->placeholder('Ketik nama teknisi kedua'),
+                            ->label('Teknisi 2 (Partner)')
+                            ->placeholder('Ketik nama partner teknisi'),
                     ])->columns(2),
             ]);
     }
@@ -107,61 +93,61 @@ class ServiceLogResource extends Resource
     {
         return $table
             ->columns([
-                // 1. Nama Customer (Lewat Machine)
-                Tables\Columns\TextColumn::make('machine.customer.nama_customer')
-                    ->label('Customer')
-                    ->searchable(),
-
-                // 2. Type Mesin
-                Tables\Columns\TextColumn::make('machine.model_mesin')
-                    ->label('Type Mesin'),
-
-                // 3. No Seri
-                Tables\Columns\TextColumn::make('machine.serial_number')
-                    ->label('SN Mesin')
-                    ->searchable(),
-
-                // 4. Tgl Instal Awal (Dari Deployment)
-                Tables\Columns\TextColumn::make('machine.deployment.tanggal_instal')
-                    ->label('Tgl Pasang')
-                    ->date('d/m/Y'),
-
-                // 5. Tgl Kunjungan
-                Tables\Columns\TextColumn::make('tanggal')
-                    ->label('Tgl Kunjungan')
-                    ->date('d/m/Y')
-                    ->sortable(),
-
-                // 6. Conter Akhir
-                Tables\Columns\TextColumn::make('counter_bw')
-                    ->label('Counter BW')
-                    ->numeric(),
-
-                // 7. Total Pemakaian
-                Tables\Columns\TextColumn::make('usage_bw')
-                    ->label('Total Pakai')
-                    ->badge()
-                    // ->color('info'),
-
-                // 8. Tipe Kunjungan dengan Warna
+                Tables\Columns\TextColumn::make('machine.customer.nama_customer')->label('Customer')->searchable()->sortable(),
+                Tables\Columns\TextColumn::make('machine.model_mesin')->label('Type Mesin'),
+                Tables\Columns\TextColumn::make('machine.serial_number')->label('SN Mesin')->searchable(),
+                Tables\Columns\TextColumn::make('machine.deployment.tanggal_instal')->label('Tgl Pasang')->date('d/m/Y'),
+                Tables\Columns\TextColumn::make('tanggal')->label('Tgl Kunjungan')->date('d/m/Y')->sortable(),
+                Tables\Columns\TextColumn::make('counter_bw')->label('Counter BW')->numeric(),
+                Tables\Columns\TextColumn::make('usage_bw')->label('Total Pakai')->badge()->color('info'),
                 Tables\Columns\TextColumn::make('tipe_kunjungan')
+                    ->label('Tipe')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'RN' => 'success', // Hijau
-                        'CM' => 'danger',  // Merah
-                        'RM' => 'info',    // Biru
-                        'RR' => 'warning', // Coklat
-                        'JK' => 'primary', // Ungu
-                        default => 'gray',
+                        'RN' => 'success', 'CM' => 'danger', 'RM' => 'info',
+                        'RR' => 'amber', 'JK' => 'primary', 'L'  => 'gray', default => 'gray',
                     }),
-
-                // 9. Nama Teknisi (Tampil 2 Orang)
-                Tables\Columns\TextColumn::make('technician.nama_technician')
-                    ->label('Teknisi 1'),
-                Tables\Columns\TextColumn::make('nama_teknisi_manual')
-                    ->label('Teknisi 2'),
+                Tables\Columns\TextColumn::make('perbaikan')->limit(30)->toggleable(),
+                Tables\Columns\TextColumn::make('technician.nama_technician')->label('Teknisi 1'),
+                Tables\Columns\TextColumn::make('nama_teknisi_manual')->label('Teknisi 2'),
             ])
-            ->defaultSort('tanggal', 'desc');
+            ->headerActions([
+                Tables\Actions\Action::make('printBulanan')
+                    ->label('Cetak Per Bulan')
+                    ->color('success')
+                    ->icon('heroicon-o-calendar')
+                    ->form([
+                        Forms\Components\Select::make('month')
+                            ->label('Pilih Bulan')
+                            ->options([
+                                '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
+                                '04' => 'April', '05' => 'Mei', '06' => 'Juni',
+                                '07' => 'Juli', '08' => 'Agustus', '09' => 'September',
+                                '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+                            ])->required()->default(date('m')),
+                        Forms\Components\Select::make('year')
+                            ->label('Pilih Tahun')
+                            ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
+                            ->required()->default(date('Y')),
+                    ])
+                    ->action(function (array $data) {
+                        return redirect()->route('service-log.monthly', [
+                            'month' => $data['month'],
+                            'year' => $data['year'],
+                        ]);
+                    }),
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('print')
+                    ->label('Print')
+                    ->color('success')
+                    ->icon('heroicon-o-printer')
+                    ->url(fn (ServiceLog $record) => route('service-log.print', $record))
+                    ->openUrlInNewTab(),
+                Tables\Actions\DeleteAction::make(),
+            ])
+            ->defaultSort('tanggal', 'desc'); // Urutkan berdasarkan tanggal terbaru
     }
 
     public static function getPages(): array

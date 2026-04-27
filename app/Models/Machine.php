@@ -17,4 +17,7 @@ class Machine extends Model
     {
     return $this->hasMany(Deployment::class);
     }
+
+    public function customer() { return $this->belongsTo(Customer::class); }
+    public function deployment() { return $this->hasOne(Deployment::class); }
 }

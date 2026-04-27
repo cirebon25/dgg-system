@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Models\ServiceLog;
+use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,3 +29,44 @@ Route::get('/print-service-bulk', function (Illuminate\Http\Request $request) {
 
     return view('print-service-bulk', compact('records'));
 })->name('print.service.bulk')->middleware('auth');
+
+// / Jalur khusus untuk cetak service log
+Route::get('/service-log/{record}/print', function (ServiceLog $record) {
+    return view('print.service-log', ['record' => $record]);
+})->name('service-log.print');
+
+
+
+Route::get('/service-log/report/monthly', function (Request $request) {
+    $month = $request->query('month');
+    $year = $request->query('year');
+
+    $logs = ServiceLog::whereYear('tanggal', $year)
+        ->whereMonth('tanggal', $month)
+        ->with(['machine.customer', 'technician'])
+        ->get();
+
+    return view('print.monthly-report', [
+        'logs' => $logs,
+        'month' => $month,
+        'year' => $year
+    ]);
+})->name('service-log.monthly');
+
+// ROUTE CETAK BULANAN 
+Route::get('/service-log/report/monthly', function (Request $request) {
+    $month = $request->query('month');
+    $year = $request->query('year');
+
+    // Ambil data servis berdasarkan bulan dan tahun
+    $logs = ServiceLog::whereYear('tanggal', $year)
+        ->whereMonth('tanggal', $month)
+        ->with(['machine.customer', 'technician'])
+        ->get();
+
+    return view('print.monthly-report', [
+        'logs' => $logs,
+        'month' => $month,
+        'year' => $year
+    ]);
+})->name('service-log.monthly');
