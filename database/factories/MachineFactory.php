@@ -1,0 +1,24 @@
+<?php
+
+namespace Database\Factories;
+
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Machine>
+ */
+class MachineFactory extends Factory
+{
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+   public function definition(): array
+    {
+    return [
+        'nama_model' => fake()->randomElement(['iR 2525', 'iRA 4545', 'iRA 6275', 'Sindoh N610']),
+        'brand' => 'Canon',
+    ];
+    }
+}

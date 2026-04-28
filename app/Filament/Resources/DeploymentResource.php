@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Actions\Action; 
 
 class DeploymentResource extends Resource
 {
@@ -106,6 +107,13 @@ class DeploymentResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+                Action::make('printSJ')
+            ->label('Surat Jalan')
+            ->icon('heroicon-m-printer')
+                    ->color('success')
+            ->url(fn ($record) => route('cetak.sj', $record->id))
+            ->openUrlInNewTab(),
+                
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -113,6 +121,7 @@ class DeploymentResource extends Resource
                 ]),
             ]);
     }
+    
 
     public static function getRelations(): array
     {

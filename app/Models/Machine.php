@@ -3,9 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory; // Ini Import (Sudah Benar)
 
 class Machine extends Model
 {
+    // WAJIB TAMBAHKAN BARIS INI DI SINI:
+    use HasFactory; 
+    
     protected $fillable = [
         'serial_number',
         'tipe_model',
@@ -18,10 +22,13 @@ class Machine extends Model
         return $this->hasMany(Deployment::class);
     }
 
-    public function customer() { return $this->belongsTo(Customer::class); }
-    public function deployment() { return $this->hasOne(Deployment::class); }
-
-    // File: app/Models/Machine.php
+    public function customer() { 
+        return $this->belongsTo(Customer::class); 
+    }
+    
+    public function deployment() { 
+        return $this->hasOne(Deployment::class); 
+    }
 
     public function serviceLogs()
     {
@@ -30,6 +37,7 @@ class Machine extends Model
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['serial_number', 'model_mesin'];
+        // Saya sesuaikan ke 'tipe_model' agar pencarian global tidak eror
+        return ['serial_number', 'tipe_model']; 
     }
 }

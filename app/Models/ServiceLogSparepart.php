@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ServiceLogSparepart extends Model
 {
+    use HasFactory; 
     // Pastikan ada titik koma (;) di akhir baris ini
     protected $fillable = ['service_log_id', 'sparepart_id', 'jumlah'];
 

@@ -204,24 +204,27 @@ Route::get('/cetak-alokasi-mesin', function () {
 })->name('cetak.alokasi');
 
 Route::get('/cetak-tukar-guling', function () {
-    // Kita ambil data dari history atau service log yang kategorinya 'Tukar Guling'
-    // Silakan sesuaikan kueri ini dengan nama tabel histori swap Boss
+    // Kueri diperbaiki: Service Log -> Machine -> Deployment -> Customer
     $data = DB::table('service_logs')
         ->join('machines', 'service_logs.machine_id', '=', 'machines.id')
-        ->join('customers', 'service_logs.customer_id', '=', 'customers.id')
+        ->join('deployments', 'machines.id', '=', 'deployments.machine_id') // Jembatan ke Customer
+        ->join('customers', 'deployments.customer_id', '=', 'customers.id')
         ->join('technicians', 'service_logs.technician_id', '=', 'technicians.id')
-        ->where('service_logs.perbaikan', 'LIKE', '%Tukar Guling%') // Filter keyword
+        ->where('service_logs.perbaikan', 'LIKE', '%Tukar Guling%') 
         ->select(
             'service_logs.tanggal',
             'customers.nama_customer',
             'customers.kota',
             'machines.serial_number as sn_lama',
             'machines.tipe_model as tipe_lama',
-            'service_logs.keterangan as unit_pengganti', // Asumsi SN baru ditulis di keterangan
+            'service_logs.perbaikan as unit_pengganti', 
             'technicians.nama_technician'
         )
         ->orderBy('service_logs.tanggal', 'desc')
         ->get();
+
+    // Bagian HTML ke bawah tetap sama seperti sebelumnya...
+    // (Gunakan kode HTML Full yang sudah saya berikan di pesan sebelumnya)
 
     $html = "
     <html>
@@ -443,3 +446,190 @@ Route::get('/cetak-pemasangan-baru/{bulan}/{tahun}', function ($bulan, $tahun) {
 
     return response($html);
 })->name('cetak.pemasangan');
+
+Route::get('/cetak-surat-jalan/{id}', function ($id) {
+    $data = DB::table('deployments')
+        ->join('machines', 'deployments.machine_id', '=', 'machines.id')
+        ->join('customers', 'deployments.customer_id', '=', 'customers.id')
+        ->where('deployments.id', $id)
+        ->select(
+            'deployments.created_at as tgl_kirim',
+            'machines.serial_number',
+            'machines.tipe_model',
+            'customers.nama_customer',
+            'customers.alamat', // Pastikan kolom 'alamat' ada di tabel customers
+            'customers.kota'
+        )
+        ->first();
+
+    if (!$data) return "Data tidak ditemukan.";
+
+    $html = "
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Surat Jalan - $data->serial_number</title>
+        <style>
+            @page { size: landscape; margin: 10mm; }
+            body { font-family: sans-serif; font-size: 12px; border: 2px solid #000; padding: 20px; height: 100%; }
+            .header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+            .content { display: flex; justify-content: space-between; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { border: 1px solid #000; padding: 12px; text-align: left; }
+            .footer-ttd { margin-top: 50px; display: flex; justify-content: space-around; text-align: center; }
+            .ttd-box { width: 200px; }
+        </style>
+    </head>
+    <body onload='window.print()'>
+        <div class='header'>
+            <h1 style='margin:0;'>DGG SYSTEM - SURAT JALAN / DELIVERY ORDER</h1>
+            <p>Nomor: SJ/DGG/" . date('Ymd', strtotime($data->tgl_kirim)) . "/$id</p>
+        </div>
+        
+        <div class='content'>
+            <div style='width: 50%;'>
+                <strong>Penerima:</strong><br>
+                $data->nama_customer<br>
+                $data->alamat<br>
+                $data->kota
+            </div>
+            <div style='width: 50%; text-align: right;'>
+                <strong>Tanggal Pengiriman:</strong> " . date('d-m-Y', strtotime($data->tgl_kirim)) . "
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr style='background: #eee;'>
+                    <th>No</th>
+                    <th>Nama Barang / Deskripsi</th>
+                    <th>Serial Number</th>
+                    <th>Jumlah</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>Mesin Fotokopi Canon $data->tipe_model</td>
+                    <td><strong>$data->serial_number</strong></td>
+                    <td>1 Unit</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style='margin-top: 20px;'>
+            <strong>Keterangan:</strong> Barang telah diterima dalam kondisi baik dan berfungsi normal.
+        </div>
+
+        <div class='footer-ttd'>
+            <div class='ttd-box'>
+                Penerima,<br><br><br><br>
+                ( ________________ )
+            </div>
+            <div class='ttd-box'>
+                Teknisi,<br><br><br><br>
+                ( ________________ )
+            </div>
+            <div class='ttd-box'>
+                Pengirim,<br><br><br><br>
+                ( ________________ )
+            </div>
+        </div>
+    </body>
+    </html>";
+
+    return response($html);
+})->name('cetak.sj');
+
+Route::get('/cetak-rekap-service/{bulan}/{tahun}', function ($bulan, $tahun) {
+    $data = DB::table('service_logs')
+        ->join('machines', 'service_logs.machine_id', '=', 'machines.id')
+        ->join('customers', 'service_logs.customer_id', '=', 'customers.id')
+        ->join('technicians', 'service_logs.technician_id', '=', 'technicians.id')
+        ->whereMonth('service_logs.tanggal', $bulan)
+        ->whereYear('service_logs.tanggal', $tahun)
+        ->select('service_logs.*', 'machines.serial_number', 'machines.tipe_model', 'customers.nama_customer', 'technicians.nama_technician')
+        ->get();
+
+    $html = "
+    <html>
+    <head>
+        <title>Rekap Service Log</title>
+        <style>
+            @page { size: landscape; margin: 10mm; }
+            body { font-family: sans-serif; font-size: 11px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+            th { background-color: #f3f4f6; }
+            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        </style>
+    </head>
+    <body onload='window.print()'>
+        <div class='header'>
+            <h1>DGG SYSTEM - REKAP SERVICE LOG</h1>
+            <p>Periode: $bulan / $tahun</p>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Tgl</th>
+                    <th>SN Mesin</th>
+                    <th>Customer</th>
+                    <th>Kerusakan / Perbaikan</th>
+                    <th>Teknisi</th>
+                </tr>
+            </thead>
+            <tbody>";
+    foreach ($data as $row) {
+        $html .= "<tr>
+            <td>$row->tanggal</td>
+            <td>$row->serial_number ($row->tipe_model)</td>
+            <td>$row->nama_customer</td>
+            <td>$row->kerusakan / $row->perbaikan</td>
+            <td>$row->nama_technician</td>
+        </tr>";
+    }Route::get('/cetak-rekap-sparepart/{bulan}/{tahun}', function ($bulan, $tahun) {
+    $data = DB::table('service_log_spareparts')
+        ->join('spareparts', 'service_log_spareparts.sparepart_id', '=', 'spareparts.id')
+        ->whereMonth('service_log_spareparts.created_at', $bulan)
+        ->whereYear('service_log_spareparts.created_at', $tahun)
+        ->select('spareparts.nama_sparepart', DB::raw('SUM(jumlah) as total_keluar'))
+        ->groupBy('spareparts.nama_sparepart')
+        ->get();
+
+    $html = "
+    <html>
+    <head>
+        <title>Rekap Pengeluaran Sparepart</title>
+        <style>
+            @page { size: portrait; margin: 15mm; }
+            body { font-family: sans-serif; font-size: 12px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #000; padding: 10px; text-align: left; }
+            th { background-color: #ef4444; color: white; }
+        </style>
+    </head>
+    <body onload='window.print()'>
+        <h1 style='text-align:center;'>DGG SYSTEM - REKAP PENGELUARAN SPAREPART</h1>
+        <p style='text-align:center;'>Periode: $bulan / $tahun</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nama Sparepart</th>
+                    <th style='text-align:right;'>Total Keluar (Unit)</th>
+                </tr>
+            </thead>
+            <tbody>";
+    foreach ($data as $row) {
+        $html .= "<tr>
+            <td>$row->nama_sparepart</td>
+            <td style='text-align:right;'>$row->total_keluar</td>
+        </tr>";
+    }
+    $html .= "</tbody></table></body></html>";
+    return response($html);
+})->name('cetak.rekap-sparepart');
+    $html .= "</tbody></table></body></html>";
+    return response($html);
+})->name('cetak.service-log-bulanan');
+

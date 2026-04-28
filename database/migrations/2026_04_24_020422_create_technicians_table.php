@@ -16,7 +16,7 @@ return new class extends Migration
         // Menghubungkan Teknisi ke Rayon
         $table->foreignId('rayon_id')->constrained('rayons')->onDelete('cascade');
         $table->string('nama_technician');
-        $table->string('nomor_hp')->nullable();
+        $table->string('phone')->nullable();
         $table->boolean('is_active')->default(true);
         $table->timestamps();
     });
