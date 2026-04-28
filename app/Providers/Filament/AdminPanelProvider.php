@@ -26,6 +26,10 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->brandName('@Rudianto') // <--- Nama di pojok kiri atas
+        // ->brandLogo(asset('images/logo.png')) // Jika Boss punya file logo
+            ->globalSearchKeyBindings(['command+k', 'ctrl+k']) // Fitur pencarian cepat
+            ->sidebarCollapsibleOnDesktop()
             ->login() // Memastikan halaman login aktif
             ->colors([
                 'primary' => Color::Amber,
@@ -41,7 +45,15 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Widgets\DeploymentChart::class,
                 \App\Filament\Widgets\StatsOverview::class, // Tambahkan ini
                 \App\Filament\Widgets\StockAlert::class,    // Dan ini
+                \App\Filament\Widgets\RecentServiceLogs::class,
+                \App\Filament\Widgets\LowStockParts::class,
+                \App\Filament\Widgets\TopSpareparts::class,
+                \App\Filament\Widgets\LatestCustomers::class,
+                \App\Filament\Widgets\MachineLocationStats::class,
+                \App\Filament\Widgets\MachineRayonStats::class,
+                \App\Filament\Widgets\PartLifespanAlert::class,
             ])
+            ->databaseNotifications()
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

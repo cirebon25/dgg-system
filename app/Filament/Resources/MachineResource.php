@@ -58,45 +58,26 @@ class MachineResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('serial_number')
-                    ->label('SN Mesin')
-                    ->searchable() // Bisa dicari lewat kolom search
-                    ->sortable()
-                    ->copyable() // Klik untuk copy SN
-                    ->description(fn (Machine $record): string => $record->tipe_model),
+    return $table
+        ->columns([
+            // ... kolom yang sudah ada (SN, Model, Type, dll) ...
+        ])
+        ->actions([
+            Tables\Actions\EditAction::make(),
 
-                Tables\Columns\TextColumn::make('status')
-                    ->badge() // Membuat tampilan seperti label berwarna
-                    ->color(fn (string $state): string => match ($state) {
-                        'Ready' => 'success',    // Hijau
-                        'Rented' => 'warning',   // Kuning
-                        'Refurbish' => 'danger', // Merah
-                    }),
+            // TAMBAHKAN TOMBOL MONITOR DI SINI
+            Tables\Actions\Action::make('monitor')
+                ->label('Monitor Part')
+                ->icon('heroicon-o-cpu-chip') // Ikon chip/mesin
+                ->color('warning') // Warna oranye/kuning biar beda
+                ->url(fn ($record) => route('sparepart.monitor', $record->id))
+                ->openUrlInNewTab(), // Biar kebuka di tab baru (laporan cetak)
 
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Update Terakhir')
-                    ->dateTime('d M Y H:i')
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                // Filter cepat berdasarkan status di atas tabel
-                Tables\Filters\SelectFilter::make('status')
-                    ->options([
-                        'Ready' => 'Ready',
-                        'Rented' => 'Rented',
-                        'Refurbish' => 'Refurbish',
-                    ]),
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+            Tables\Actions\DeleteAction::make(),
+        ])
+        ->bulkActions([
+            // ...
+        ]);
     }
 
     public static function getRelations(): array

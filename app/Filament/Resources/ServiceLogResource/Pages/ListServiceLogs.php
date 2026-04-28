@@ -12,8 +12,15 @@ class ListServiceLogs extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-            Actions\CreateAction::make(),
-        ];
+    return [
+        Actions\CreateAction::make(),
+        
+        Actions\Action::make('cetakSwap')
+            ->label('Cetak Tukar Mesin')
+            ->icon('heroicon-m-arrows-right-left')
+            ->color('info')
+            ->url(route('cetak.swap'))
+            ->openUrlInNewTab(),
+    ];
     }
 }

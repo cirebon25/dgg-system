@@ -3,25 +3,50 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Sparepart;
+use App\Models\Machine;
+use App\Models\Customer;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class StockAlert extends BaseWidget
 {
-    // Mengatur urutan agar tampil di paling atas (opsional)
+    // 1. URUTAN (Paling Atas)
     protected static ?int $sort = 1;
+
+    // 2. ANTI-GLITCH (Biar enteng pas di-scroll)
+    protected static bool $isLazy = true;
+
+    // 3. LEBAR PENUH (Biar simetris di atas)
+    protected int | string | array $columnSpan = 'full';
 
     protected function getStats(): array
     {
-        // Menghitung jumlah item yang stoknya 5 atau kurang
+        // Hitung stok kritis
         $lowStockCount = Sparepart::where('stok', '<=', 5)->count();
+        
+        // Tambahan: Ambil data mesin & customer biar Boss sekali lihat langsung tahu
+        $totalMesin = Machine::count();
+        $totalCustomer = Customer::count();
 
         return [
+            // Stat 1: Total Mesin
+            Stat::make('Total Unit Mesin', $totalMesin . ' Unit')
+                ->description('Total inventaris DGG')
+                ->descriptionIcon('heroicon-m-cpu-chip')
+                ->color('info'),
+
+            // Stat 2: Customer
+            Stat::make('Total Customer', $totalCustomer . ' Lokasi')
+                ->description('Unit yang tersebar')
+                ->descriptionIcon('heroicon-m-user-group')
+                ->color('success'),
+
+            // Stat 3: Sparepart Kritis (Perbaikan kode Boss)
             Stat::make('Sparepart Kritis', $lowStockCount . ' Item')
-                ->description($lowStockCount > 0 ? 'Segera lakukan pengadaan stok!' : 'Stok semua aman')
-                ->descriptionIcon('heroicon-m-exclamation-triangle')
+                ->description($lowStockCount > 0 ? 'Segera belanja stok!' : 'Stok gudang aman')
+                ->descriptionIcon($lowStockCount > 0 ? 'heroicon-m-exclamation-triangle' : 'heroicon-m-check-circle')
                 ->color($lowStockCount > 0 ? 'danger' : 'success')
-                // Menambahkan efek grafik (opsional)
+                // Chart ini hanya muncul kalau ada barang kritis (visualisasi tren penurunan)
                 ->chart($lowStockCount > 0 ? [7, 3, 5, 2, 4, 1] : [1, 1, 1]),
         ];
     }
