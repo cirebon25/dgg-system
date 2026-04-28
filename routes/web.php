@@ -70,3 +70,33 @@ Route::get('/service-log/report/monthly', function (Request $request) {
         'year' => $year
     ]);
 })->name('service-log.monthly');
+
+// ROUTE CETAK BULANAN
+Route::get('/service-log/report/monthly', function (Illuminate\Http\Request $request) {
+    $month = $request->query('month');
+    $year = $request->query('year');
+
+    // TARIK DATA LENGKAP TERMASUK DEPLOYMENT DAN SPAREPART
+    $logs = App\Models\ServiceLog::whereYear('tanggal', $year)
+        ->whereMonth('tanggal', $month)
+        ->with(['machine.deployment.customer', 'technician', 'serviceLogSpareparts.sparepart'])
+        ->orderBy('tanggal', 'asc') // Urutkan dari tanggal terawal
+        ->get();
+
+    return view('print.monthly-report', [
+        'logs' => $logs,
+        'month' => $month,
+        'year' => $year
+    ]);
+})->name('service-log.monthly');
+
+Route::get('/sparepart/report/outflow', function (Illuminate\Http\Request $request) {
+    $month = $request->query('month');
+    $year = $request->query('year');
+
+    $usages = \App\Models\ServiceLogSparepart::whereHas('serviceLog', function($q) use ($month, $year) {
+        $q->whereMonth('tanggal', $month)->whereYear('tanggal', $year);
+    })->with(['sparepart', 'serviceLog.machine.deployment.customer'])->get();
+
+    return view('print.sparepart-outflow', compact('usages', 'month', 'year'));
+})->name('sparepart.report.outflow');

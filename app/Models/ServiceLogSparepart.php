@@ -2,26 +2,40 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ServiceLogSparepart extends Model
 {
-    use HasFactory;
+    // Pastikan ada titik koma (;) di akhir baris ini
+    protected $fillable = ['service_log_id', 'sparepart_id', 'jumlah'];
 
-    protected $fillable = [
-        'service_log_id',
-        'sparepart_id',
-        'jumlah',
-    ];
-
-    // Logika Otomatis: Begitu sparepart disimpan di Service Log, stok gudang langsung berkurang
     protected static function booted()
     {
+        // Logika saat input barang baru
         static::created(function ($item) {
-            $sparepart = Sparepart::find($item->sparepart_id);
+            $sparepart = $item->sparepart;
             if ($sparepart) {
-                $sparepart->decrement('stok', $item->jumlah);
+                $sparepart->saldo_keluar += $item->jumlah;
+                $sparepart->save();
+            }
+        });
+
+        // Logika saat jumlah barang diedit
+        static::updated(function ($item) {
+            $sparepart = $item->sparepart;
+            if ($sparepart) {
+                $selisih = $item->jumlah - $item->getOriginal('jumlah');
+                $sparepart->saldo_keluar += $selisih;
+                $sparepart->save();
+            }
+        });
+
+        // Logika saat data servis dihapus
+        static::deleted(function ($item) {
+            $sparepart = $item->sparepart;
+            if ($sparepart) {
+                $sparepart->saldo_keluar -= $item->jumlah;
+                $sparepart->save();
             }
         });
     }

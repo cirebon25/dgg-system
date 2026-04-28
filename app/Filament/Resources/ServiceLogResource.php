@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Carbon\Carbon;
 
 class ServiceLogResource extends Resource
 {
@@ -24,11 +25,10 @@ class ServiceLogResource extends Resource
                 Forms\Components\Section::make('Data Kunjungan')
                     ->schema([
                         Forms\Components\Select::make('machine_id')
-                            ->relationship('machine', 'serial_number', fn (Builder $query) => $query->where('status', 'Rented'))
+                            ->relationship('machine', 'serial_number')
                             ->label('SN Mesin')
                             ->required()
                             ->searchable()
-                            ->preload()
                             ->reactive()
                             ->afterStateUpdated(function ($state, Forms\Set $set) {
                                 $lastLog = ServiceLog::where('machine_id', $state)->latest('tanggal')->first();
@@ -40,12 +40,9 @@ class ServiceLogResource extends Resource
                         
                         Forms\Components\Select::make('tipe_kunjungan')
                             ->options([
-                                'RN' => 'RN (Routine) - Hijau',
-                                'CM' => 'CM (Corrective) - Merah',
-                                'RM' => 'RM (Repair) - Biru',
-                                'RR' => 'RR (Return) - Coklat',
-                                'JK' => 'JK (Jaga Kandang) - Ungu',
-                                'L' => 'L (Lain-lain) - Abu',
+                                'RN' => 'RN (Routine)', 'CM' => 'CM (Corrective)', 
+                                'RM' => 'RM (Repair)', 'RR' => 'RR (Return)', 
+                                'JK' => 'JK (Jaga Kandang)', 'L' => 'L (Lain-lain)',
                             ])->required(),
 
                         Forms\Components\DatePicker::make('tanggal')
@@ -64,13 +61,34 @@ class ServiceLogResource extends Resource
                         Forms\Components\TextInput::make('bw_lalu')->label('BW Lalu')->numeric()->readOnly(),
                         Forms\Components\TextInput::make('counter_bw')->label('BW Sekarang')->numeric()->required()->reactive()
                             ->afterStateUpdated(fn ($state, $get, $set) => $set('usage_bw', (int)$state - (int)$get('bw_lalu'))),
-                        Forms\Components\TextInput::make('usage_bw')->label('Total Pakai BW')->numeric()->readOnly(),
+                        Forms\Components\TextInput::make('usage_bw')->label('Usage BW')->numeric()->readOnly(),
 
                         Forms\Components\TextInput::make('color_lalu')->label('Color Lalu')->numeric()->readOnly(),
                         Forms\Components\TextInput::make('counter_color')->label('Color Sekarang')->numeric()->reactive()
                             ->afterStateUpdated(fn ($state, $get, $set) => $set('usage_color', (int)$state - (int)$get('color_lalu'))),
-                        Forms\Components\TextInput::make('usage_color')->label('Total Pakai Color')->numeric()->readOnly(),
+                        Forms\Components\TextInput::make('usage_color')->label('Usage Color')->numeric()->readOnly(),
                     ])->columns(3),
+
+                // --- BAGIAN SPAREPART (REPEATER) SUDAH KEMBALI ---
+                Forms\Components\Section::make('Sparepart yang Diganti')
+                    ->description('Kosongkan jika tidak ada pergantian sparepart.')
+                    ->schema([
+                        Forms\Components\Repeater::make('serviceLogSpareparts')
+                            ->relationship()
+                            ->schema([
+                                Forms\Components\Select::make('sparepart_id')
+                                    ->relationship('sparepart', 'nama_sparepart')
+                                    ->label('Pilih Sparepart')
+                                    ->searchable()
+                                    ->preload(),
+                                Forms\Components\TextInput::make('jumlah')
+                                    ->numeric()
+                                    ->default(1),
+                            ])
+                            ->columns(2)
+                            ->defaultItems(0)
+                            ->addActionLabel('Tambah Sparepart'),
+                    ]),
 
                 Forms\Components\Section::make('Detail Teknisi & Perbaikan')
                     ->schema([
@@ -79,12 +97,10 @@ class ServiceLogResource extends Resource
                         
                         Forms\Components\Select::make('technician_id')
                             ->relationship('technician', 'nama_technician')
-                            ->label('Teknisi 1 (Utama)')
-                            ->required(),
+                            ->label('Teknisi Utama')->required(),
                         
                         Forms\Components\TextInput::make('nama_teknisi_manual')
-                            ->label('Teknisi 2 (Partner)')
-                            ->placeholder('Ketik nama partner teknisi'),
+                            ->label('Teknisi Partner (Manual)'),
                     ])->columns(2),
             ]);
     }
@@ -93,25 +109,73 @@ class ServiceLogResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('machine.customer.nama_customer')->label('Customer')->searchable()->sortable(),
-                Tables\Columns\TextColumn::make('machine.model_mesin')->label('Type Mesin'),
-                Tables\Columns\TextColumn::make('machine.serial_number')->label('SN Mesin')->searchable(),
-                Tables\Columns\TextColumn::make('machine.deployment.tanggal_instal')->label('Tgl Pasang')->date('d/m/Y'),
-                Tables\Columns\TextColumn::make('tanggal')->label('Tgl Kunjungan')->date('d/m/Y')->sortable(),
-                Tables\Columns\TextColumn::make('counter_bw')->label('Counter BW')->numeric(),
-                Tables\Columns\TextColumn::make('usage_bw')->label('Total Pakai')->badge()->color('info'),
+                // 1. Nama Customer & Model
+                Tables\Columns\TextColumn::make('machine.deployment.customer.nama_customer')
+                    ->label('Customer / Model')
+                    ->placeholder('Data Kosong')
+                    ->description(fn ($record): string => "Model: " . ($record->machine?->model_mesin ?? '-'))
+                    ->searchable()
+                    ->sortable(),
+
+                // 2. SN & Tgl Pasang
+                Tables\Columns\TextColumn::make('machine.serial_number')
+                    ->label('SN / Tgl Pasang')
+                    ->description(function ($record) {
+                        $tgl = $record->machine?->deployment?->tanggal_instal;
+                        return "Instal: " . ($tgl ? \Carbon\Carbon::parse($tgl)->format('d/m/Y') : '-');
+                    })
+                    ->searchable(),
+
+                // 3. Tgl Kunjungan
+                Tables\Columns\TextColumn::make('tanggal')
+                    ->label('Tgl Servis')
+                    ->date('d/m/Y')
+                    ->sortable(),
+
+                // 4. Counter BW & Color (MENGGUNAKAN KOLOM ASLI AGAR TIDAK KOSONG)
+                Tables\Columns\TextColumn::make('counter_bw')
+                    ->label('Counter (BW/CL)')
+                    ->html()
+                    ->formatStateUsing(fn ($record) => 
+                        "BW: " . number_format($record->counter_bw) . "<br>CL: " . number_format($record->counter_color)
+                    ),
+
+                // 5. Usage BW & Color (MENGGUNAKAN KOLOM ASLI AGAR TIDAK KOSONG)
+                Tables\Columns\TextColumn::make('usage_bw')
+                    ->label('Usage (BW/CL)')
+                    ->html()
+                    ->formatStateUsing(fn ($record) => 
+                        "<span style='color:#3b82f6; font-weight:bold;'>BW: " . number_format($record->usage_bw) . "</span><br>" .
+                        "<span style='color:#ef4444; font-weight:bold;'>CL: " . number_format($record->usage_color) . "</span>"
+                    ),
+
+                // 6. Tipe Kunjungan
                 Tables\Columns\TextColumn::make('tipe_kunjungan')
-                    ->label('Tipe')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'RN' => 'success', 'CM' => 'danger', 'RM' => 'info',
-                        'RR' => 'amber', 'JK' => 'primary', 'L'  => 'gray', default => 'gray',
+                        'RN' => 'success', 'CM' => 'danger', 'RM' => 'info', 
+                        'RR' => 'amber', 'JK' => 'primary', default => 'gray',
                     }),
-                Tables\Columns\TextColumn::make('perbaikan')->limit(30)->toggleable(),
-                Tables\Columns\TextColumn::make('technician.nama_technician')->label('Teknisi 1'),
-                Tables\Columns\TextColumn::make('nama_teknisi_manual')->label('Teknisi 2'),
+                
+                // 7. Perbaikan
+                Tables\Columns\TextColumn::make('perbaikan')
+                    ->label('Tindakan')
+                    ->limit(20)
+                    ->toggleable(),
+                    
+                // 8. Teknisi
+                Tables\Columns\TextColumn::make('technician.nama_technician')
+                    ->label('Teknisi')
+                    ->description(fn ($record) => $record->nama_teknisi_manual ? "Partner: " . $record->nama_teknisi_manual : ''),
+            ])
+            ->groups([
+                Tables\Grouping\Group::make('tanggal')
+                    ->label('Bulan Kunjungan')
+                    ->date()
+                    ->collapsible(),
             ])
             ->headerActions([
+                // TOMBOL CETAK PER BULAN KEMBALI
                 Tables\Actions\Action::make('printBulanan')
                     ->label('Cetak Per Bulan')
                     ->color('success')
@@ -138,18 +202,18 @@ class ServiceLogResource extends Resource
                     }),
             ])
             ->actions([
+                // TOMBOL EDIT DAN PRINT PER BARIS KEMBALI
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('print')
                     ->label('Print')
-                    ->color('success')
                     ->icon('heroicon-o-printer')
+                    ->color('success')
                     ->url(fn (ServiceLog $record) => route('service-log.print', $record))
                     ->openUrlInNewTab(),
                 Tables\Actions\DeleteAction::make(),
             ])
-            ->defaultSort('tanggal', 'desc'); // Urutkan berdasarkan tanggal terbaru
+            ->defaultSort('tanggal', 'desc');
     }
-
     public static function getPages(): array
     {
         return [

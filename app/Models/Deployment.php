@@ -17,21 +17,31 @@ class Deployment extends Model
         'keterangan',
     ];
 
-    // INI KABEL OTOMATISNYA BOSS
+    // INI POSISI YANG BENAR BOSS, DI LUAR FUNGSI
+    protected $casts = [
+        'tanggal_instal' => 'date', 
+    ];
+
+    // Logika Otomatis Sinkronisasi Status Mesin
     protected static function booted()
     {
         // 1. Saat Deployment BARU DIBUAT -> Ubah Status Mesin jadi 'Rented'
         static::created(function ($deployment) {
-            $deployment->machine->update(['status' => 'Rented']);
+            if ($deployment->machine) {
+                $deployment->machine->update(['status' => 'Rented']);
+            }
         });
 
-        // 2. Saat Deployment DIUPDATE -> Pastikan status sinkron
+        // 2. Saat Deployment DIUPDATE
         static::updated(function ($deployment) {
             if ($deployment->wasChanged('machine_id')) {
                 // Mesin lama balik jadi Ready
-                Machine::find($deployment->getOriginal('machine_id'))->update(['status' => 'Ready']);
+                $oldMachineId = $deployment->getOriginal('machine_id');
+                if ($oldMachineId) {
+                    Machine::find($oldMachineId)?->update(['status' => 'Ready']);
+                }
                 // Mesin baru jadi Rented
-                $deployment->machine->update(['status' => 'Rented']);
+                $deployment->machine?->update(['status' => 'Rented']);
             }
         });
 
@@ -43,6 +53,7 @@ class Deployment extends Model
         });
     }
 
+    // Relasi
     public function customer() { return $this->belongsTo(Customer::class); }
     public function machine() { return $this->belongsTo(Machine::class); }
     public function technician() { return $this->belongsTo(Technician::class); }
