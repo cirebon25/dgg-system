@@ -60,7 +60,34 @@ class MachineResource extends Resource
     {
     return $table
         ->columns([
-            // ... kolom yang sudah ada (SN, Model, Type, dll) ...
+            // 1. Tampilkan Serial Number
+            Tables\Columns\TextColumn::make('serial_number')
+                ->label('Serial Number')
+                ->searchable()
+                ->sortable(),
+
+            // 2. Tampilkan Tipe Model
+            Tables\Columns\TextColumn::make('tipe_model')
+                ->label('Tipe Mesin')
+                ->searchable(),
+
+            // 3. Tampilkan Status (Biar kelihatan unitnya ready atau tidak)
+            Tables\Columns\TextColumn::make('status')
+                ->badge()
+                ->color(fn (string $state): string => match ($state) {
+                    'Available' => 'success',
+                    'Rented' => 'warning',
+                    'Broken' => 'danger',
+                    default => 'gray',
+                }),
+
+            // 4. Tampilkan Nama Customer (Opsional)
+            Tables\Columns\TextColumn::make('customer.nama_customer')
+                ->label('Lokasi / Pelanggan')
+                ->placeholder('Gudang DGG'),
+        ])
+        ->filters([
+            //
         ])
         ->actions([
             Tables\Actions\EditAction::make(),

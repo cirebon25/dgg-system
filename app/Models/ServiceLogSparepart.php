@@ -13,33 +13,54 @@ class ServiceLogSparepart extends Model
 
     protected static function booted()
     {
-        // Logika saat input barang baru
-        static::created(function ($item) {
-            $sparepart = $item->sparepart;
-            if ($sparepart) {
-                $sparepart->saldo_keluar += $item->jumlah;
-                $sparepart->save();
-            }
-        });
+    // 1. SAAT INPUT BARANG BARU
+    static::created(function ($item) {
+        $sparepart = $item->sparepart;
+        if ($sparepart) {
+            // Update Stok (Logika Boss)
+            $sparepart->saldo_keluar += $item->jumlah;
+            $sparepart->save();
 
-        // Logika saat jumlah barang diedit
-        static::updated(function ($item) {
-            $sparepart = $item->sparepart;
-            if ($sparepart) {
-                $selisih = $item->jumlah - $item->getOriginal('jumlah');
-                $sparepart->saldo_keluar += $selisih;
-                $sparepart->save();
+            // Update Jembatan Kesehatan Mesin (Logika Baru)
+            $serviceLog = $item->serviceLog;
+            if ($serviceLog) {
+                \App\Models\MachinePartHealth::updateOrInsert(
+                    [
+                        'machine_id' => $serviceLog->machine_id,
+                        'sparepart_id' => $item->sparepart_id,
+                    ],
+                    [
+                        'last_replaced_counter' => $serviceLog->counter_akhir ?? 0,
+                        'last_replaced_at' => $serviceLog->tanggal,
+                        'current_usage' => 0, // Reset karena part baru dipasang
+                        'updated_at' => now(),
+                    ]
+                );
             }
-        });
+        }
+    });
 
-        // Logika saat data servis dihapus
-        static::deleted(function ($item) {
-            $sparepart = $item->sparepart;
-            if ($sparepart) {
-                $sparepart->saldo_keluar -= $item->jumlah;
-                $sparepart->save();
-            }
-        });
+    // 2. SAAT JUMLAH BARANG DIEDIT
+    static::updated(function ($item) {
+        $sparepart = $item->sparepart;
+        if ($sparepart) {
+            $selisih = $item->jumlah - $item->getOriginal('jumlah');
+            $sparepart->saldo_keluar += $selisih;
+            $sparepart->save();
+        }
+    });
+
+    // 3. SAAT DATA SERVIS DIHAPUS
+    static::deleted(function ($item) {
+        $sparepart = $item->sparepart;
+        if ($sparepart) {
+            $sparepart->saldo_keluar -= $item->jumlah;
+            $sparepart->save();
+            
+            // Opsional: Jika data dihapus, mungkin Boss ingin reset health-nya juga?
+            // Biasanya dibiarkan saja agar tetap ada record penggantian terakhir.
+        }
+    });
     }
 
     public function serviceLog()

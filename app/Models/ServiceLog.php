@@ -10,33 +10,36 @@ class ServiceLog extends Model
 {
     use HasFactory;
 
-    // Daftar kolom yang boleh diisi
     protected $fillable = [
-    'machine_id', 'technician_id', 'tanggal', 'jam_mulai', 'jam_selesai',
-    'tipe_kunjungan', 'counter_bw', 'usage_bw', 'counter_color', 'usage_color',
-    'kerusakan', 'perbaikan', 'sparepart_id', 'jumlah_sparepart'
+        'machine_id', 'technician_id', 'tanggal', 'jam_mulai', 'jam_selesai',
+        'tipe_kunjungan', 'counter_bw', 'usage_bw', 'counter_color', 'usage_color',
+        'kerusakan', 'perbaikan', 'sparepart_id', 'jumlah_sparepart'
     ];
 
-    // Format otomatis tanggal
     protected $casts = [
-        'tanggal_service' => 'date',
+        'tanggal' => 'date', // Sesuaikan nama kolomnya (tadi di fillable 'tanggal')
     ];
 
-    // Logika Otomatis saat data dibuat
     protected static function booted()
     {
         static::created(function ($serviceLog) {
-            // Jika teknisi memilih sparepart dari list, stok di gudang otomatis berkurang
-            if ($serviceLog->sparepart_id && $serviceLog->jumlah_sparepart > 0) {
-                $sparepart = \App\Models\Sparepart::find($serviceLog->sparepart_id);
-                if ($sparepart) {
-                    $sparepart->decrement('stok', $serviceLog->jumlah_sparepart);
-                }
+            // JEMBATAN OTOMATIS: Update angka pemakaian part setiap ada servis baru
+            // Kita ambil semua catatan kesehatan part untuk mesin ini
+            $healthRecords = \App\Models\MachinePartHealth::where('machine_id', $serviceLog->machine_id)->get();
+            
+            foreach ($healthRecords as $health) {
+                // Pemakaian = Counter Sekarang (BW) - Counter saat terakhir ganti
+                // Boss bisa ganti ke counter_color jika partnya spesifik warna
+                $currentCounter = $serviceLog->counter_bw ?? 0; 
+                $usage = $currentCounter - $health->last_replaced_counter;
+                
+                $health->update([
+                    'current_usage' => $usage > 0 ? $usage : 0
+                ]);
             }
         });
     }
 
-    // Relasi ke tabel lain
     public function machine(): BelongsTo 
     { 
         return $this->belongsTo(Machine::class); 
@@ -54,7 +57,6 @@ class ServiceLog extends Model
 
     public function serviceLogSpareparts()
     {
-    return $this->hasMany(ServiceLogSparepart::class);
+        return $this->hasMany(ServiceLogSparepart::class);
     }
-
 }

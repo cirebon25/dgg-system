@@ -153,6 +153,14 @@ Route::get('/cetak-alokasi-mesin', function () {
             .bg-total-rayon { background-color: #dcfce7; font-weight: bold; font-size: 14px; }
             .text-right { text-align: right; }
             header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            
+            /* -- INI KODE TAMBAHAN AGAR WARNA TEMBUS SAAT PRINT -- */
+            @media print {
+                * {
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+            }
         </style>
     </head>
     <body onload='window.print()'>
