@@ -27,100 +27,91 @@ class ListCustomers extends ListRecords
                 ->icon('heroicon-o-arrow-down-tray')
                 ->form([
                     FileUpload::make('file_csv')
-                        ->label('Upload File (Wajib format .csv)')
-                        ->disk('local') // Disimpan sementara di server
+                        ->label('Upload File (Format .csv)')
+                        ->disk('local')
                         ->directory('import-temp')
                         ->acceptedFileTypes(['text/csv', 'text/plain', 'application/csv'])
                         ->required(),
                 ])
                 ->action(function (array $data) {
-                    // 1. Cari lokasi file yang diupload
                     $filePath = Storage::disk('local')->path($data['file_csv']);
                     $file = fopen($filePath, "r");
                     
-                    // 2. Lewati baris pertama (Judul Kolom / Header)
+                    // Lewati header (baris pertama)
                     fgetcsv($file); 
 
                     $lastCustomer = null;
                     $berhasil = 0;
 
-                    // 3. Mulai proses masuk ke database (Pakai Transaction agar aman)
                     DB::beginTransaction();
                     try {
                         while (($row = fgetcsv($file)) !== false) {
-                            $kodeCustomer = $row[1] ?? '';
-                            $namaCustomer = $row[2] ?? '';
+                            // Sesuai file Excel Boss: index 2 adalah NAMA CUSTOMER
+                            $namaCustomer = trim($row[2] ?? '');
 
-                            // JIKA KODE CUSTOMER ADA, BUAT/CARI CUSTOMER
-                            if (!empty(trim($kodeCustomer))) {
-                                   $$lastCustomer = Customer::firstOrCreate(
-                                    ['nama_customer' => trim($namaCustomer)], // Sekarang dicari berdasarkan Nama
+                            // 1. CARI ATAU BUAT CUSTOMER (Pakai nama_customer sesuai HeidiSQL)
+                            if (!empty($namaCustomer)) {
+                                $lastCustomer = Customer::firstOrCreate(
+                                    ['nama_customer' => $namaCustomer],
                                     [
-                                        'alamat' => $row[3] ?? '-',
-                                        'rayon_id' => 1 
-                                        // Abaikan kolom kode_customer
+                                        'rayon_id'   => 1, // Sesuaikan ID Rayon Boss
+                                        'kota'       => $row[3] ?? '-', // Sesuaikan urutan kolom di CSV
+                                        'alamat'     => $row[3] ?? '-', 
+                                        'nomor_telp' => null,
                                     ]
                                 );
                             }
 
-                            // JIKA NO SERI MESIN ADA, BUAT MESIN & ALOKASIKAN KE CUSTOMER
+                            // 2. CARI ATAU BUAT MESIN (Index 6 adalah NO SERI MESIN)
                             $noSeri = trim($row[6] ?? '');
                             if (!empty($noSeri) && $lastCustomer) {
-                                // Masukkan Mesin
                                 $machine = Machine::firstOrCreate(
                                     ['serial_number' => $noSeri],
                                     [
                                         'tipe_model' => $row[5] ?? 'Unknown', 
-                                        'status' => 'Rented'
+                                        'status'     => 'Rented'
                                     ]
                                 );
 
-                                // Masukkan ke Deployment (Alokasi)
+                                // 3. BUAT ALOKASI (DEPLOYMENT)
                                 Deployment::firstOrCreate(
                                     [
-                                        'machine_id' => $machine->id, 
+                                        'machine_id'  => $machine->id, 
                                         'customer_id' => $lastCustomer->id
                                     ],
                                     [
-                                        'tanggal_pasang' => !empty($row[4]) ? date('Y-m-d', strtotime($row[4])) : now(),
-                                        'harga_sewa' => (int) preg_replace('/\D/', '', $row[7] ?? 0),
-                                        'free_copy' => (int) preg_replace('/\D/', '', $row[8] ?? 0),
+                                        'tanggal_pasang'    => !empty($row[4]) ? date('Y-m-d', strtotime($row[4])) : now(),
+                                        'harga_sewa'        => (int) preg_replace('/\D/', '', $row[7] ?? 0),
+                                        'free_copy'         => (int) preg_replace('/\D/', '', $row[8] ?? 0),
                                         'charge_per_lembar' => (int) preg_replace('/\D/', '', $row[9] ?? 0),
-                                        'status' => 'Active'
+                                        'status'            => 'Active'
                                     ]
                                 );
                                 $berhasil++;
                             }
                         }
                         
-                        // Kunci data ke database
                         DB::commit();
                         fclose($file);
-                        
-                        // Hapus file CSV dari server setelah selesai biar tidak penuh
                         Storage::disk('local')->delete($data['file_csv']); 
 
-                        // Tampilkan Notifikasi Sukses
                         Notification::make()
                             ->title("MANTAP BOSS! Berhasil import $berhasil Mesin.")
                             ->success()
                             ->send();
 
                     } catch (\Exception $e) {
-                        // Jika ada eror, batalkan semua perubahan database
                         DB::rollBack();
                         if (isset($file)) { fclose($file); }
                         
-                        // Tampilkan Notifikasi Eror
                         Notification::make()
-                            ->title('Gagal Import Data!')
+                            ->title('Gagal Import!')
                             ->body($e->getMessage())
                             ->danger()
                             ->send();
                     }
                 }),
 
-            // TOMBOL BAWAAN "NEW CUSTOMER"
             Actions\CreateAction::make(),
         ];
     }
