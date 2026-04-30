@@ -14,7 +14,11 @@ class Machine extends Model
         'serial_number',
         'tipe_model',
         'status',
-        'keterangan_awal'
+        'keterangan_awal',
+        'volt',     // Tambahkan ini
+        'finisher', // Tambahkan ini
+        'cover',    // Tambahkan ini
+        'kaset',
     ];
 
     public function deployments()

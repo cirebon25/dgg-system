@@ -14,23 +14,22 @@ class MachineResource extends Resource
 {
     protected static ?string $model = Machine::class;
 
-    // Ikon menu di navigasi samping
     protected static ?string $navigationIcon = 'heroicon-o-cpu-chip';
 
-    // Label menu di navigasi
     protected static ?string $navigationLabel = 'Data Mesin';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
+                // SEKSI 1: INFORMASI UMUM
                 Forms\Components\Section::make('Informasi Unit Mesin')
                     ->description('Masukkan detail mesin fotokopi sesuai label SN di bodi mesin.')
                     ->schema([
                         Forms\Components\TextInput::make('serial_number')
                             ->label('Serial Number (SN)')
                             ->required()
-                            ->unique(ignoreRecord: true) // Mencegah SN ganda
+                            ->unique(ignoreRecord: true)
                             ->placeholder('Contoh: WEP12345'),
 
                         Forms\Components\TextInput::make('tipe_model')
@@ -50,68 +49,71 @@ class MachineResource extends Resource
 
                         Forms\Components\Textarea::make('keterangan_awal')
                             ->label('Catatan Kondisi')
-                            ->placeholder('Misal: Kondisi drum 90%, include toner baru.')
+                            ->placeholder('Misal: Kondisi drum 90%')
                             ->columnSpanFull(),
+                    ])->columns(2),
+
+                // SEKSI 2: DETAIL TEKNIS (Ini yang tadi terpisah)
+                Forms\Components\Section::make('Detail Teknis Mesin')
+                    ->description('Informasi tambahan untuk stok gudang')
+                    ->schema([
+                        Forms\Components\TextInput::make('volt')
+                            ->label('Voltase')
+                            ->placeholder('Contoh: 110V / 220V'),
+                        Forms\Components\TextInput::make('finisher')
+                            ->label('Finisher'),
+                        Forms\Components\TextInput::make('cover')
+                            ->label('Cover'),
+                        Forms\Components\TextInput::make('kaset')
+                            ->label('Jumlah Kaset'),
                     ])->columns(2),
             ]);
     }
 
     public static function table(Table $table): Table
     {
-    return $table
-        ->columns([
-            // 1. Tampilkan Serial Number
-            Tables\Columns\TextColumn::make('serial_number')
-                ->label('Serial Number')
-                ->searchable()
-                ->sortable(),
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('serial_number')
+                    ->label('Serial Number')
+                    ->searchable()
+                    ->sortable(),
 
-            // 2. Tampilkan Tipe Model
-            Tables\Columns\TextColumn::make('tipe_model')
-                ->label('Tipe Mesin')
-                ->searchable(),
+                Tables\Columns\TextColumn::make('tipe_model')
+                    ->label('Tipe Mesin')
+                    ->searchable(),
 
-            // 3. Tampilkan Status (Biar kelihatan unitnya ready atau tidak)
-            Tables\Columns\TextColumn::make('status')
-                ->badge()
-                ->color(fn (string $state): string => match ($state) {
-                    'Available' => 'success',
-                    'Rented' => 'warning',
-                    'Broken' => 'danger',
-                    default => 'gray',
-                }),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'Ready' => 'success', // Tadi Akang tulis 'Available' makanya gak muncul warnanya
+                        'Rented' => 'warning',
+                        'Refurbish' => 'danger',
+                        default => 'gray',
+                    }),
 
-            // 4. Tampilkan Nama Customer (Opsional)
-            Tables\Columns\TextColumn::make('customer.nama_customer')
-                ->label('Lokasi / Pelanggan')
-                ->placeholder('Gudang DGG'),
-        ])
-        ->filters([
-            //
-        ])
-        ->actions([
-            Tables\Actions\EditAction::make(),
+                Tables\Columns\TextColumn::make('customer.nama_customer')
+                    ->label('Lokasi / Pelanggan')
+                    ->placeholder('Gudang DGG'),
+            ])
+            ->filters([])
+            ->actions([
+                Tables\Actions\EditAction::make(),
 
-            // TAMBAHKAN TOMBOL MONITOR DI SINI
-            Tables\Actions\Action::make('monitor')
-                ->label('Monitor Part')
-                ->icon('heroicon-o-cpu-chip') // Ikon chip/mesin
-                ->color('warning') // Warna oranye/kuning biar beda
-                ->url(fn ($record) => route('sparepart.monitor', $record->id))
-                ->openUrlInNewTab(), // Biar kebuka di tab baru (laporan cetak)
+                Tables\Actions\Action::make('monitor')
+                    ->label('Monitor Part')
+                    ->icon('heroicon-o-cpu-chip')
+                    ->color('warning')
+                    ->url(fn ($record) => route('sparepart.monitor', $record->id))
+                    ->openUrlInNewTab(),
 
-            Tables\Actions\DeleteAction::make(),
-        ])
-        ->bulkActions([
-            // ...
-        ]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
+                Tables\Actions\DeleteAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
     }
 
     public static function getPages(): array

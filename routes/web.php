@@ -5,6 +5,8 @@ use App\Models\ServiceLog;
 use Illuminate\Http\Request;
 use App\Models\ServiceLogSparepart;
 use Illuminate\Support\Facades\DB;
+use App\Models\Machine;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -641,3 +643,139 @@ Route::get('/cetak-rekap-service/{bulan}/{tahun}', function ($bulan, $tahun) {
     return response($html);
 })->name('cetak.service-log-bulanan');
 
+
+Route::get('/cetak-stok-gudang', function () {
+    $machines = Machine::where('status', 'Ready')->get();
+    // $machines = Machine::all();
+    // $machines = Machine::where('status', 'Ready')->get();
+    // $machines = Machine::whereDoesntHave('Gudang DGG')->get();
+    
+
+  $html = "
+    <html>
+    <head>
+        <title>STOCK MESIN PHOTO COPY</title>
+        <style>
+            body { font-family: sans-serif; font-size: 12px; padding: 20px; }
+            
+            /* Header Rata Tengah */
+            .header-laporan { text-align: center; margin-bottom: 20px; }
+            .header-laporan p { margin: 2px 0; font-weight: bold; }
+            .judul-utama { 
+                font-size: 16px; 
+                text-decoration: underline; 
+                margin-top: 15px; 
+                font-weight: bold;
+            }
+            
+            /* Tabel Laporan */
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+            th { background: #f2f2f2; text-align: center; }
+            .text-center { text-align: center; }
+            
+            @media print { 
+                .no-print { display: none; }
+                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            }
+        </style>
+    </head>
+    <body onload='window.print()'>
+        
+        <div class='header-laporan'>
+            <p>PT. DINAMIKA GLOBAL GEMILANG</p>
+            <p>DEPO CIREBON</p>
+            <div class='judul-utama'>LAPORAN STOK MESIN GUDANG</div>
+        </div>
+
+        <p>Tanggal Cetak: " . date('d-m-Y') . "</p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th width='30'>NO</th>
+                    <th>TYPE MESIN</th>
+                    <th width='60'>QTY</th>
+                    <th width='80'>VOLT</th>
+                    <th>FINISHER</th>
+                    <th>COVER</th>
+                    <th>KASET</th>
+                </tr>
+            </thead>
+            <tbody>";
+            
+    $no = 1;
+    // Mengambil data mesin yang statusnya 'Ready' di gudang
+    foreach ($machines as $m) {
+    // Paksa munculkan tulisan kalau datanya kosong
+    $v = $m->volt ?? 'DATA VOLT KOSONG';
+    $f = $m->finisher ?? 'DATA FINISHER KOSONG';
+
+    $html .= "<tr>
+        <td class='text-center'>$no</td> 
+        <td>{$m->tipe_model}</td>
+        <td class='text-center'>1 Unit</td>
+        <td class='text-center'>{$v}</td>
+        <td class='text-center'>{$f}</td>
+        <td>" . ($m->cover ?? '-') . "</td>
+        <td>" . ($m->kaset ?? '-') . "</td>
+    </tr>";
+    $no++;
+}
+
+    $html .= "
+            </tbody>
+        </table>
+        
+        <div style='margin-top: 30px; float: right; text-align: center;'>
+            <p>Cirebon, " . date('d-m-Y') . "</p>
+            <br><br><br>
+            <p><b>( _________________ )</b></p>
+            <p>Admin Gudang</p>
+        </div>
+
+    </body>
+    </html>";
+    return response($html);
+})->name('cetak.stok-gudang');
+
+// FITUR 2: LAPORAN ALOKASI CUSTOMER (Mesin yang sedang terpasang)
+Route::get('/cetak-alokasi-customer', function () {
+    $data = \App\Models\Deployment::with(['customer', 'machine'])->get();
+
+    $html = "
+    <html>
+    <head>
+        <title>Laporan Alokasi Customer</title>
+        <style>
+            body { font-family: sans-serif; font-size: 12px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #000; padding: 6px; text-align: left; }
+            th { background: #e5e7eb; }
+        </style>
+    </head>
+    <body onload='window.print()'>
+        <h2 style='text-align:center'>DAFTAR ALOKASI UNIT CUSTOMER</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>NAMA CUSTOMER</th>
+                    <th>SN MESIN</th>
+                    <th>TGL PASANG</th>
+                    <th>HARGA SEWA</th>
+                </tr>
+            </thead>
+            <tbody>";
+
+    foreach ($data as $d) {
+        $html .= "<tr>
+            <td>" . ($d->customer->nama_customer ?? '-') . "</td>
+            <td>" . ($d->machine->serial_number ?? '-') . "</td>
+            <td>" . ($d->tanggal_pasang ?? '-') . "</td>
+            <td>Rp " . number_format($d->harga_sewa, 0, ',', '.') . "</td>
+        </tr>";
+    }
+
+    $html .= "</tbody></table></body></html>";
+    return response($html);
+})->name('cetak.alokasi-customer');

@@ -3,9 +3,11 @@
 namespace App\Filament\Resources\MachineResource\Pages;
 
 use App\Filament\Resources\MachineResource;
+use Filament\Actions\Action;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Support\Facades\DB;
+
 
 class ListMachines extends ListRecords
 {
@@ -16,6 +18,13 @@ class ListMachines extends ListRecords
     return [
         Actions\CreateAction::make(),
         
+        Action::make('cetakStokGudang')
+                ->label('Cetak Stok Gudang')
+                ->color('info')
+                ->icon('heroicon-o-printer')
+                ->url(fn () => route('cetak.stok-gudang'))
+                ->openUrlInNewTab(),
+
         // TOMBOL CETAK PEMASANGAN BARU
         Actions\Action::make('cetakPemasangan')
             ->label('Cetak Pemasangan Baru')
