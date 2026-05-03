@@ -13,11 +13,9 @@ return new class extends Migration
 {
     Schema::create('technicians', function (Blueprint $table) {
         $table->id();
-        // Menghubungkan Teknisi ke Rayon
-        $table->foreignId('rayon_id')->constrained('rayons')->onDelete('cascade');
+        $table->foreignId('rayon_id'); // atau kolom rayon lainnya
         $table->string('nama_technician');
-        $table->string('phone')->nullable();
-        $table->boolean('is_active')->default(true);
+        $table->string('nomor_hp'); // <-- PASTIKAN BARIS INI ADA
         $table->timestamps();
     });
 }

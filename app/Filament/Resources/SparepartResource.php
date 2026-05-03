@@ -9,13 +9,14 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
 
 class SparepartResource extends Resource
 {
     protected static ?string $model = Sparepart::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-tag';
     protected static ?string $navigationGroup = 'Master Data'; // Saya masukkan ke grup Master Data
 
     public static function form(Form $form): Form
@@ -28,9 +29,9 @@ class SparepartResource extends Resource
                             ->label('Nama Sparepart')
                             ->required(),
                         Forms\Components\TextInput::make('code_part')
-                            ->label('Code Part'),
+                            ->label('code Part'),
                         Forms\Components\TextInput::make('no_part')
-                            ->label('No Part'),
+                            ->label('no Part'),
                     ])->columns(3),
 
                 Forms\Components\Section::make('Manajemen Stok')
@@ -58,8 +59,32 @@ class SparepartResource extends Resource
     {
     return $table
         ->columns([
-            // ... kolom-kolom yang sudah ada ...
+            // --- TAMBAHKAN KOLOM-KOLOM INI ---
+            TextColumn::make('nama_sparepart')
+                ->label('Nama Sparepart')
+                ->searchable()
+                ->sortable(),
+
+            TextColumn::make('code_part')
+                ->label('Kode Part')
+                ->searchable(),
+                
+
+            TextColumn::make('no_part')
+                ->label('No Part')
+                ->searchable(),
+
+            TextColumn::make('stok')
+                ->label('Stok')
+                ->badge()
+                ->color(fn (string $state): string => match (true) {
+                    $state <= 2 => 'danger',  // Merah kalau sisa sedikit
+                    $state <= 5 => 'warning', // Kuning kalau mulai habis
+                    default => 'success',     // Hijau kalau aman
+                })
+                ->sortable(),
         ])
+
         ->headerActions([
             // TOMBOL REKAP BULANAN
             Tables\Actions\Action::make('rekapKeluar')

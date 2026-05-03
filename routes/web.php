@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\ServiceLogSparepart;
 use Illuminate\Support\Facades\DB;
 use App\Models\Machine;
+use App\Models\Deployment;
+use App\Models\Sparepart;
 
 /*
 |--------------------------------------------------------------------------
@@ -149,8 +151,8 @@ Route::get('/cetak-alokasi-mesin', function () {
             body { font-family: sans-serif; font-size: 12px; padding: 20px; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
             th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-            .bg-rayon { background-color: #1e40af; color: white; font-weight: bold; }
-            .bg-kota { background-color: #e5e7eb; font-weight: bold; }
+            .bg-rayon { background-color: #a9a9a9; color: black; font-weight: bold; }
+            .bg-kota { background-color: #17a2b8; font-weight: bold; }
             .bg-total-kota { background-color: #fef9c3; font-weight: bold; }
             .bg-total-rayon { background-color: #dcfce7; font-weight: bold; font-size: 14px; }
             .text-right { text-align: right; }
@@ -173,7 +175,7 @@ Route::get('/cetak-alokasi-mesin', function () {
         </header>
         <table>
             <thead>
-                <tr style='background: #333; color: #fff;'>
+                <tr style='background: #a9a9a9; color: #fff;'>
                     <th>RAYON / KOTA / TIPE MESIN</th>
                     <th width='150' class='text-right'>JUMLAH UNIT</th>
                 </tr>
@@ -201,7 +203,7 @@ Route::get('/cetak-alokasi-mesin', function () {
     $html .= "
             </tbody>
             <tfoot>
-                <tr style='background: #000; color: #fff; font-size: 16px;'>
+                <tr style='background: #a9a9a9; color: #fff; font-size: 16px;'>
                     <td class='text-right'>GRAND TOTAL UNIT TERPASANG:</td>
                     <td class='text-right'>$grandTotal Unit</td>
                 </tr>
@@ -448,7 +450,6 @@ Route::get('/cetak-pemasangan-baru/{bulan}/{tahun}', function ($bulan, $tahun) {
                 <p>Indramayu, " . date('d F Y') . "</p>
                 <p style='margin-bottom: 60px;'>Admin Operasional,</p>
                 <strong>( _________________________ )</strong>
-                <p>Rudianto</p>
             </div>
         </div>
     </body>
@@ -457,99 +458,101 @@ Route::get('/cetak-pemasangan-baru/{bulan}/{tahun}', function ($bulan, $tahun) {
     return response($html);
 })->name('cetak.pemasangan');
 
-Route::get('/cetak-surat-jalan/{id}', function ($id) {
-    $data = DB::table('deployments')
-        ->join('machines', 'deployments.machine_id', '=', 'machines.id')
-        ->join('customers', 'deployments.customer_id', '=', 'customers.id')
-        ->where('deployments.id', $id)
-        ->select(
-            'deployments.created_at as tgl_kirim',
-            'machines.serial_number',
-            'machines.tipe_model',
-            'customers.nama_customer',
-            'customers.alamat', // Pastikan kolom 'alamat' ada di tabel customers
-            'customers.kota'
-        )
-        ->first();
 
-    if (!$data) return "Data tidak ditemukan.";
+Route::get('/cetak-surat-jalan/{id}', function ($id) {
+    // KUNCI UTAMA: Kita panggil 'with spareparts' agar datanya ikut keambil
+    $d = Deployment::with(['machine', 'customer', 'spareparts'])->findOrFail($id);
+    // dd($d->spareparts->toArray());
+
+    // Logika Merk
+    $tipe = strtoupper($d->machine->tipe_model);
+    $merk = 'Mesin Fotokopi';
+    if (str_contains($tipe, 'IR') || str_contains($tipe, 'IRA') || str_contains($tipe, 'MF')){
+        $merk = "Mesin Fotokopi Canon";
+    } elseif (str_contains($tipe, 'M ') || str_contains($tipe, 'ECOSYS') || str_contains($tipe, 'KYOCERA')) {
+        $merk = "Mesin Fotokopi Kyocera";
+    } elseif (str_contains($tipe, 'SINDOH') || str_contains($tipe, 'D') || str_contains($tipe, 'C')) {
+        $merk = "Mesin Fotokopi Sindoh";
+    }
 
     $html = "
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Surat Jalan - $data->serial_number</title>
+        <title>SJ - {$d->machine->serial_number}</title>
         <style>
             @page { size: landscape; margin: 10mm; }
-            body { font-family: sans-serif; font-size: 12px; border: 2px solid #000; padding: 20px; height: 100%; }
-            .header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-            .content { display: flex; justify-content: space-between; }
-            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            th, td { border: 1px solid #000; padding: 12px; text-align: left; }
-            .footer-ttd { margin-top: 50px; display: flex; justify-content: space-around; text-align: center; }
-            .ttd-box { width: 200px; }
+            body { font-family: sans-serif; font-size: 11px; border: 2px solid #000; padding: 20px; }
+            .header { border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 15px; display: flex; justify-content: space-between; }
+            table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+            th { background: #f2f2f2; text-transform: uppercase; }
         </style>
     </head>
     <body onload='window.print()'>
         <div class='header'>
-            <h1 style='margin:0;'>DGG SYSTEM - SURAT JALAN / DELIVERY ORDER</h1>
-            <p>Nomor: SJ/DGG/" . date('Ymd', strtotime($data->tgl_kirim)) . "/$id</p>
+            <div>
+                <h2 style='margin:0;'>PT. DINAMIKA GLOBAL GEMILANG</h2>
+                <p style='margin:0;'>Depo Cirebon - SURAT JALAN</p>
+            </div>
+            <div style='text-align: right;'>
+                <p style='margin:0;'><b>Nomor: SJ/FC/CRB/" . date('dmy', strtotime($d->created_at)) . "/" . str_pad($d->id, 3, '0', STR_PAD_LEFT) . "</b></p>
+                <p style='margin:0;'>Tanggal: " . date('d-m-Y', strtotime($d->created_at)) . "</p>
+            </div>
         </div>
         
-        <div class='content'>
-            <div style='width: 50%;'>
-                <strong>Penerima:</strong><br>
-                $data->nama_customer<br>
-                $data->alamat<br>
-                $data->kota
-            </div>
-            <div style='width: 50%; text-align: right;'>
-                <strong>Tanggal Pengiriman:</strong> " . date('d-m-Y', strtotime($data->tgl_kirim)) . "
-            </div>
-        </div>
+        <p>
+          <b>Penerima:</b> {$d->customer->nama_customer} 
+            <br> {$d->customer->alamat} | {$d->customer->kota} <br/>
+        </p>
 
         <table>
             <thead>
-                <tr style='background: #eee;'>
-                    <th>No</th>
-                    <th>Nama Barang / Deskripsi</th>
-                    <th>Serial Number</th>
-                    <th>Jumlah</th>
+                <tr>
+                    <th width='30'>NO</th>
+                    <th>NAMA BARANG / DESKRIPSI</th>
+                    <th width='100'>SN / KODE PART</th>
+                    <th width='80'>JUMLAH</th>
+                    <th width='60'>KETERANGAN/COUNTER</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td>1</td>
-                    <td>Mesin Fotokopi Canon $data->tipe_model</td>
-                    <td><strong>$data->serial_number</strong></td>
+                    <td><b>$merk {$d->machine->tipe_model}</b></td>
+                    <td>{$d->machine->serial_number}</td>
                     <td>1 Unit</td>
-                </tr>
+                    <td> </td>
+                </tr>";
+
+    // --- BAGIAN INI YANG MENAMPILKAN SPAREPART ---
+    $no = 2;
+    foreach ($d->spareparts as $part) {
+        $html .= "<tr>
+            <td>$no</td>
+            <td>{$part->nama_sparepart}</td>
+            <td>" . ($part->code_part ?: $part->no_part ?: '-') . "</td>
+            <td>{$part->pivot->jumlah} Pcs</td>
+            <td> </td>
+        </tr>";
+        $no++;
+    }
+
+    $html .= "
             </tbody>
         </table>
 
-        <div style='margin-top: 20px;'>
-            <strong>Keterangan:</strong> Barang telah diterima dalam kondisi baik dan berfungsi normal.
-        </div>
-
-        <div class='footer-ttd'>
-            <div class='ttd-box'>
-                Penerima,<br><br><br><br>
-                ( ________________ )
-            </div>
-            <div class='ttd-box'>
-                Teknisi,<br><br><br><br>
-                ( ________________ )
-            </div>
-            <div class='ttd-box'>
-                Pengirim,<br><br><br><br>
-                ( ________________ )
-            </div>
+        <div style='display: flex; justify-content: space-around; margin-top: 40px; text-align: center;'>
+            <div>Admin,<br><br><br>( ____________ )</div>
+            <div>Disetujui,<br><br><br>( ____________ )</div>
+            <div>Teknisi,<br><br><br>( ____________ )</div>
+            <div>Penerima,<br><br><br>( ____________ )</div>
         </div>
     </body>
     </html>";
 
     return response($html);
-})->name('cetak.sj');
+})->name('cetak.surat-jalan');
 
 Route::get('/cetak-rekap-service/{bulan}/{tahun}', function ($bulan, $tahun) {
     $data = DB::table('service_logs')
@@ -598,6 +601,7 @@ Route::get('/cetak-rekap-service/{bulan}/{tahun}', function ($bulan, $tahun) {
             <td>$row->kerusakan / $row->perbaikan</td>
             <td>$row->nama_technician</td>
         </tr>";
+
     }Route::get('/cetak-rekap-sparepart/{bulan}/{tahun}', function ($bulan, $tahun) {
     $data = DB::table('service_log_spareparts')
         ->join('spareparts', 'service_log_spareparts.sparepart_id', '=', 'spareparts.id')
@@ -645,37 +649,29 @@ Route::get('/cetak-rekap-service/{bulan}/{tahun}', function ($bulan, $tahun) {
 
 
 Route::get('/cetak-stok-gudang', function () {
-    $machines = Machine::where('status', 'Ready')->get();
-    // $machines = Machine::all();
-    // $machines = Machine::where('status', 'Ready')->get();
-    // $machines = Machine::whereDoesntHave('Gudang DGG')->get();
-    
+    // 1. Ambil mesin di gudang (Status bukan Rented)
+    $machines = \App\Models\Machine::where('status', '!=', 'Rented')->get();
 
-  $html = "
+    // 2. Kelompokkan agar hitungan per tipe/voltase akurat
+    $groupedMachines = $machines->groupBy(function ($item) {
+        return $item->tipe_model . '|' . $item->status . '|' . ($item->volt ?? '-');
+    });
+
+    $html = "
     <html>
     <head>
-        <title>STOCK MESIN PHOTO COPY</title>
+        <title></title> <!-- Judul tab dikosongkan agar tidak muncul saat diprint -->
         <style>
-            body { font-family: sans-serif; font-size: 12px; padding: 20px; }
-            
-            /* Header Rata Tengah */
+            body { font-family: sans-serif; font-size: 11px; padding: 10px; }
             .header-laporan { text-align: center; margin-bottom: 20px; }
             .header-laporan p { margin: 2px 0; font-weight: bold; }
-            .judul-utama { 
-                font-size: 16px; 
-                text-decoration: underline; 
-                margin-top: 15px; 
-                font-weight: bold;
-            }
-            
-            /* Tabel Laporan */
+            .judul-utama { font-size: 17px; text-decoration: underline; margin-top: 10px; font-weight: bold; }
             table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-            th { background: #f2f2f2; text-align: center; }
+            th, td { border: 1px solid #000; padding: 6px; text-align: left; }
+            th { background: #f2f2f2; text-align: center; text-transform: uppercase; font-size: 10px; }
             .text-center { text-align: center; }
-            
             @media print { 
-                .no-print { display: none; }
+                @page { margin: 0.5cm; } /* Memperkecil margin kertas */
                 * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             }
         </style>
@@ -694,40 +690,59 @@ Route::get('/cetak-stok-gudang', function () {
             <thead>
                 <tr>
                     <th width='30'>NO</th>
-                    <th>TYPE MESIN</th>
-                    <th width='60'>QTY</th>
-                    <th width='80'>VOLT</th>
-                    <th>FINISHER</th>
-                    <th>COVER</th>
-                    <th>KASET</th>
+                    <th width='50'>TYPE MESIN</th>
+                    <th width='50'>VOLT</th>
+                    <th width='50'>QTY</th>
+                    <th width='50'>FINISHER</th>
+                    <th width='50'>COVER</th>
+                    <th width='50'>KASET</th>
+                    <th width='50'>KETERANGAN</th>
                 </tr>
             </thead>
             <tbody>";
             
     $no = 1;
-    // Mengambil data mesin yang statusnya 'Ready' di gudang
-    foreach ($machines as $m) {
-    // Paksa munculkan tulisan kalau datanya kosong
-    $v = $m->volt ?? 'DATA VOLT KOSONG';
-    $f = $m->finisher ?? 'DATA FINISHER KOSONG';
+    $totalSemua = 0;
 
-    $html .= "<tr>
-        <td class='text-center'>$no</td> 
-        <td>{$m->tipe_model}</td>
-        <td class='text-center'>1 Unit</td>
-        <td class='text-center'>{$v}</td>
-        <td class='text-center'>{$f}</td>
-        <td>" . ($m->cover ?? '-') . "</td>
-        <td>" . ($m->kaset ?? '-') . "</td>
-    </tr>";
-    $no++;
-}
+    foreach ($groupedMachines as $key => $group) {
+        $first = $group->first();
+        $qty = $group->count();
+        $totalSemua += $qty;
+
+        // Ambil keterangan unik (Tanpa Nomor Seri)
+        $keteranganGabungan = $group->pluck('keterangan_awal')
+            ->filter(fn($ket) => !empty(trim($ket ?? '')) && $ket !== '-')
+            ->unique()
+            ->implode(', ');
+
+        // Hitung stok part per grup
+        $fin = $group->filter(fn($m) => !empty(trim($m->finisher ?? '')) && trim($m->finisher) !== '-')->count();
+        $cov = $group->filter(fn($m) => !empty(trim($m->cover ?? '')) && trim($m->cover) !== '-')->count();
+        $kas = $group->filter(fn($m) => !empty(trim($m->kaset ?? '')) && trim($m->kaset) !== '-')->count();
+
+        $html .= "<tr>
+            <td class='text-center'>$no</td> 
+            <td><b style='font-size:12px;'>{$first->tipe_model}</b></td>
+            <td class='text-center'>{$first->volt}</td>
+            <td class='text-center'><b style='font-size:12px;'>{$qty} Unit</b></td>
+            <td class='text-center'>" . ($fin > 0 ? "{$fin}" : "-") . "</td>
+            <td class='text-center'>" . ($cov > 0 ? "{$cov}" : "-") . "</td>
+            <td class='text-center'>" . ($kas > 0 ? "{$kas}" : "-") . "</td>
+            <td style='font-size: 10px; color: #333;'>" . ($keteranganGabungan ?: '-') . "</td>
+        </tr>";
+        $no++;
+    }
 
     $html .= "
+            <tr style='background: #f2f2f2; font-weight: bold;'>
+                <td colspan='3' class='text-center'>TOTAL KESELURUHAN STOK</td>
+                <td class='text-center' style='font-size:13px; background: #ddd;'>{$totalSemua} Unit</td>
+                <td colspan='4'></td>
+            </tr>
             </tbody>
         </table>
         
-        <div style='margin-top: 30px; float: right; text-align: center;'>
+        <div style='margin-top: 30px; float: right; text-align: center; width: 200px;'>
             <p>Cirebon, " . date('d-m-Y') . "</p>
             <br><br><br>
             <p><b>( _________________ )</b></p>
@@ -736,6 +751,7 @@ Route::get('/cetak-stok-gudang', function () {
 
     </body>
     </html>";
+
     return response($html);
 })->name('cetak.stok-gudang');
 
@@ -758,8 +774,7 @@ Route::get('/cetak-alokasi-customer', function () {
         <h2 style='text-align:center'>DAFTAR ALOKASI UNIT CUSTOMER</h2>
         <table>
             <thead>
-                <tr>
-                    <th>NAMA CUSTOMER</th>
+                <tr>                    <th>NAMA CUSTOMER</th>
                     <th>SN MESIN</th>
                     <th>TGL PASANG</th>
                     <th>HARGA SEWA</th>
@@ -779,3 +794,89 @@ Route::get('/cetak-alokasi-customer', function () {
     $html .= "</tbody></table></body></html>";
     return response($html);
 })->name('cetak.alokasi-customer');
+
+
+Route::get('/cetak-rekap-sparepart', function (Request $request) {
+    // 1. Ambil data stok sparepart urut abjad
+    $spareparts = Sparepart::orderBy('nama_sparepart', 'asc')->get();
+    
+    // 2. Pengaturan Periode
+    $bulanNominal = $request->query('bulan', date('m'));
+    $namaBulan = date('F', mktime(0, 0, 0, $bulanNominal, 10));
+    $tahun = $request->query('tahun', date('Y'));
+
+    $html = "
+    <html>
+    <head>
+        <title></title>
+        <style>
+            body { font-family: sans-serif; font-size: 11px; padding: 10px; }
+            .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .header p { margin: 2px 0; font-weight: bold; }
+            .judul { font-size: 16px; margin-top: 10px; font-weight: bold; text-transform: uppercase; }
+            
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: center; }
+            th { background: #f2f2f2; text-transform: uppercase; font-size: 10px; }
+            
+            .text-left { text-align: left; }
+            .font-bold { font-weight: bold; }
+            
+            /* Menghilangkan margin otomatis saat print agar lebih bersih */
+            @media print { 
+                @page { margin: 1cm; }
+                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } 
+            }
+        </style>
+    </head>
+    <body onload='window.print()'>
+        <div class='header'>
+            <p>PT. DINAMIKA GLOBAL GEMILANG</p>
+            <p>DEPO CIREBON</p>
+            <div class='judul'>REKAP SALDO SPAREPART</div>
+            <p>PERIODE: $namaBulan $tahun</p>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th width='30'>NO</th>
+                    <th width='100'>KODE PART</th>
+                    <th width='100'>NO PART</th>
+                    <th>NAMA SPAREPART</th>
+                    <th width='80'>STOK</th>
+                </tr>
+            </thead>
+            <tbody>";
+
+    $no = 1;
+    foreach ($spareparts as $s) {
+        $html .= "<tr>
+            <td>$no</td>
+            <td>" . ($s->code_part ?: '-') . "</td>
+            <td>" . ($s->no_part ?: '-') . "</td>
+            <td class='text-left'>" . ($s->nama_sparepart ?: '-') . "</td>
+            <td class='font-bold' style='font-size: 12px;'>" . ($s->stok ?? 0) . " Unit</td>
+        </tr>";
+        $no++;
+    }
+
+    $html .= "
+            </tbody>
+        </table>
+
+        <div style='margin-top: 40px; float: right; text-align: center; width: 250px;'>
+            <p>Cirebon, " . date('d-m-Y') . "</p>
+            <br><br><br><br>
+            <p><b>( _________________ )</b></p>
+            <p>Admin Gudang</p>
+        </div>
+    </body>
+    </html>";
+
+    return response($html);
+})->name('cetak.rekap-sparepart');
+
+
+
+

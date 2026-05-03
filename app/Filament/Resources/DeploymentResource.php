@@ -4,21 +4,23 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\DeploymentResource\Pages;
 use App\Models\Deployment;
+use App\Models\Sparepart;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Filament\Tables\Actions\Action; 
 
 class DeploymentResource extends Resource
 {
     protected static ?string $model = Deployment::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-truck'; // Icon truk biar pas buat pengiriman
+    protected static ?string $navigationIcon = 'heroicon-o-truck';
     
-    protected static ?string $navigationGroup = 'Transaksi'; // Biar rapi di menu samping
+    protected static ?string $navigationGroup = 'Transaksi';
+
+    protected static ?string $pluralLabel = 'Pemasangan Mesin';
 
     public static function form(Form $form): Form
     {
@@ -36,15 +38,14 @@ class DeploymentResource extends Resource
 
                         Forms\Components\Select::make('machine_id')
                             ->relationship('machine', 'serial_number', function (Builder $query) {
-                                // HANYA munculkan mesin yang statusnya 'Ready' di gudang
                                 return $query->where('status', 'Ready');
                             })
                             ->label('SN Mesin')
-                            ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->serial_number} - {$record->model_mesin}")
+                            ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->serial_number} - {$record->tipe_model}")
                             ->required()
                             ->searchable()
                             ->preload()
-                            ->unique(ignoreRecord: true), // Keamanan ganda biar SN tidak duplikat
+                            ->unique(ignoreRecord: true),
 
                         Forms\Components\Select::make('technician_id')
                             ->relationship('technician', 'nama_technician')
@@ -57,12 +58,34 @@ class DeploymentResource extends Resource
                             ->required()
                             ->default(now())
                             ->displayFormat('d/m/Y'),
-                            
+                    ])->columns(2),
+
+                Forms\Components\Section::make('Sparepart Tambahan')
+    ->description('Item yang disertakan dalam pengiriman.')
+    ->schema([
+        Forms\Components\Repeater::make('deploymentSpareparts') // <--- Ganti jadi ini
+            ->relationship('deploymentSpareparts') // <--- Ganti jadi ini
+            ->schema([
+                Forms\Components\Select::make('sparepart_id')
+                    ->label('Item')
+                    ->relationship('sparepart', 'nama_sparepart') // <--- Filament otomatis ambil ID yang valid dari DB
+                    ->searchable()
+                    ->preload()
+                    ->required(),
+                Forms\Components\TextInput::make('jumlah')
+                    ->label('Qty')
+                    ->numeric()
+                    ->default(1)
+                    ->required(),
+            ])
+            ->columns(2)
+            ->createItemButtonLabel('Tambah Sparepart'),
+
                         Forms\Components\Textarea::make('keterangan')
                             ->label('Catatan Tambahan')
                             ->placeholder('Contoh: Lantai 2, dekat meja admin')
                             ->columnSpanFull(),
-                    ])->columns(2),
+                    ]),
             ]);
     }
 
@@ -77,13 +100,13 @@ class DeploymentResource extends Resource
 
                 Tables\Columns\TextColumn::make('machine.serial_number')
                     ->label('SN Mesin')
-                    ->description(fn (Deployment $record): string => $record->machine->model_mesin ?? '')
+                    ->description(fn (Deployment $record): string => $record->machine->tipe_model ?? '')
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('technician.nama_technician')
                     ->label('Teknisi')
-                    ->toggleable(isToggledHiddenByDefault: false),
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('tanggal_instal')
                     ->label('Tgl Pasang')
@@ -105,29 +128,20 @@ class DeploymentResource extends Resource
                     ->relationship('customer', 'nama_customer'),
             ])
             ->actions([
+                Tables\Actions\Action::make('cetak_sj')
+                    ->label('Cetak Surat Jalan')
+                    ->icon('heroicon-m-printer')
+                    ->color('success')
+                    ->url(fn (Deployment $record): string => route('cetak.surat-jalan', ['id' => $record->id]))
+                    ->openUrlInNewTab(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
-                Action::make('printSJ')
-            ->label('Surat Jalan')
-            ->icon('heroicon-m-printer')
-                    ->color('success')
-            ->url(fn ($record) => route('cetak.sj', $record->id))
-            ->openUrlInNewTab(),
-                
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
-    }
-    
-
-    public static function getRelations(): array
-    {
-        return [
-            // Bisa ditambah RelationManager Customer nanti
-        ];
     }
 
     public static function getPages(): array

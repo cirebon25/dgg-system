@@ -32,11 +32,25 @@ class MachineResource extends Resource
                             ->unique(ignoreRecord: true)
                             ->placeholder('Contoh: WEP12345'),
 
-                        Forms\Components\TextInput::make('tipe_model')
-                            ->label('Tipe Model')
+                        // Ganti TextInput::make('tipe_model') menjadi ini:
+                        Forms\Components\Select::make('tipe_model')
+                             ->label('Tipe / Model Mesin')
+                            ->options(\App\Models\TypeModel::pluck('nama_tipe', 'nama_tipe')) // Menarik data dari tabel TypeModel
+                            ->searchable()
+                            ->preload()
                             ->required()
-                            ->placeholder('Contoh: Canon iRA 4545'),
-
+                            
+                            // FITUR SAKTI: Tombol "+" untuk tambah cepat langsung dari dropdown
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('nama_tipe')
+                                    ->label('Tipe Model Baru')
+                                    ->required()
+                                    ->unique('type_models', 'nama_tipe'),
+                            ])
+                            ->createOptionUsing(function (array $data): string {
+                                $tipe = \App\Models\TypeModel::create($data);
+                                return $tipe->nama_tipe;
+                            }),
                         Forms\Components\Select::make('status')
                             ->label('Status Mesin')
                             ->options([
@@ -48,8 +62,8 @@ class MachineResource extends Resource
                             ->required(),
 
                         Forms\Components\Textarea::make('keterangan_awal')
-                            ->label('Catatan Kondisi')
-                            ->placeholder('Misal: Kondisi drum 90%')
+                            ->label('Keterangan Mesin')
+                            ->placeholder('Misal: EX LUAR / EX RENTAL')
                             ->columnSpanFull(),
                     ])->columns(2),
 

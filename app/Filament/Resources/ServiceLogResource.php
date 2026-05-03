@@ -15,6 +15,7 @@ use Carbon\Carbon;
 class ServiceLogResource extends Resource
 {
     protected static ?string $model = ServiceLog::class;
+    protected static ?string $navigationLabel = 'Input Servis Teknisi';
     protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
     protected static ?string $navigationGroup = 'Transaksi';
 
@@ -40,9 +41,9 @@ class ServiceLogResource extends Resource
                         
                         Forms\Components\Select::make('tipe_kunjungan')
                             ->options([
-                                'RN' => 'RN (Routine)', 'CM' => 'CM (Corrective)', 
-                                'RM' => 'RM (Repair)', 'RR' => 'RR (Return)', 
-                                'JK' => 'JK (Jaga Kandang)', 'L' => 'L (Lain-lain)',
+                                'RN' => 'RN (Intal Baru)', 'CM' => 'CM (Call Maintenance)', 
+                                'RM' => 'RM (Kunjungan Rutin)', 'RR' => 'RR (Ganti Mesin)', 
+                                'JK' => 'JK (Jaringan komputer)', 'L' => 'L (Lanjut)',
                             ])->required(),
 
                         Forms\Components\DatePicker::make('tanggal')

@@ -12,9 +12,11 @@ use Filament\Tables\Table;
 
 class RayonResource extends Resource
 {
+    protected static ?string $navigationLabel = 'Rayon';
+    
     protected static ?string $model = Rayon::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-map-pin';
 
     // Pengaturan Form Input (Saat Tambah Data)
     public static function form(Form $form): Form

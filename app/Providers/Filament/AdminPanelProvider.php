@@ -26,8 +26,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->brandName('@Rudianto') // <--- Nama di pojok kiri atas
-        // ->brandLogo(asset('images/logo.png')) // Jika Boss punya file logo
+            ->brandName('PT DINAMIKA GLOBAL GEMILANG')
             ->globalSearchKeyBindings(['command+k', 'ctrl+k']) // Fitur pencarian cepat
             ->sidebarCollapsibleOnDesktop()
             ->login() // Memastikan halaman login aktif
@@ -43,8 +42,8 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 Widgets\AccountWidget::class,
                 \App\Filament\Widgets\DeploymentChart::class,
-                \App\Filament\Widgets\StatsOverview::class, // Tambahkan ini
-                \App\Filament\Widgets\StockAlert::class,    // Dan ini
+                \App\Filament\Widgets\StatsOverview::class, 
+                \App\Filament\Widgets\StockAlert::class,   
                 \App\Filament\Widgets\RecentServiceLogs::class,
                 \App\Filament\Widgets\LowStockParts::class,
                 \App\Filament\Widgets\TopSpareparts::class,

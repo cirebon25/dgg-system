@@ -4,6 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 
 class Deployment extends Model
 {
@@ -53,6 +57,16 @@ class Deployment extends Model
         });
     }
 
+    public function spareparts(): BelongsToMany {
+        return $this->belongsToMany(Sparepart::class, 'deployment_sparepart')
+                    ->withPivot('jumlah')
+                    ->withTimestamps();
+    }
+
+    public function deploymentSpareparts(): HasMany
+    {
+    return $this->hasMany(DeploymentSparepart::class);
+    }
     // Relasi
     public function customer() { return $this->belongsTo(Customer::class); }
     public function machine() { return $this->belongsTo(Machine::class); }

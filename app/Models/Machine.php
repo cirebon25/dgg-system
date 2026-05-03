@@ -3,11 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory; // Ini Import (Sudah Benar)
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Machine extends Model
 {
-    // WAJIB TAMBAHKAN BARIS INI DI SINI:
     use HasFactory; 
     
     protected $fillable = [
@@ -15,22 +14,32 @@ class Machine extends Model
         'tipe_model',
         'status',
         'keterangan_awal',
-        'volt',     // Tambahkan ini
-        'finisher', // Tambahkan ini
-        'cover',    // Tambahkan ini
+        'volt', 
+        'finisher', 
+        'cover', 
         'kaset',
+        'rayon_id',    // Tambahkan ini agar bisa simpan data wilayah
+        'customer_id', // Tambahkan ini agar bisa simpan data customer
     ];
+
+    // --- RELASI KE RAYON (WAJIB ADA UNTUK LAPORAN ALOKASI) ---
+    public function rayon()
+    {
+        return $this->belongsTo(Rayon::class);
+    }
+
+    public function customer() 
+    { 
+        return $this->belongsTo(Customer::class); 
+    }
 
     public function deployments()
     {
         return $this->hasMany(Deployment::class);
     }
-
-    public function customer() { 
-        return $this->belongsTo(Customer::class); 
-    }
     
-    public function deployment() { 
+    public function deployment() 
+    { 
         return $this->hasOne(Deployment::class); 
     }
 
@@ -41,7 +50,6 @@ class Machine extends Model
 
     public static function getGloballySearchableAttributes(): array
     {
-        // Saya sesuaikan ke 'tipe_model' agar pencarian global tidak eror
         return ['serial_number', 'tipe_model']; 
     }
 }

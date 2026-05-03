@@ -17,6 +17,13 @@ class ListMachines extends ListRecords
     {
     return [
         Actions\CreateAction::make(),
+
+        Action::make('cetak_stok_gudang')
+                ->label('Cetak Stok Gudang')
+                ->color('success') // Warna Hijau
+                ->icon('heroicon-o-printer')
+                ->url(route('cetak.stok-gudang')) // Memanggil nama route di web.php
+                ->openUrlInNewTab(), // Biar terbuka di tab baru
         
         Action::make('cetakStokGudang')
                 ->label('Cetak Stok Gudang')
@@ -60,6 +67,7 @@ class ListMachines extends ListRecords
             ->url(route('cetak.alokasi')) // <--- Langsung arahkan ke route tadi
             ->openUrlInNewTab(),         // <--- Biar kebuka di tab baru
     ];
+    
     }
     public function printAllocation()
     {
