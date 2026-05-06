@@ -953,6 +953,143 @@ Route::get('/cetak-rekap-sparepart', function (Request $request) {
     return response($html);
 })->name('cetak.rekap-sparepart');
 
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
+// ➡️ RUTE 1: UNTUK MENCETAK STIKER QR CODE (Ukuran pas untuk Printer Thermal/Stiker)
+Route::get('/mesin/{id}/cetak-qr', function ($id) {
+    $machine = \App\Models\Machine::findOrFail($id);
+    
+    // Tembak URL yang akan otomatis terbuka saat anak workshop melakukan scan QR
+    $urlHistori = route('mesin.histori', ['id' => $machine->id]);
+
+    // Membuat gambar QR Code otomatis
+    $qrCode = QrCode::size(120)->margin(1)->generate($urlHistori);
+
+    $html = "
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>QR Mesin - {$machine->serial_number}</title>
+        <style>
+            @page { size: a5; margin: 0; } 
+            body { font-family: sans-serif; text-align: center; margin: 0; padding: 4px; box-sizing: border-box; }
+            .title { font-size: 10px; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
+            .sn { font-size: 11px; font-weight: bold; color: #1e40af; }
+            .qr-box { margin: 2px auto; display: inline-block; }
+            .qr-box svg { width: 85px; height: 85px; }
+            .footer { font-size: 8px; color: #666; font-weight: bold; margin-top: 1px; }
+        </style>
+    </head>
+    <body onload='window.print()'>
+        <div class='title'>{$machine->tipe_model}</div>
+        <div class='sn'>SN: {$machine->serial_number}</div>
+        <div class='qr-box'>{$qrCode}</div>
+        <div class='footer'>DGG SYSTEM - WORKSHOP HUB</div>
+    </body>
+    </html>";
+
+    return response($html);
+})->name('mesin.cetak-qr');
+
+
+// ➡️ RUTE 2: HALAMAN YANG TERBUKA DI HP SAAT QR CODE DI-SCAN
+Route::get('/mesin/{id}/histori', function ($id) {
+    $machine = \App\Models\Machine::findOrFail($id);
+
+    // 1. Ambil Riwayat Mutasi / Penempatan Mesin (Deployments)
+    $deployments = DB::table('deployments')
+        ->join('customers', 'deployments.customer_id', '=', 'customers.id')
+        ->leftJoin('technicians', 'deployments.technician_id', '=', 'technicians.id')
+        ->where('machine_id', $id)
+        ->select('deployments.*', 'customers.nama_customer', 'customers.kota', 'technicians.nama_technician')
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    // 2. Ambil Riwayat Service/Perbaikan (Log Service)
+    // Di-protect pakai try-catch biar aman kalau nama tabel log service Akang agak beda
+    try {
+        $serviceLogs = DB::table('service_logs')
+            ->leftJoin('technicians', 'service_logs.technician_id', '=', 'technicians.id')
+            ->where('machine_id', $id)
+            ->select('service_logs.*', 'technicians.nama_technician')
+            ->orderBy('created_at', 'desc')
+            ->get();
+    } catch (\Exception $e) {
+        $serviceLogs = collect([]); // Kosongkan jika belum bikin tabel service_logs
+    }
+
+    $html = "
+    <!DOCTYPE html>
+    <html lang='id'>
+    <head>
+        <meta charset='UTF-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+        <title>Histori Mesin - {$machine->serial_number}</title>
+        <script src='https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4'></script>
+    </head>
+    <body class='bg-slate-100 text-slate-800 pb-10 font-sans'>
+        
+        <div class='bg-slate-900 text-white p-5 shadow-md sticky top-0 z-50'>
+            <div class='max-w-md mx-auto'>
+                <span class='text-[10px] font-bold uppercase bg-blue-600 px-2 py-0.5 rounded text-white'>Daftar Histori Unit</span>
+                <h1 class='text-xl font-bold mt-1 text-yellow-400'>{$machine->tipe_model}</h1>
+                <p class='text-xs opacity-90 font-mono'>Serial Number: <b>{$machine->serial_number}</b></p>
+                <p class='text-xs mt-2'>Status Saat Ini: <span class='px-2 py-0.5 rounded bg-green-600 text-white font-bold text-[10px]'>{$machine->status}</span></p>
+            </div>
+        </div>
+
+        <div class='max-w-md mx-auto px-4 mt-5 space-y-5'>
+            
+            <div>
+                <h2 class='text-xs font-bold text-slate-500 uppercase tracking-wider mb-2'>🔧 Jurnal Perbaikan & Log Service</h2>";
+                if ($serviceLogs->isEmpty()) {
+                    $html .= "<div class='bg-white p-4 rounded-xl shadow-sm text-center text-slate-400 text-xs'>Belum ada catatan log perbaikan.</div>";
+                } else {
+                    $html .= "<div class='space-y-3'>";
+                    foreach ($serviceLogs as $log) {
+                        $tgl = date('d-m-Y H:i', strtotime($log->created_at));
+                        $html .= "
+                        <div class='bg-white p-4 rounded-xl shadow-sm border-l-4 border-amber-500'>
+                            <div class='flex justify-between text-[10px] text-slate-400 font-bold'>
+                                <span>🛠️ Teknisi: {$log->nama_technician}</span>
+                                <span>📅 $tgl</span>
+                            </div>
+                            <div class='mt-2 text-xs'><b class='text-slate-700'>Kendala:</b> <span class='text-slate-600'>{$log->keluhan}</span></div>
+                            <div class='mt-1 text-xs'><b class='text-slate-700'>Tindakan:</b> <span class='text-slate-600'>{$log->tindakan}</span></div>
+                        </div>";
+                    }
+                    $html .= "</div>";
+                }
+    $html .= "</div>
+
+            <div>
+                <h2 class='text-xs font-bold text-slate-500 uppercase tracking-wider mb-2'>📍 Riwayat Penempatan Pelanggan</h2>";
+                if ($deployments->isEmpty()) {
+                    $html .= "<div class='bg-white p-4 rounded-xl shadow-sm text-center text-slate-400 text-xs'>Mesin ini belum pernah dikirim ke customer.</div>";
+                } else {
+                    $html .= "<div class='space-y-3'>";
+                    foreach ($deployments as $dep) {
+                        $tglPasang = date('d-m-Y', strtotime($dep->tanggal_instal ?? $dep->created_at));
+                        $html .= "
+                        <div class='bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-600'>
+                            <div class='text-sm font-bold text-slate-800'>{$dep->nama_customer}</div>
+                            <div class='text-xs text-slate-500'>📍 Lokasi: {$dep->kota}</div>
+                            <div class='grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-slate-100 text-[11px] text-slate-600'>
+                                <div><b>Tanggal Pasang:</b><br>$tglPasang</div>
+                                <div><b>Counter Awal:</b><br>BW: ".number_format($dep->counter_bw)."<br>CL: ".number_format($dep->counter_color)."</div>
+                            </div>
+                            <div class='text-[10px] text-slate-400 mt-2 border-t border-dashed border-slate-100 pt-1'>👷 Teknisi Pasang: {$dep->nama_technician}</div>
+                        </div>";
+                    }
+                    $html .= "</div>";
+                }
+    $html .= "</div>
+
+        </div>
+    </body>
+    </html>";
+
+    return response($html);
+})->name('mesin.histori');
 
 

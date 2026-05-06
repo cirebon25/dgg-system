@@ -49,11 +49,18 @@ class CustomerResource extends Resource
         return $table
             ->columns([
                 // Kolom Rayon
-                TextColumn::make('rayon.nama_rayon')
+                Tables\Columns\TextColumn::make('rayon.nama_rayon')
                     ->label('Rayon')
                     ->badge()
-                    ->color('info')
-                    ->sortable(),
+                    ->color(fn (string $state): string => match (trim(strtolower($state))) {
+                        'barat daya' => 'danger',  // 🔴 Merah
+                        'barat'      => 'success', // 🟢 Hijau
+                        'utara'      => 'warning', // 🟡 Kuning
+                        'timur'      => 'info',    // 🔵 Biru
+                        default      => 'gray',    // ⚪ Abu-abu jika tidak cocok
+                    }) // ✨ SUDAH DITUTUP DI SINI BOSS
+                    ->sortable()
+                    ->searchable(), // Tambah koma di akhir jika di dalam array columns,
 
                 // Kolom Nama & Alamat (Stack)
                 TextColumn::make('nama_customer')

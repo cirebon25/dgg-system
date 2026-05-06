@@ -127,6 +127,13 @@ class MachineResource extends Resource
                     ->color('warning')
                     ->url(fn ($record) => route('sparepart.monitor', $record->id))
                     ->openUrlInNewTab(),
+                    
+                Tables\Actions\Action::make('cetak_qr')
+                    ->label('Cetak QR Histori')
+                    ->icon('heroicon-m-qr-code')
+                    ->color('warning') // Tombol warna kuning emas yang mencolok
+                    ->url(fn (\App\Models\Machine $record): string => route('mesin.cetak-qr', ['id' => $record->id]))
+                    ->openUrlInNewTab(), // Buka di tab baru agar halaman utama Filament tidak hilang
 
                 Tables\Actions\DeleteAction::make(),
             ])
