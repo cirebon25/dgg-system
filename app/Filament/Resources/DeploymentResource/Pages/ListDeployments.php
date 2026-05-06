@@ -74,7 +74,7 @@ class ListDeployments extends ListRecords
                             return;
                         }
 
-                        // Normalisasi teks header (Hanya ambil a-z, 0-9, underscore)
+                        // Normalisasi teks header
                         $header = array_map(function($h) {
                             $h = preg_replace('/[^a-zA-Z0-9_]/', '', $h);
                             return strtolower(trim($h));
@@ -85,6 +85,7 @@ class ListDeployments extends ListRecords
                         $techIdx = false;
                         $dateIdx = false;
                         $ketIdx = false;
+                        $kontrakIdx = false; // Penanda kolom no kontrak
 
                         foreach ($header as $idx => $col) {
                             if (str_contains($col, 'customer') || str_contains($col, 'pelanggan')) {
@@ -102,13 +103,16 @@ class ListDeployments extends ListRecords
                             if (str_contains($col, 'ket') || str_contains($col, 'catatan')) {
                                 $ketIdx = $idx;
                             }
+                            if (str_contains($col, 'kontrak') || str_contains($col, 'no_kontrak')) {
+                                $kontrakIdx = $idx;
+                            }
                         }
 
                         if ($customerIdx === false || $machineIdx === false) {
                             $detectedHeaders = implode(', ', $header);
                             Notification::make()
                                 ->title('Gagal Impor')
-                                ->body("Kolom Customer atau SN Mesin tidak ditemukan. Kolom yang terdeteksi: [$detectedHeaders]")
+                                ->body("Kolom Customer atau SN Mesin tidak ditemukan. Kolom terdeteksi: [$detectedHeaders]")
                                 ->danger()
                                 ->persistent()
                                 ->send();
@@ -117,7 +121,7 @@ class ListDeployments extends ListRecords
                             return;
                         }
 
-                        // Siapkan data Rayon default jika database kosong
+                        // Menyiapkan Rayon Default jika database kosong
                         $defaultRayon = Rayon::first();
                         if (!$defaultRayon) {
                             $defaultRayon = new Rayon();
@@ -182,7 +186,7 @@ class ListDeployments extends ListRecords
                                     $machineId = $machine->id;
                                 }
 
-                                // --- PROSES TEKNISI (DIHAPUS PENGISIAN phone) ---
+                                // --- PROSES TEKNISI ---
                                 $technicianId = null;
                                 if ($techIdx !== false && isset($row[$techIdx]) && trim($row[$techIdx]) !== '') {
                                     $techVal = trim($row[$techIdx]);
@@ -193,14 +197,13 @@ class ListDeployments extends ListRecords
                                         if (!$tech) {
                                             $tech = new Technician();
                                             $tech->nama_technician = $techVal;
-                                            // Kolom phone sengaja tidak diisi karena tidak ada di database
                                             $tech->save();
                                         }
                                         $technicianId = $tech->id;
                                     }
                                 }
 
-                                // --- GARANSI VALIDASI: technician_id tidak boleh null ---
+                                // --- GARANSI VALIDASI TECHNICIAN_ID ---
                                 if ($technicianId === null) {
                                     $fallbackTech = Technician::first();
                                     if (!$fallbackTech) {
@@ -225,6 +228,7 @@ class ListDeployments extends ListRecords
                                 }
 
                                 $keterangan = $ketIdx !== false && isset($row[$ketIdx]) ? trim($row[$ketIdx]) : null;
+                                $noKontrak = $kontrakIdx !== false && isset($row[$kontrakIdx]) ? trim($row[$kontrakIdx]) : null;
 
                                 // Simpan ke Tabel Deployments
                                 $deployment = Deployment::where('customer_id', $customerId)
@@ -237,6 +241,7 @@ class ListDeployments extends ListRecords
                                     $deployment->machine_id = $machineId;
                                 }
                                 $deployment->technician_id = $technicianId;
+                                $deployment->no_kontrak = $noKontrak; // <-- Menyimpan no kontrak
                                 $deployment->tanggal_instal = $tanggalInstal;
                                 $deployment->keterangan = $keterangan;
                                 $deployment->save();

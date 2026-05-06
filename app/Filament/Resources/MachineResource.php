@@ -87,6 +87,13 @@ class MachineResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+        // ✨ MANTRA UTAMA: Urutkan status 'Ready' paling atas, lalu urutkan dari yang terbaru
+            ->defaultSort('created_at', 'desc') 
+            ->modifyQueryUsing(function (\Illuminate\Database\Eloquent\Builder $query) {
+                 return $query
+                    ->orderByRaw("CASE WHEN status = 'Ready' THEN 0 ELSE 1 END") // 'Ready' jadi nomor satu
+                    ->orderBy('created_at', 'desc');
+                 })
             ->columns([
                 Tables\Columns\TextColumn::make('serial_number')
                     ->label('Serial Number')

@@ -8,20 +8,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-
 class Deployment extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'no_kontrak',
         'customer_id',
         'machine_id',
         'technician_id',
         'tanggal_instal',
         'keterangan',
+        'counter_bw',     // 🔥 SUNTIK BARIS INI AGAR BISA NYIMPAN COUNTER HITAM PUTIH
+        'counter_color',
+        'Volt',  // 🔥 SUNTIK BARIS INI AGAR BISA NYIMPAN COUNTER WARNA
     ];
 
-    // INI POSISI YANG BENAR BOSS, DI LUAR FUNGSI
     protected $casts = [
         'tanggal_instal' => 'date', 
     ];
@@ -65,8 +67,9 @@ class Deployment extends Model
 
     public function deploymentSpareparts(): HasMany
     {
-    return $this->hasMany(DeploymentSparepart::class);
+        return $this->hasMany(DeploymentSparepart::class);
     }
+    
     // Relasi
     public function customer() { return $this->belongsTo(Customer::class); }
     public function machine() { return $this->belongsTo(Machine::class); }

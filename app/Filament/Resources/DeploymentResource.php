@@ -29,6 +29,12 @@ class DeploymentResource extends Resource
                 Forms\Components\Section::make('Informasi Pemasangan')
                     ->description('Detail customer dan mesin yang akan dipasang.')
                     ->schema([
+
+                        Forms\Components\TextInput::make('no_kontrak')
+                            ->label('No. Kontrak')
+                            ->placeholder('Contoh: KTR-2026-001')
+                            ->nullable(),
+
                         Forms\Components\Select::make('customer_id')
                             ->relationship('customer', 'nama_customer')
                             ->label('Customer')
@@ -53,33 +59,56 @@ class DeploymentResource extends Resource
                             ->required()
                             ->preload(),
 
+                        Forms\Components\TextInput::make('counter_bw')
+                            ->label('Counter Awal BW')
+                            ->numeric()
+                            ->default(0)
+                            ->required()
+                            ->placeholder('Contoh: 0'),
+
+                        Forms\Components\TextInput::make('counter_color')
+                            ->label('Counter Awal Color (CL)')
+                            ->numeric()
+                            ->default(0)
+                            ->required()
+                            ->placeholder('Contoh: 0'),  
+                            
+                        Forms\Components\TextInput::make('volt')
+                            ->label('Tegangan Listrik (Volt)')
+                            ->numeric()
+                            ->default(220) // Otomatis terisi angka 220 standar PLN
+                            ->required()
+                            ->placeholder('Contoh: 220'),
+
                         Forms\Components\DatePicker::make('tanggal_instal')
                             ->label('Tanggal Pasang')
                             ->required()
                             ->default(now())
                             ->displayFormat('d/m/Y'),
-                    ])->columns(2),
+                        ])
+                            ->columns(2),
 
-                Forms\Components\Section::make('Sparepart Tambahan')
-    ->description('Item yang disertakan dalam pengiriman.')
-    ->schema([
-        Forms\Components\Repeater::make('deploymentSpareparts') // <--- Ganti jadi ini
-            ->relationship('deploymentSpareparts') // <--- Ganti jadi ini
-            ->schema([
-                Forms\Components\Select::make('sparepart_id')
-                    ->label('Item')
-                    ->relationship('sparepart', 'nama_sparepart') // <--- Filament otomatis ambil ID yang valid dari DB
-                    ->searchable()
-                    ->preload()
-                    ->required(),
-                Forms\Components\TextInput::make('jumlah')
-                    ->label('Qty')
-                    ->numeric()
-                    ->default(1)
-                    ->required(),
-            ])
-            ->columns(2)
-            ->createItemButtonLabel('Tambah Sparepart'),
+                        Forms\Components\Section::make('Sparepart Tambahan')
+                             ->description('Item yang disertakan dalam pengiriman.')
+                             ->schema([
+                        Forms\Components\Repeater::make('deploymentSpareparts') // <--- Ganti jadi ini
+                            ->relationship('deploymentSpareparts') // <--- Ganti jadi ini
+                            ->defaultItems(0)
+                            ->schema([
+                        Forms\Components\Select::make('sparepart_id')
+                            ->label('Item')
+                            ->relationship('sparepart', 'nama_sparepart') // <--- Filament otomatis ambil ID yang valid dari DB
+                            ->searchable()
+                            ->preload()
+                            ->required(),
+                        Forms\Components\TextInput::make('jumlah')
+                            ->label('Qty')
+                            ->numeric()
+                            ->default(1)
+                            ->required(),
+                         ])
+                            ->columns(2)
+                            ->createItemButtonLabel('Tambah Sparepart'),
 
                         Forms\Components\Textarea::make('keterangan')
                             ->label('Catatan Tambahan')
@@ -93,6 +122,12 @@ class DeploymentResource extends Resource
     {
         return $table
             ->columns([
+
+                Tables\Columns\TextColumn::make('no_kontrak')
+                    ->label('No. Kontrak')
+                    ->searchable()
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('customer.nama_customer')
                     ->label('Customer')
                     ->searchable()
