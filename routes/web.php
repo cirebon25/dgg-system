@@ -572,6 +572,7 @@ Route::get('/cetak-surat-jalan/{id}', function ($id) {
     return response($html);
 })->name('cetak.surat-jalan');
 
+<<<<<<< Updated upstream
 
 // =========================================================================
 // 1. ROUTE REKAP SERVICE LOG
@@ -680,6 +681,96 @@ Route::get('/cetak-surat-jalan/{id}', function ($id) {
 // 2. ROUTE REKAP SPAREPART
 // =========================================================================
 Route::get('/cetak-rekap-sparepart/{bulan}/{tahun}', function ($bulan, $tahun) {
+=======
+
+
+Route::get('/cetak-rekap-service/{bulan}/{tahun}', function ($bulan, $tahun) {
+    // 1. Ambil data service logs dengan menghubungkan data No. Kontrak dari tabel deployments
+    $data = DB::table('service_logs')
+        ->join('machines', 'service_logs.machine_id', '=', 'machines.id')
+        ->join('customers', 'service_logs.customer_id', '=', 'customers.id')
+        ->join('technicians', 'service_logs.technician_id', '=', 'technicians.id')
+        // Hubungkan ke tabel deployments berdasarkan machine_id agar no_kontrak terbaca otomatis
+        ->leftJoin('deployments', 'service_logs.machine_id', '=', 'deployments.machine_id')
+        ->whereMonth('service_logs.tanggal', $bulan)
+        ->whereYear('service_logs.tanggal', $tahun)
+        ->select(
+            'service_logs.*', 
+            'machines.serial_number', 
+            'machines.tipe_model', 
+            'customers.nama_customer', 
+            'technicians.nama_technician',
+            'deployments.no_kontrak' // Mengambil kolom nomor kontrak
+        )
+        ->orderBy('service_logs.tanggal', 'asc')
+        ->get();
+
+    // 2. Struktur Dokumen HTML Cetak Cetak (Sudah Ditambah Kolom No & Kontrak di Kiri)
+    $html = "
+    <html>
+    <head>
+        <title>Rekap Service Log</title>
+        <style>
+            @page { size: landscape; margin: 10mm; }
+            body { font-family: sans-serif; font-size: 11px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+            th { background-color: #f3f4f6; font-weight: bold; }
+            .text-center { text-align: center; }
+            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        </style>
+    </head>
+    <body onload='window.print()'>
+        <div class='header'>
+            <h1>DGG SYSTEM - REKAP SERVICE LOG</h1>
+            <p>Periode: $bulan / $tahun</p>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th width='35' class='text-center'>No</th>
+                    <th width='130'>No. Kontrak</th>
+                    <th width='80'>Tgl</th>
+                    <th>SN Mesin</th>
+                    <th>Customer</th>
+                    <th>Kerusakan / Perbaikan</th>
+                    <th>Teknisi</th>
+                </tr>
+            </thead>
+            <tbody>";
+
+    $no = 1; // Membuat angka urut otomatis dari PHP yang dimulai dari angka 1
+
+    foreach ($data as $row) {
+        // Cek jika nomor kontrak kosong di database, otomatis ganti dengan tanda '-'
+        $kontrak = !empty($row->no_kontrak) ? $row->no_kontrak : '-';
+        $tanggal = date('d-m-Y', strtotime($row->tanggal));
+
+        $html .= "<tr>
+            <td class='text-center'>$no</td>
+            <td><b>$kontrak</b></td>
+            <td>$tanggal</td>
+            <td>$row->serial_number ($row->tipe_model)</td>
+            <td>$row->nama_customer</td>
+            <td>$row->kerusakan / $row->perbaikan</td>
+            <td>$row->nama_technician</td>
+        </tr>";
+
+        $no++; // Angka otomatis bertambah (1, 2, 3...) di setiap baris data baru
+    }
+
+    // Tampilkan pesan jika data pada bulan & tahun tersebut kosong
+    if ($data->isEmpty()) {
+        $html .= "<tr><td colspan='7' style='text-align: center; padding: 15px;'>Tidak ada data service log untuk periode ini.</td></tr>";
+    }
+
+    $html .= "</tbody></table></body></html>";
+
+    return response($html);
+})->name('cetak.service-log-bulanan');
+
+    Route::get('/cetak-rekap-sparepart/{bulan}/{tahun}', function ($bulan, $tahun) {
+>>>>>>> Stashed changes
     $data = DB::table('service_log_spareparts')
         ->join('spareparts', 'service_log_spareparts.sparepart_id', '=', 'spareparts.id')
         ->whereMonth('service_log_spareparts.created_at', $bulan)
@@ -722,7 +813,11 @@ Route::get('/cetak-rekap-sparepart/{bulan}/{tahun}', function ($bulan, $tahun) {
     $html .= "</tbody></table></body></html>";
     return response($html);
 })->name('cetak.rekap-sparepart');
+<<<<<<< Updated upstream
 
+=======
+    
+>>>>>>> Stashed changes
 
 Route::get('/cetak-stok-gudang', function () {
     // 1. Ambil mesin di gudang (Status bukan Rented)
