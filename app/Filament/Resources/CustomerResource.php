@@ -53,10 +53,10 @@ class CustomerResource extends Resource
                     ->label('Rayon')
                     ->badge()
                     ->color(fn (string $state): string => match (trim(strtolower($state))) {
-                        'barat daya' => 'danger',  // 🔴 Merah
+                        'barat daya' => 'info',  // 🔴 Merah
                         'barat'      => 'success', // 🟢 Hijau
                         'utara'      => 'warning', // 🟡 Kuning
-                        'timur'      => 'info',    // 🔵 Biru
+                        'timur'      => 'danger',    // 🔵 Biru
                         default      => 'gray',    // ⚪ Abu-abu jika tidak cocok
                     }) // ✨ SUDAH DITUTUP DI SINI BOSS
                     ->sortable()
