@@ -9,20 +9,19 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class MachineResource extends Resource
 {
     protected static ?string $model = Machine::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-cpu-chip';
-
     protected static ?string $navigationLabel = 'Data Mesin';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                // SEKSI 1: INFORMASI UMUM
                 Forms\Components\Section::make('Informasi Unit Mesin')
                     ->description('Masukkan detail mesin fotokopi sesuai label SN di bodi mesin.')
                     ->schema([
@@ -32,15 +31,12 @@ class MachineResource extends Resource
                             ->unique(ignoreRecord: true)
                             ->placeholder('Contoh: WEP12345'),
 
-                        // Ganti TextInput::make('tipe_model') menjadi ini:
                         Forms\Components\Select::make('tipe_model')
-                             ->label('Tipe / Model Mesin')
-                            ->options(\App\Models\TypeModel::pluck('nama_tipe', 'nama_tipe')) // Menarik data dari tabel TypeModel
+                            ->label('Tipe / Model Mesin')
+                            ->options(\App\Models\TypeModel::pluck('nama_tipe', 'nama_tipe'))
                             ->searchable()
                             ->preload()
                             ->required()
-                            
-                            // FITUR SAKTI: Tombol "+" untuk tambah cepat langsung dari dropdown
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('nama_tipe')
                                     ->label('Tipe Model Baru')
@@ -51,6 +47,7 @@ class MachineResource extends Resource
                                 $tipe = \App\Models\TypeModel::create($data);
                                 return $tipe->nama_tipe;
                             }),
+
                         Forms\Components\Select::make('status')
                             ->label('Status Mesin')
                             ->options([
@@ -67,7 +64,6 @@ class MachineResource extends Resource
                             ->columnSpanFull(),
                     ])->columns(2),
 
-                // SEKSI 2: DETAIL TEKNIS (Ini yang tadi terpisah)
                 Forms\Components\Section::make('Detail Teknis Mesin')
                     ->description('Informasi tambahan untuk stok gudang')
                     ->schema([
@@ -87,13 +83,34 @@ class MachineResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-        // ✨ MANTRA UTAMA: Urutkan status 'Ready' paling atas, lalu urutkan dari yang terbaru
+            ->headerActions([
+                Tables\Actions\Action::make('cetak_rekap_rayon')
+                    ->label('Rekap Per Rayon')
+                    ->icon('heroicon-o-map')
+                    ->color('warning')
+                    ->form([
+                        Forms\Components\Select::make('month')
+                            ->label('Bulan')
+                            ->options([
+                                '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
+                                '04' => 'April', '05' => 'Mei', '06' => 'Juni',
+                                '07' => 'Juli', '08' => 'Agustus', '09' => 'September',
+                                '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+                            ])->required()->default(date('m')),
+                        Forms\Components\Select::make('year')
+                            ->label('Tahun')
+                            ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
+                            ->required()->default(date('Y')),
+                    ])
+                    ->action(fn (array $data) => redirect()->route('cetak.rekap-rayon', $data)),
+                Tables\Actions\CreateAction::make(),
+            ])
             ->defaultSort('created_at', 'desc') 
-            ->modifyQueryUsing(function (\Illuminate\Database\Eloquent\Builder $query) {
+            ->modifyQueryUsing(function (Builder $query) {
                  return $query
-                    ->orderByRaw("CASE WHEN status = 'Ready' THEN 0 ELSE 1 END") // 'Ready' jadi nomor satu
+                    ->orderByRaw("CASE WHEN status = 'Ready' THEN 0 ELSE 1 END")
                     ->orderBy('created_at', 'desc');
-                 })
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('serial_number')
                     ->label('Serial Number')
@@ -107,7 +124,7 @@ class MachineResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'Ready' => 'success', // Tadi Akang tulis 'Available' makanya gak muncul warnanya
+                        'Ready' => 'success',
                         'Rented' => 'warning',
                         'Refurbish' => 'danger',
                         default => 'gray',
@@ -117,25 +134,20 @@ class MachineResource extends Resource
                     ->label('Lokasi / Pelanggan')
                     ->placeholder('Gudang DGG'),
             ])
-            ->filters([])
             ->actions([
                 Tables\Actions\EditAction::make(),
-
                 Tables\Actions\Action::make('monitor')
                     ->label('Monitor Part')
                     ->icon('heroicon-o-cpu-chip')
                     ->color('warning')
                     ->url(fn ($record) => route('sparepart.monitor', $record->id))
                     ->openUrlInNewTab(),
-                    
                 Tables\Actions\Action::make('cetak_qr')
-                    ->label('Cetak QR Histori')
+                    ->label('Cetak QR')
                     ->icon('heroicon-m-qr-code')
-                    ->color('warning') // Tombol warna kuning emas yang mencolok
-                    ->url(fn (\App\Models\Machine $record): string => route('mesin.cetak-qr', ['id' => $record->id]))
-                    ->openUrlInNewTab(), // Buka di tab baru agar halaman utama Filament tidak hilang
-
-                Tables\Actions\DeleteAction::make(),
+                    ->color('warning')
+                    ->url(fn (Machine $record): string => route('mesin.cetak-qr', ['id' => $record->id]))
+                    ->openUrlInNewTab(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

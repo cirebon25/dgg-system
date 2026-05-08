@@ -63,50 +63,49 @@ class DeploymentResource extends Resource
                             ->label('Counter Awal BW')
                             ->numeric()
                             ->default(0)
-                            ->required()
-                            ->placeholder('Contoh: 0'),
+                            ->required(),
 
                         Forms\Components\TextInput::make('counter_color')
                             ->label('Counter Awal Color (CL)')
                             ->numeric()
                             ->default(0)
-                            ->required()
-                            ->placeholder('Contoh: 0'),  
+                            ->required(),  
                             
                         Forms\Components\TextInput::make('volt')
                             ->label('Tegangan Listrik (Volt)')
                             ->numeric()
-                            ->default(220) // Otomatis terisi angka 220 standar PLN
-                            ->required()
-                            ->placeholder('Contoh: 220'),
+                            ->default(220)
+                            ->required(),
 
                         Forms\Components\DatePicker::make('tanggal_instal')
                             ->label('Tanggal Pasang')
                             ->required()
                             ->default(now())
                             ->displayFormat('d/m/Y'),
-                        ])
-                            ->columns(2),
+                    ])
+                    ->columns(2),
 
-                        Forms\Components\Section::make('Sparepart Tambahan')
-                             ->description('Item yang disertakan dalam pengiriman.')
-                             ->schema([
-                        Forms\Components\Repeater::make('deploymentSpareparts') // <--- Ganti jadi ini
-                            ->relationship('deploymentSpareparts') // <--- Ganti jadi ini
+                Forms\Components\Section::make('Sparepart Tambahan')
+                    ->description('Item yang disertakan dalam pengiriman.')
+                    ->schema([
+                        // ✨ PERBAIKAN DI SINI: Gunakan 'spareparts' agar sinkron dengan Model
+                        Forms\Components\Repeater::make('spareparts') 
+                            ->relationship('spareparts') 
                             ->defaultItems(0)
                             ->schema([
-                        Forms\Components\Select::make('sparepart_id')
-                            ->label('Item')
-                            ->relationship('sparepart', 'nama_sparepart') // <--- Filament otomatis ambil ID yang valid dari DB
-                            ->searchable()
-                            ->preload()
-                            ->required(),
-                        Forms\Components\TextInput::make('jumlah')
-                            ->label('Qty')
-                            ->numeric()
-                            ->default(1)
-                            ->required(),
-                         ])
+                                Forms\Components\Select::make('sparepart_id')
+                                    ->label('Item')
+                                    // Kita ambil data dari model Sparepart langsung
+                                    ->options(Sparepart::pluck('nama_sparepart', 'id'))
+                                    ->searchable()
+                                    ->preload()
+                                    ->required(),
+                                Forms\Components\TextInput::make('jumlah')
+                                    ->label('Qty')
+                                    ->numeric()
+                                    ->default(1)
+                                    ->required(),
+                            ])
                             ->columns(2)
                             ->createItemButtonLabel('Tambah Sparepart'),
 
@@ -122,7 +121,6 @@ class DeploymentResource extends Resource
     {
         return $table
             ->columns([
-
                 Tables\Columns\TextColumn::make('no_kontrak')
                     ->label('No. Kontrak')
                     ->searchable()

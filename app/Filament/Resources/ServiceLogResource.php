@@ -10,7 +10,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Carbon\Carbon;
 
 class ServiceLogResource extends Resource
 {
@@ -70,9 +69,7 @@ class ServiceLogResource extends Resource
                         Forms\Components\TextInput::make('usage_color')->label('Usage Color')->numeric()->readOnly(),
                     ])->columns(3),
 
-                // --- BAGIAN SPAREPART (REPEATER) SUDAH KEMBALI ---
                 Forms\Components\Section::make('Sparepart yang Diganti')
-                    ->description('Kosongkan jika tidak ada pergantian sparepart.')
                     ->schema([
                         Forms\Components\Repeater::make('serviceLogSpareparts')
                             ->relationship()
@@ -109,31 +106,66 @@ class ServiceLogResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->headerActions([
+                // 1. Tombol Rekap Rayon
+                Tables\Actions\Action::make('cetak_rekap_rayon')
+                    ->label('Rekap Rayon')
+                    ->icon('heroicon-o-map')
+                    ->color('info')
+                    ->form([
+                        Forms\Components\Select::make('month')
+                            ->label('Bulan')
+                            ->options([
+                                '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
+                                '04' => 'April', '05' => 'Mei', '06' => 'Juni',
+                                '07' => 'Juli', '08' => 'Agustus', '09' => 'September',
+                                '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+                            ])->required()->default(date('m')),
+                        Forms\Components\Select::make('year')
+                            ->label('Tahun')
+                            ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
+                            ->required()->default(date('Y')),
+                    ])
+                    ->action(fn (array $data) => redirect()->route('cetak.service-rayon', $data)),
+
+                // 2. Tombol Cetak Per Bulan
+                Tables\Actions\Action::make('printBulanan')
+                    ->label('Cetak Per Bulan')
+                    ->color('success')
+                    ->icon('heroicon-o-calendar')
+                    ->form([
+                        Forms\Components\Select::make('month')
+                            ->options([
+                                '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
+                                '04' => 'April', '05' => 'Mei', '06' => 'Juni',
+                                '07' => 'Juli', '08' => 'Agustus', '09' => 'September',
+                                '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+                            ])->required()->default(date('m')),
+                        Forms\Components\Select::make('year')
+                            ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
+                            ->required()->default(date('Y')),
+                    ])
+                    ->action(fn (array $data) => redirect()->route('service-log.monthly', $data)),
+
+                Tables\Actions\CreateAction::make(),
+            ])
             ->columns([
-                // 1. Nama Customer & Model
                 Tables\Columns\TextColumn::make('machine.deployment.customer.nama_customer')
                     ->label('Customer / Model')
-                    ->placeholder('Data Kosong')
-                    ->description(fn ($record): string => "Model: " . ($record->machine?->model_mesin ?? '-'))
+                    ->description(fn ($record): string => "Model: " . ($record->machine?->tipe_model ?? '-'))
                     ->searchable()
                     ->sortable(),
 
-                // 2. SN & Tgl Pasang
                 Tables\Columns\TextColumn::make('machine.serial_number')
                     ->label('SN / Tgl Pasang')
-                    ->description(function ($record) {
-                        $tgl = $record->machine?->deployment?->tanggal_instal;
-                        return "Instal: " . ($tgl ? \Carbon\Carbon::parse($tgl)->format('d/m/Y') : '-');
-                    })
+                    ->description(fn ($record) => "Instal: " . ($record->machine?->deployment?->tanggal_instal?->format('d/m/Y') ?? '-'))
                     ->searchable(),
 
-                // 3. Tgl Kunjungan
                 Tables\Columns\TextColumn::make('tanggal')
                     ->label('Tgl Servis')
                     ->date('d/m/Y')
                     ->sortable(),
 
-                // 4. Counter BW & Color (MENGGUNAKAN KOLOM ASLI AGAR TIDAK KOSONG)
                 Tables\Columns\TextColumn::make('counter_bw')
                     ->label('Counter (BW/CL)')
                     ->html()
@@ -141,7 +173,6 @@ class ServiceLogResource extends Resource
                         "BW: " . number_format($record->counter_bw) . "<br>CL: " . number_format($record->counter_color)
                     ),
 
-                // 5. Usage BW & Color (MENGGUNAKAN KOLOM ASLI AGAR TIDAK KOSONG)
                 Tables\Columns\TextColumn::make('usage_bw')
                     ->label('Usage (BW/CL)')
                     ->html()
@@ -150,7 +181,6 @@ class ServiceLogResource extends Resource
                         "<span style='color:#ef4444; font-weight:bold;'>CL: " . number_format($record->usage_color) . "</span>"
                     ),
 
-                // 6. Tipe Kunjungan
                 Tables\Columns\TextColumn::make('tipe_kunjungan')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
@@ -158,52 +188,10 @@ class ServiceLogResource extends Resource
                         'RR' => 'amber', 'JK' => 'primary', default => 'gray',
                     }),
                 
-                // 7. Perbaikan
-                Tables\Columns\TextColumn::make('perbaikan')
-                    ->label('Tindakan')
-                    ->limit(20)
-                    ->toggleable(),
-                    
-                // 8. Teknisi
                 Tables\Columns\TextColumn::make('technician.nama_technician')
-                    ->label('Teknisi')
-                    ->description(fn ($record) => $record->nama_teknisi_manual ? "Partner: " . $record->nama_teknisi_manual : ''),
-            ])
-            ->groups([
-                Tables\Grouping\Group::make('tanggal')
-                    ->label('Bulan Kunjungan')
-                    ->date()
-                    ->collapsible(),
-            ])
-            ->headerActions([
-                // TOMBOL CETAK PER BULAN KEMBALI
-                Tables\Actions\Action::make('printBulanan')
-                    ->label('Cetak Per Bulan')
-                    ->color('success')
-                    ->icon('heroicon-o-calendar')
-                    ->form([
-                        Forms\Components\Select::make('month')
-                            ->label('Pilih Bulan')
-                            ->options([
-                                '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
-                                '04' => 'April', '05' => 'Mei', '06' => 'Juni',
-                                '07' => 'Juli', '08' => 'Agustus', '09' => 'September',
-                                '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
-                            ])->required()->default(date('m')),
-                        Forms\Components\Select::make('year')
-                            ->label('Pilih Tahun')
-                            ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
-                            ->required()->default(date('Y')),
-                    ])
-                    ->action(function (array $data) {
-                        return redirect()->route('service-log.monthly', [
-                            'month' => $data['month'],
-                            'year' => $data['year'],
-                        ]);
-                    }),
+                    ->label('Teknisi'),
             ])
             ->actions([
-                // TOMBOL EDIT DAN PRINT PER BARIS KEMBALI
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('print')
                     ->label('Print')
@@ -215,6 +203,7 @@ class ServiceLogResource extends Resource
             ])
             ->defaultSort('tanggal', 'desc');
     }
+
     public static function getPages(): array
     {
         return [

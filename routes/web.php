@@ -8,8 +8,9 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Machine;
 use App\Models\Deployment;
 use App\Models\Sparepart;
-
-
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use App\Models\Rayon;
+use Carbon\Carbon;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -696,17 +697,22 @@ Route::get('/cetak-rekap-sparepart', function (Request $request) {
     return response($html);
 })->name('cetak.rekap-sparepart');
 
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
-// ➡️ RUTE 1: UNTUK MENCETAK STIKER QR CODE (Ukuran pas untuk Printer Thermal/Stiker)
+// ➡️ RUTE 1: UNTUK MENCETAK STIKER QR CODE (Ukuran Presisi Stiker)
 Route::get('/mesin/{id}/cetak-qr', function ($id) {
-    $machine = \App\Models\Machine::findOrFail($id);
+    // Pastikan pakai try-catch biar kalau ID mesin gak ada gak langsung eror putih
+    try {
+        $machine = \App\Models\Machine::findOrFail($id);
+    } catch (\Exception $e) {
+        return "Data mesin tidak ditemukan!";
+    }
     
-    // Tembak URL yang akan otomatis terbuka saat anak workshop melakukan scan QR
+    // URL yang akan dibuka saat scan (Histori Mesin)
     $urlHistori = route('mesin.histori', ['id' => $machine->id]);
 
-    // Membuat gambar QR Code otomatis
-    $qrCode = QrCode::size(120)->margin(1)->generate($urlHistori);
+    // Membuat gambar QR Code (Pakai format SVG agar tajam saat di-print)
+    // Jangan lupa import: use SimpleSoftwareIO\QrCode\Facades\QrCode; di atas file routes
+    $qrCode = QrCode::size(100)->margin(0)->generate($urlHistori);
 
     $html = "
     <!DOCTYPE html>
@@ -714,20 +720,65 @@ Route::get('/mesin/{id}/cetak-qr', function ($id) {
     <head>
         <title>QR Mesin - {$machine->serial_number}</title>
         <style>
-            @page { size: a5; margin: 0; } 
-            body { font-family: sans-serif; text-align: center; margin: 0; padding: 4px; box-sizing: border-box; }
-            .title { font-size: 10px; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
-            .sn { font-size: 11px; font-weight: bold; color: #1e40af; }
-            .qr-box { margin: 2px auto; display: inline-block; }
-            .qr-box svg { width: 85px; height: 85px; }
-            .footer { font-size: 8px; color: #666; font-weight: bold; margin-top: 1px; }
+            /* 🛠️ SETTING UKURAN STIKER THERMAL (50mm x 40mm) */
+            @page { 
+                size: 50mm 40mm; 
+                margin: 0; 
+            } 
+            
+            body { 
+                font-family: Arial, sans-serif; 
+                text-align: center; 
+                margin: 0; 
+                padding: 5px; 
+                width: 50mm; 
+                height: 40mm; 
+                display: flex; 
+                flex-direction: column; 
+                justify-content: center; 
+                align-items: center;
+                box-sizing: border-box;
+            }
+
+            .title { 
+                font-size: 8px; 
+                font-weight: bold; 
+                margin-bottom: 2px; 
+                white-space: nowrap; 
+                overflow: hidden; 
+                text-overflow: ellipsis; 
+                width: 100%;
+            }
+
+            .sn { 
+                font-size: 10px; 
+                font-weight: bold; 
+                color: #000; 
+                margin-bottom: 3px;
+            }
+
+            .qr-box svg { 
+                width: 70px; 
+                height: 70px; 
+            }
+
+            .footer { 
+                font-size: 7px; 
+                font-weight: bold; 
+                margin-top: 3px; 
+                border-top: 1px solid #ccc; 
+                padding-top: 2px;
+                width: 100%;
+            }
         </style>
     </head>
     <body onload='window.print()'>
         <div class='title'>{$machine->tipe_model}</div>
         <div class='sn'>SN: {$machine->serial_number}</div>
-        <div class='qr-box'>{$qrCode}</div>
-        <div class='footer'>DGG SYSTEM - WORKSHOP HUB</div>
+        <div class='qr-box'>
+            $qrCode
+        </div>
+        <div class='footer'>DGG - WORKSHOP HUB</div>
     </body>
     </html>";
 
@@ -836,3 +887,201 @@ Route::get('/mesin/{id}/histori', function ($id) {
 })->name('mesin.histori');
 
 
+// --- ROUTE CETAK STOK GUDANG SPAREPART ---
+Route::get('/cetak-stok-gudang', function () {
+    // 1. Ambil semua data sparepart, urutkan dari A ke Z
+    $spareparts = \App\Models\Sparepart::orderBy('nama_sparepart', 'asc')->get();
+
+    // 2. Susunan HTML Laporan
+    $html = "
+    <!DOCTYPE html>
+    <html lang='id'>
+    <head>
+        <meta charset='UTF-8'>
+        <title>Laporan Stok Gudang - DGG System</title>
+        <style>
+            body { font-family: sans-serif; font-size: 12px; padding: 20px; color: #333; }
+            header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+            header h1 { margin: 0; color: #1e40af; font-size: 20px; }
+            header h2 { margin: 5px 0; font-size: 16px; }
+            
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th { background-color: #1e40af; color: white; padding: 10px; border: 1px solid #000; text-transform: uppercase; }
+            td { padding: 8px; border: 1px solid #000; }
+            tr:nth-child(even) { background-color: #f8fafc; }
+            
+            .text-center { text-align: center; }
+            .text-right { text-align: right; }
+            .font-bold { font-weight: bold; }
+            
+            @media print {
+                @page { size: portrait; margin: 10mm; }
+                body { padding: 0; }
+            }
+        </style>
+    </head>
+    <body onload='window.print()'>
+        <header>
+            <h1>DGG SYSTEM - WAREHOUSE HUB</h1>
+            <h2>LAPORAN STOK GUDANG SPAREPART</h2>
+            <p>Per Tanggal: " . date('d-m-Y H:i') . "</p>
+        </header>
+
+        <table>
+            <thead>
+                <tr>
+                    <th width='40'>NO</th>
+                    <th>NAMA SPAREPART</th>
+                    <th width='150'>KODE / NO PART</th>
+                    <th width='100'>JUMLAH STOK</th>
+                </tr>
+            </thead>
+            <tbody>";
+
+    // 3. Looping Data Sparepart
+    if ($spareparts->isEmpty()) {
+        $html .= "<tr><td colspan='4' class='text-center'>Data sparepart kosong.</td></tr>";
+    } else {
+        foreach ($spareparts as $index => $item) {
+            $no = $index + 1;
+            $noPart = $item->no_part ?: ($item->code_part ?: '-');
+            // Jika stok sedikit (misal di bawah 5), kasih warna merah buat peringatan
+            $warnaStok = ($item->stok <= 5) ? "color: red; font-weight: bold;" : "";
+            
+            $html .= "
+            <tr>
+                <td class='text-center'>$no</td>
+                <td class='font-bold'>{$item->nama_sparepart}</td>
+                <td class='text-center'>$noPart</td>
+                <td class='text-center' style='$warnaStok'>{$item->stok} Pcs</td>
+            </tr>";
+        }
+    }
+
+    $html .= "
+            </tbody>
+        </table>
+
+        <div style='margin-top: 30px; float: right; width: 200px; text-align: center;'>
+            <p>Indramayu, " . date('d-m-Y') . "</p>
+            <p style='margin-bottom: 60px;'>Kepala Gudang,</p>
+            <strong>( ________________ )</strong>
+        </div>
+    </body>
+    </html>";
+
+    return response($html);
+})->name('cetak.stok-gudang');
+
+
+
+Route::get('/cetak-rekap-rayon', function (Illuminate\Http\Request $request) {
+    $month = $request->query('month', date('m'));
+    $year = $request->query('year', date('Y'));
+
+    // Ambil semua rayon dan ikut sertakan customer -> deployment -> mesin
+    $rayons = Rayon::with(['customers.deployments.machine'])->get();
+
+    $namaBulan = Carbon::createFromFormat('m', $month)->translatedFormat('F');
+
+    $html = "
+    <!DOCTYPE html>
+    <html lang='id'>
+    <head>
+        <meta charset='UTF-8'>
+        <style>
+            body { font-family: 'Helvetica', sans-serif; font-size: 11px; padding: 10px; }
+            header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
+            .rayon-box { margin-bottom: 30px; }
+            .rayon-title { background: #333; color: #fff; padding: 8px; font-weight: bold; font-size: 14px; margin-bottom: 5px; }
+            table { width: 100%; border-collapse: collapse; }
+            th { background: #f2f2f2; border: 1px solid #000; padding: 8px; text-transform: uppercase; }
+            td { border: 1px solid #000; padding: 8px; vertical-align: top; }
+            .text-center { text-align: center; }
+            .empty { color: #999; font-style: italic; }
+        </style>
+    </head>
+    <body onload='window.print()'>
+        <header>
+            <h1 style='margin:0;'>DGG SYSTEM - MONITORING UNIT</h1>
+            <h2 style='margin:5px 0;'>LAPORAN KINERJA MESIN PER RAYON</h2>
+            <p>Periode: $namaBulan $year</p>
+        </header>";
+
+    foreach ($rayons as $rayon) {
+        $html .= "<div class='rayon-box'>
+                    <div class='rayon-title'>📍 RAYON: " . strtoupper($rayon->nama_rayon) . "</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th width='30'>NO</th>
+                                <th width='200'>NAMA CUSTOMER & KOTA</th>
+                                <th width='150'>SN / MODEL</th>
+                                <th>HISTORI SERVICE ($namaBulan)</th>
+                            </tr>
+                        </thead>
+                        <tbody>";
+
+        $i = 1;
+        foreach ($rayon->customers as $customer) {
+            foreach ($customer->deployments as $dep) {
+                $machine = $dep->machine;
+                if (!$machine) continue;
+
+                // Ambil log service untuk mesin ini di bulan terpilih
+                $logs = ServiceLog::where('machine_id', $machine->id)
+                    ->whereMonth('created_at', $month)
+                    ->whereYear('created_at', $year)
+                    ->get();
+
+                $html .= "<tr>
+                            <td class='text-center'>$i</td>
+                            <td><b>{$customer->nama_customer}</b><br>{$customer->kota}</td>
+                            <td><b>{$machine->serial_number}</b><br>{$machine->tipe_model}</td>
+                            <td>";
+
+                if ($logs->isEmpty()) {
+                    $html .= "<span class='empty'>- Unit Normal (Tidak Ada Tindakan) -</span>";
+                } else {
+                    $html .= "<ul style='margin:0; padding-left:15px;'>";
+                    foreach ($logs as $log) {
+                        $tgl = date('d/m', strtotime($log->created_at));
+                        $html .= "<li><b>[$tgl]</b> {$log->keluhan} -> <i>{$log->tindakan}</i></li>";
+                    }
+                    $html .= "</ul>";
+                }
+
+                $html .= "</td></tr>";
+                $i++;
+            }
+        }
+
+        if ($i == 1) {
+            $html .= "<tr><td colspan='4' class='text-center empty'>Tidak ada mesin terpasang di wilayah ini.</td></tr>";
+        }
+
+        $html .= "</tbody></table></div>";
+    }
+
+    $html .= "</body></html>";
+
+    return response($html);
+})->name('cetak.rekap-rayon');
+
+
+
+Route::get('/cetak-service-rayon', function (Request $request) {
+    $month = $request->query('month', date('m'));
+    $year = $request->query('year', date('Y'));
+
+    // Ambil Rayon yang punya data Customer & Deployment
+    $rayons = Rayon::with(['customers.deployments.machine'])->get();
+    $namaBulan = Carbon::createFromFormat('m', $month)->translatedFormat('F');
+
+    return view('filament.pages.cetak-rekap-rayon', [
+        'rayons' => $rayons,
+        'month' => $month,
+        'year' => $year,
+        'namaBulan' => $namaBulan
+    ]);
+})->name('cetak.service-rayon');

@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Deployment extends Model
 {
@@ -19,16 +18,18 @@ class Deployment extends Model
         'technician_id',
         'tanggal_instal',
         'keterangan',
-        'counter_bw',     // 🔥 SUNTIK BARIS INI AGAR BISA NYIMPAN COUNTER HITAM PUTIH
+        'counter_bw',
         'counter_color',
-        'Volt',  // 🔥 SUNTIK BARIS INI AGAR BISA NYIMPAN COUNTER WARNA
+        'volt', // Pastikan kecil semua agar aman di database
     ];
 
     protected $casts = [
         'tanggal_instal' => 'date', 
     ];
 
-    // Logika Otomatis Sinkronisasi Status Mesin
+    /**
+     * Logika Otomatis Sinkronisasi Status Mesin
+     */
     protected static function booted()
     {
         // 1. Saat Deployment BARU DIBUAT -> Ubah Status Mesin jadi 'Rented'
@@ -59,19 +60,37 @@ class Deployment extends Model
         });
     }
 
-    public function spareparts(): BelongsToMany {
+    /**
+     * RELASI: Sparepart yang disertakan (Many-to-Many)
+     */
+    public function spareparts(): BelongsToMany 
+    {
         return $this->belongsToMany(Sparepart::class, 'deployment_sparepart')
                     ->withPivot('jumlah')
                     ->withTimestamps();
     }
 
-    public function deploymentSpareparts(): HasMany
+    /**
+     * RELASI: Milik Customer
+     */
+    public function customer(): BelongsTo
     {
-        return $this->hasMany(DeploymentSparepart::class);
+        return $this->belongsTo(Customer::class);
     }
-    
-    // Relasi
-    public function customer() { return $this->belongsTo(Customer::class); }
-    public function machine() { return $this->belongsTo(Machine::class); }
-    public function technician() { return $this->belongsTo(Technician::class); }
+
+    /**
+     * RELASI: Menggunakan Mesin
+     */
+    public function machine(): BelongsTo
+    {
+        return $this->belongsTo(Machine::class);
+    }
+
+    /**
+     * RELASI: Dipasang oleh Teknisi
+     */
+    public function technician(): BelongsTo
+    {
+        return $this->belongsTo(Technician::class);
+    }
 }
