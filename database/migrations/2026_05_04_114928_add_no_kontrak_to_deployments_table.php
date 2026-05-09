@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-    Schema::table('deployments', function (Blueprint $table) {
-        $table->string('no_kontrak')->nullable()->after('machine_id');
-    });
+        Schema::table('deployments', function (Blueprint $table) {
+            $table->string('no_kontrak')->nullable()->after('machine_id');
+        });
     }
 
     /**

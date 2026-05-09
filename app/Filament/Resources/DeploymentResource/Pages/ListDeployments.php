@@ -3,11 +3,11 @@
 namespace App\Filament\Resources\DeploymentResource\Pages;
 
 use App\Filament\Resources\DeploymentResource;
-use App\Models\Deployment;
 use App\Models\Customer;
+use App\Models\Deployment;
 use App\Models\Machine;
-use App\Models\Technician;
 use App\Models\Rayon;
+use App\Models\Technician;
 use Filament\Actions;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -60,10 +60,10 @@ class ListDeployments extends ListRecords
                     $tempFile = tempnam(sys_get_temp_dir(), 'csv_clean_d');
                     file_put_contents($tempFile, $fileContent);
 
-                    if (($handle = fopen($tempFile, 'r')) !== FALSE) {
+                    if (($handle = fopen($tempFile, 'r')) !== false) {
                         $header = fgetcsv($handle, 1000, $delimiter);
 
-                        if (!$header) {
+                        if (! $header) {
                             Notification::make()
                                 ->title('Gagal Impor')
                                 ->body('File CSV kosong atau tidak valid.')
@@ -71,12 +71,14 @@ class ListDeployments extends ListRecords
                                 ->send();
                             fclose($handle);
                             unlink($tempFile);
+
                             return;
                         }
 
                         // Normalisasi teks header
-                        $header = array_map(function($h) {
+                        $header = array_map(function ($h) {
                             $h = preg_replace('/[^a-zA-Z0-9_]/', '', $h);
+
                             return strtolower(trim($h));
                         }, $header);
 
@@ -118,13 +120,14 @@ class ListDeployments extends ListRecords
                                 ->send();
                             fclose($handle);
                             unlink($tempFile);
+
                             return;
                         }
 
                         // Menyiapkan Rayon Default jika database kosong
                         $defaultRayon = Rayon::first();
-                        if (!$defaultRayon) {
-                            $defaultRayon = new Rayon();
+                        if (! $defaultRayon) {
+                            $defaultRayon = new Rayon;
                             $defaultRayon->nama_rayon = 'Rayon Pusat';
                             $defaultRayon->save();
                         }
@@ -134,10 +137,11 @@ class ListDeployments extends ListRecords
                         $errorDetails = [];
                         $rowCount = 1;
 
-                        while (($row = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
+                        while (($row = fgetcsv($handle, 1000, $delimiter)) !== false) {
                             $rowCount++;
-                            if (empty($row) || !isset($row[$customerIdx]) || !isset($row[$machineIdx])) {
+                            if (empty($row) || ! isset($row[$customerIdx]) || ! isset($row[$machineIdx])) {
                                 $skippedCount++;
+
                                 continue;
                             }
 
@@ -146,6 +150,7 @@ class ListDeployments extends ListRecords
 
                             if ($custVal === '' || $machineVal === '') {
                                 $skippedCount++;
+
                                 continue;
                             }
 
@@ -155,9 +160,9 @@ class ListDeployments extends ListRecords
                                 if (is_numeric($custVal)) {
                                     $customerId = $custVal;
                                 } else {
-                                    $customer = Customer::where('nama_customer', 'like', '%' . $custVal . '%')->first();
-                                    if (!$customer) {
-                                        $customer = new Customer();
+                                    $customer = Customer::where('nama_customer', 'like', '%'.$custVal.'%')->first();
+                                    if (! $customer) {
+                                        $customer = new Customer;
                                         $customer->nama_customer = $custVal;
                                         $customer->alamat = '-';
                                         $customer->kota = 'Cirebon';
@@ -173,8 +178,8 @@ class ListDeployments extends ListRecords
                                     $machineId = $machineVal;
                                 } else {
                                     $machine = Machine::where('serial_number', $machineVal)->first();
-                                    if (!$machine) {
-                                        $machine = new Machine();
+                                    if (! $machine) {
+                                        $machine = new Machine;
                                         $machine->serial_number = $machineVal;
                                         $machine->tipe_model = 'Imported';
                                         $machine->status = 'Rented';
@@ -193,9 +198,9 @@ class ListDeployments extends ListRecords
                                     if (is_numeric($techVal)) {
                                         $technicianId = $techVal;
                                     } else {
-                                        $tech = Technician::where('nama_technician', 'like', '%' . $techVal . '%')->first();
-                                        if (!$tech) {
-                                            $tech = new Technician();
+                                        $tech = Technician::where('nama_technician', 'like', '%'.$techVal.'%')->first();
+                                        if (! $tech) {
+                                            $tech = new Technician;
                                             $tech->nama_technician = $techVal;
                                             $tech->save();
                                         }
@@ -206,8 +211,8 @@ class ListDeployments extends ListRecords
                                 // --- GARANSI VALIDASI TECHNICIAN_ID ---
                                 if ($technicianId === null) {
                                     $fallbackTech = Technician::first();
-                                    if (!$fallbackTech) {
-                                        $fallbackTech = new Technician();
+                                    if (! $fallbackTech) {
+                                        $fallbackTech = new Technician;
                                         $fallbackTech->nama_technician = 'Teknisi Umum';
                                         $fallbackTech->save();
                                     }
@@ -219,8 +224,12 @@ class ListDeployments extends ListRecords
                                 if ($dateIdx !== false && isset($row[$dateIdx]) && trim($row[$dateIdx]) !== '') {
                                     $valDate = trim($row[$dateIdx]);
                                     $parsed = \DateTime::createFromFormat('d/m/Y', $valDate);
-                                    if (!$parsed) $parsed = \DateTime::createFromFormat('d-m-Y', $valDate);
-                                    if (!$parsed) $parsed = \DateTime::createFromFormat('Y-m-d', $valDate);
+                                    if (! $parsed) {
+                                        $parsed = \DateTime::createFromFormat('d-m-Y', $valDate);
+                                    }
+                                    if (! $parsed) {
+                                        $parsed = \DateTime::createFromFormat('Y-m-d', $valDate);
+                                    }
 
                                     if ($parsed) {
                                         $tanggalInstal = $parsed->format('Y-m-d');
@@ -235,8 +244,8 @@ class ListDeployments extends ListRecords
                                     ->where('machine_id', $machineId)
                                     ->first();
 
-                                if (!$deployment) {
-                                    $deployment = new Deployment();
+                                if (! $deployment) {
+                                    $deployment = new Deployment;
                                     $deployment->customer_id = $customerId;
                                     $deployment->machine_id = $machineId;
                                 }
@@ -249,8 +258,9 @@ class ListDeployments extends ListRecords
                                 $successCount++;
                             } catch (\Exception $e) {
                                 if (count($errorDetails) < 3) {
-                                    $errorDetails[] = "Baris $rowCount: " . $e->getMessage();
+                                    $errorDetails[] = "Baris $rowCount: ".$e->getMessage();
                                 }
+
                                 continue;
                             }
                         }
@@ -260,13 +270,15 @@ class ListDeployments extends ListRecords
                         Storage::disk('local')->delete($data['file']);
 
                         $msg = "$successCount data pemasangan mesin berhasil diimpor.";
-                        if ($skippedCount > 0) $msg .= " ($skippedCount baris dilewati).";
+                        if ($skippedCount > 0) {
+                            $msg .= " ($skippedCount baris dilewati).";
+                        }
 
-                        if ($successCount === 0 && !empty($errorDetails)) {
+                        if ($successCount === 0 && ! empty($errorDetails)) {
                             $errBody = implode("\n", $errorDetails);
                             Notification::make()
                                 ->title('Impor Gagal (0 Data)')
-                                ->body($msg . "\nDetail Error:\n" . $errBody)
+                                ->body($msg."\nDetail Error:\n".$errBody)
                                 ->danger()
                                 ->persistent()
                                 ->send();

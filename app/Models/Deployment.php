@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
@@ -24,7 +24,7 @@ class Deployment extends Model
     ];
 
     protected $casts = [
-        'tanggal_instal' => 'date', 
+        'tanggal_instal' => 'date',
     ];
 
     /**
@@ -63,11 +63,11 @@ class Deployment extends Model
     /**
      * RELASI: Sparepart yang disertakan (Many-to-Many)
      */
-    public function spareparts(): BelongsToMany 
+    public function spareparts(): BelongsToMany
     {
         return $this->belongsToMany(Sparepart::class, 'deployment_sparepart')
-                    ->withPivot('jumlah')
-                    ->withTimestamps();
+            ->withPivot('jumlah')
+            ->withTimestamps();
     }
 
     /**

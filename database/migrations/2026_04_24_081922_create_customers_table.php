@@ -11,17 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-    Schema::create('customers', function (Blueprint $table) {
-        $table->id();
-        // Menghubungkan Customer ke tabel Rayon
-        $table->foreignId('rayon_id')->constrained('rayons')->onDelete('cascade');
-        
-        $table->string('nama_customer');
-        $table->string('kota'); // Contoh: Cirebon, Indramayu, Majalengka
-        $table->text('alamat')->nullable();
-        $table->string('nomor_telp')->nullable();
-        $table->timestamps();
-    });
+        Schema::create('customers', function (Blueprint $table) {
+            $table->id();
+            // Menghubungkan Customer ke tabel Rayon
+            $table->foreignId('rayon_id')->constrained('rayons')->onDelete('cascade');
+
+            $table->string('nama_customer');
+            $table->string('kota'); // Contoh: Cirebon, Indramayu, Majalengka
+            $table->text('alamat')->nullable();
+            $table->string('nomor_telp')->nullable();
+            $table->timestamps();
+        });
     }
 
     /**

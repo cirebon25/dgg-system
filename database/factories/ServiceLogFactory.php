@@ -14,14 +14,14 @@ class ServiceLogFactory extends Factory
      *
      * @return array<string, mixed>
      */
-   public function definition(): array
-{
-    return [
-        'tanggal' => fake()->dateTimeBetween('-2 months', 'now'),
-        'machine_id' => \App\Models\Machine::all()->random()->id,
-        'technician_id' => \App\Models\Technician::all()->random()->id,
-        'kerusakan' => fake()->randomElement(['E000', 'Paper Jam', 'Hasil Kotor', 'Mati Total']),
-        'perbaikan' => fake()->randomElement(['Ganti Drum', 'Cleaning Corona', 'Tukar Guling Unit']),
-    ];
-}
+    public function definition(): array
+    {
+        return [
+            'tanggal' => fake()->dateTimeBetween('-2 months', 'now'),
+            'machine_id' => \App\Models\Machine::all()->random()->id,
+            'technician_id' => \App\Models\Technician::all()->random()->id,
+            'kerusakan' => fake()->randomElement(['E000', 'Paper Jam', 'Hasil Kotor', 'Mati Total']),
+            'perbaikan' => fake()->randomElement(['Ganti Drum', 'Cleaning Corona', 'Tukar Guling Unit']),
+        ];
+    }
 }

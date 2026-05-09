@@ -33,6 +33,6 @@ class User extends Authenticatable implements FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         // Kita buka untuk semua user dulu biar Boss bisa masuk
-        return true; 
+        return true;
     }
 }

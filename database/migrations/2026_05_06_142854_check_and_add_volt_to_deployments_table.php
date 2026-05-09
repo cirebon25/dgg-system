@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         // Pengecekan kolom harus dilakukan di luar Blueprint closure untuk beberapa versi Laravel
-        if (!Schema::hasColumn('deployments', 'volt')) {
+        if (! Schema::hasColumn('deployments', 'volt')) {
             Schema::table('deployments', function (Blueprint $table) {
                 // Ganti 'counter_color' menjadi 'no_kontrak' agar tidak error
                 // Atau hapus ->after(...) jika ingin diletakkan di urutan paling akhir

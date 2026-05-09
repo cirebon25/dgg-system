@@ -9,15 +9,15 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-   public function up(): void
+    public function up(): void
     {
-    Schema::create('service_log_spareparts', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('service_log_id')->constrained()->onDelete('cascade');
-        $table->foreignId('sparepart_id')->constrained()->onDelete('cascade');
-        $table->integer('jumlah')->default(1);
-        $table->timestamps();
-    });
+        Schema::create('service_log_spareparts', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('service_log_id')->constrained()->onDelete('cascade');
+            $table->foreignId('sparepart_id')->constrained()->onDelete('cascade');
+            $table->integer('jumlah')->default(1);
+            $table->timestamps();
+        });
     }
 
     /**

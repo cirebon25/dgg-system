@@ -11,17 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-    Schema::create('deployments', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('customer_id')->constrained()->onDelete('cascade');
-        $table->foreignId('machine_id')->constrained()->onDelete('cascade');
-        $table->foreignId('technician_id')->constrained()->onDelete('cascade');
-        $table->date('tanggal_instal');
-        $table->date('tanggal_tarik')->nullable(); // Diisi nanti kalau sewa selesai
-        $table->text('keterangan')->nullable();
-        $table->timestamps();
-    });
-    }   
+        Schema::create('deployments', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('customer_id')->constrained()->onDelete('cascade');
+            $table->foreignId('machine_id')->constrained()->onDelete('cascade');
+            $table->foreignId('technician_id')->constrained()->onDelete('cascade');
+            $table->date('tanggal_instal');
+            $table->date('tanggal_tarik')->nullable(); // Diisi nanti kalau sewa selesai
+            $table->text('keterangan')->nullable();
+            $table->timestamps();
+        });
+    }
 
     /**
      * Reverse the migrations.

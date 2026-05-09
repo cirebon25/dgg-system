@@ -11,9 +11,12 @@ use Illuminate\Support\Facades\DB;
 class MachineRayonStats extends BaseWidget
 {
     protected static ?string $heading = '🏢 Unit Per Rayon';
+
     protected static bool $isLazy = true;
+
     protected static ?int $sort = 6;
-    protected int | string | array $columnSpan = 1;
+
+    protected int|string|array $columnSpan = 1;
 
     // KUNCI AGAR TIDAK ERROR PAS DI-SCROLL
     public function getTableRecordKey($record): string

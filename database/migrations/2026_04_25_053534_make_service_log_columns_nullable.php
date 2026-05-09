@@ -11,16 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-    Schema::table('service_logs', function (Blueprint $table) {
-        // Mengubah kolom menjadi nullable (boleh kosong)
-        $table->integer('counter_color')->nullable()->change();
-        $table->foreignId('sparepart_id')->nullable()->change();
-        $table->integer('jumlah_sparepart')->nullable()->change();
-        
-        // Pastikan usage juga boleh kosong agar tidak error hitungan
-        $table->integer('usage_color')->nullable()->change();
-        $table->integer('usage_bw')->nullable()->change();
-    });
+        Schema::table('service_logs', function (Blueprint $table) {
+            // Mengubah kolom menjadi nullable (boleh kosong)
+            $table->integer('counter_color')->nullable()->change();
+            $table->foreignId('sparepart_id')->nullable()->change();
+            $table->integer('jumlah_sparepart')->nullable()->change();
+
+            // Pastikan usage juga boleh kosong agar tidak error hitungan
+            $table->integer('usage_color')->nullable()->change();
+            $table->integer('usage_bw')->nullable()->change();
+        });
     }
 
     /**

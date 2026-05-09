@@ -16,6 +16,7 @@ class MachineResource extends Resource
     protected static ?string $model = Machine::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-cpu-chip';
+
     protected static ?string $navigationLabel = 'Data Mesin';
 
     public static function form(Form $form): Form
@@ -45,6 +46,7 @@ class MachineResource extends Resource
                             ])
                             ->createOptionUsing(function (array $data): string {
                                 $tipe = \App\Models\TypeModel::create($data);
+
                                 return $tipe->nama_tipe;
                             }),
 
@@ -76,6 +78,10 @@ class MachineResource extends Resource
                             ->label('Cover'),
                         Forms\Components\TextInput::make('kaset')
                             ->label('Jumlah Kaset'),
+                        Forms\Components\TextInput::make('double_scan')
+                            ->label('Double Scan (Qty)')
+                            ->numeric()
+                            ->default(0),
                     ])->columns(2),
             ]);
     }
@@ -105,9 +111,9 @@ class MachineResource extends Resource
                     ->action(fn (array $data) => redirect()->route('cetak.rekap-rayon', $data)),
                 Tables\Actions\CreateAction::make(),
             ])
-            ->defaultSort('created_at', 'desc') 
+            ->defaultSort('created_at', 'desc')
             ->modifyQueryUsing(function (Builder $query) {
-                 return $query
+                return $query
                     ->orderByRaw("CASE WHEN status = 'Ready' THEN 0 ELSE 1 END")
                     ->orderBy('created_at', 'desc');
             })

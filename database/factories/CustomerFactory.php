@@ -15,12 +15,12 @@ class CustomerFactory extends Factory
      * @return array<string, mixed>
      */
     public function definition(): array
-{
-    return [
-        'nama_customer' => fake()->company(),
-        'alamat' => fake()->address(),
-        'kota' => fake()->randomElement(['Indramayu', 'Cirebon', 'Majalengka', 'Kuningan']),
-        'rayon_id' => \App\Models\Rayon::factory(),
-    ];
-}
+    {
+        return [
+            'nama_customer' => fake()->company(),
+            'alamat' => fake()->address(),
+            'kota' => fake()->randomElement(['Indramayu', 'Cirebon', 'Majalengka', 'Kuningan']),
+            'rayon_id' => \App\Models\Rayon::factory(),
+        ];
+    }
 }

@@ -3,15 +3,11 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\TechnicianResource\Pages;
-use App\Filament\Resources\TechnicianResource\RelationManagers;
 use App\Models\Technician;
-use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class TechnicianResource extends Resource
 {
@@ -21,22 +17,22 @@ class TechnicianResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
-   public static function form(Form $form): Form
-    {   
-    return $form
-        ->schema([
-            // Pilih Rayon dari data yang sudah diinput sebelumnya
-            \Filament\Forms\Components\Select::make('rayon_id')
-                ->relationship('rayon', 'nama_rayon') // Menghubungkan ke tabel Rayon
-                ->required(),
-                
-            \Filament\Forms\Components\TextInput::make('nama_technician')
-                ->required()
-                ->maxLength(255),
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                // Pilih Rayon dari data yang sudah diinput sebelumnya
+                \Filament\Forms\Components\Select::make('rayon_id')
+                    ->relationship('rayon', 'nama_rayon') // Menghubungkan ke tabel Rayon
+                    ->required(),
 
-            \Filament\Forms\Components\TextInput::make('nomor_hp')
-                ->tel(), // Format nomor telepon
-        ]);
+                \Filament\Forms\Components\TextInput::make('nama_technician')
+                    ->required()
+                    ->maxLength(255),
+
+                \Filament\Forms\Components\TextInput::make('nomor_hp')
+                    ->tel(), // Format nomor telepon
+            ]);
     }
 
     public static function table(Table $table): Table

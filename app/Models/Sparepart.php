@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Sparepart extends Model
 {
@@ -34,7 +34,7 @@ class Sparepart extends Model
             // Sisa Saldo (stok) = Masuk - Keluar
             $masuk = $sparepart->saldo_masuk ?? 0;
             $keluar = $sparepart->saldo_keluar ?? 0;
-            
+
             $sparepart->stok = $masuk - $keluar;
         });
     }

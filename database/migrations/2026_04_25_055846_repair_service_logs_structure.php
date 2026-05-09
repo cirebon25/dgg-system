@@ -10,10 +10,10 @@ return new class extends Migration
     {
         Schema::table('service_logs', function (Blueprint $table) {
             // 1. Pastikan kolom pemakaian ada
-            if (!Schema::hasColumn('service_logs', 'usage_color')) {
+            if (! Schema::hasColumn('service_logs', 'usage_color')) {
                 $table->integer('usage_color')->default(0)->nullable();
             }
-            if (!Schema::hasColumn('service_logs', 'usage_bw')) {
+            if (! Schema::hasColumn('service_logs', 'usage_bw')) {
                 $table->integer('usage_bw')->default(0)->nullable();
             }
 

@@ -20,8 +20,8 @@ class ListMachines extends ListRecords
     {
         return [
             // 1. TOMBOL CREATE (NEW MACHINE)
-            Actions\CreateAction::make()
-                ->label('New Machine'),
+            // Actions\CreateAction::make()
+            //     ->label('New Machine'),
 
             // 2. TOMBOL IMPORT CSV ANTI-GAGAL UNTUK DATA MESIN
             Action::make('import_csv')
@@ -58,10 +58,10 @@ class ListMachines extends ListRecords
                     $tempFile = tempnam(sys_get_temp_dir(), 'csv_clean_m');
                     file_put_contents($tempFile, $fileContent);
 
-                    if (($handle = fopen($tempFile, 'r')) !== FALSE) {
+                    if (($handle = fopen($tempFile, 'r')) !== false) {
                         $header = fgetcsv($handle, 1000, $delimiter);
 
-                        if (!$header) {
+                        if (! $header) {
                             Notification::make()
                                 ->title('Gagal Impor')
                                 ->body('File CSV kosong.')
@@ -69,12 +69,14 @@ class ListMachines extends ListRecords
                                 ->send();
                             fclose($handle);
                             unlink($tempFile);
+
                             return;
                         }
 
                         // Normalisasi teks header (huruf kecil & hanya ambil karakter a-z, 0-9, underscore)
                         $header = array_map(function ($h) {
                             $h = preg_replace('/[^a-zA-Z0-9_]/', '', $h);
+
                             return strtolower(trim($h));
                         }, $header);
 
@@ -92,6 +94,7 @@ class ListMachines extends ListRecords
                                 ->send();
                             fclose($handle);
                             unlink($tempFile);
+
                             return;
                         }
 
@@ -100,30 +103,31 @@ class ListMachines extends ListRecords
                         $errorDetails = [];
                         $rowCount = 1;
 
-                        while (($row = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
+                        while (($row = fgetcsv($handle, 1000, $delimiter)) !== false) {
                             $rowCount++;
-                            if (empty($row) || !isset($row[$snIdx]) || trim($row[$snIdx]) === '') {
+                            if (empty($row) || ! isset($row[$snIdx]) || trim($row[$snIdx]) === '') {
                                 $skippedCount++;
+
                                 continue;
                             }
 
                             try {
                                 $snVal = trim($row[$snIdx]);
-                                
+
                                 $machine = Machine::where('serial_number', $snVal)->first();
-                                if (!$machine) {
-                                    $machine = new Machine();
+                                if (! $machine) {
+                                    $machine = new Machine;
                                     $machine->serial_number = $snVal;
                                 }
-                                
-                                $machine->tipe_model = !empty($row[$tipeIdx]) ? trim($row[$tipeIdx]) : '-';
-                                $machine->status = !empty($row[$statusIdx]) ? trim($row[$statusIdx]) : 'Ready';
+
+                                $machine->tipe_model = ! empty($row[$tipeIdx]) ? trim($row[$tipeIdx]) : '-';
+                                $machine->status = ! empty($row[$statusIdx]) ? trim($row[$statusIdx]) : 'Ready';
                                 $machine->save();
 
                                 $successCount++;
                             } catch (\Exception $e) {
                                 if (count($errorDetails) < 3) {
-                                    $errorDetails[] = "Baris $rowCount: " . $e->getMessage();
+                                    $errorDetails[] = "Baris $rowCount: ".$e->getMessage();
                                 }
                             }
                         }
@@ -133,13 +137,15 @@ class ListMachines extends ListRecords
                         Storage::disk('local')->delete($data['file']);
 
                         $msg = "$successCount data mesin berhasil diimpor.";
-                        if ($skippedCount > 0) $msg .= " ($skippedCount baris dilewati).";
+                        if ($skippedCount > 0) {
+                            $msg .= " ($skippedCount baris dilewati).";
+                        }
 
-                        if ($successCount === 0 && !empty($errorDetails)) {
+                        if ($successCount === 0 && ! empty($errorDetails)) {
                             $errBody = implode("\n", $errorDetails);
                             Notification::make()
                                 ->title('Impor Gagal (0 Data)')
-                                ->body($msg . "\nDetail Error:\n" . $errBody)
+                                ->body($msg."\nDetail Error:\n".$errBody)
                                 ->danger()
                                 ->persistent()
                                 ->send();
@@ -183,7 +189,7 @@ class ListMachines extends ListRecords
                 ->action(function (array $data) {
                     return redirect()->route('cetak.pemasangan', [
                         'bulan' => $data['bulan'],
-                        'tahun' => $data['tahun']
+                        'tahun' => $data['tahun'],
                     ]);
                 }),
 
@@ -215,7 +221,8 @@ class ListMachines extends ListRecords
             ->get()
             ->groupBy(['nama_rayon', 'kota']);
 
-        $html = "<html><head><title>Laporan Alokasi Mesin</title></head><body>...</body></html>";
+        $html = '<html><head><title>Laporan Alokasi Mesin</title></head><body>...</body></html>';
+
         return response($html);
     }
 }

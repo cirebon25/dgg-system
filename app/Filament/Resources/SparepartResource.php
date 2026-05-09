@@ -8,9 +8,8 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
-use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Table;
 use Maatwebsite\Excel\Facades\Excel; // Pastikan library excel sudah terinstall
 
 class SparepartResource extends Resource
@@ -18,6 +17,7 @@ class SparepartResource extends Resource
     protected static ?string $model = Sparepart::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
+
     protected static ?string $navigationGroup = 'Master Data';
 
     public static function form(Form $form): Form
@@ -46,7 +46,7 @@ class SparepartResource extends Resource
                             ->label('Saldo Keluar (Terpakai)')
                             ->numeric()
                             ->default(0)
-                            ->readOnly(), 
+                            ->readOnly(),
                         Forms\Components\TextInput::make('stok')
                             ->label('Sisa Saldo / Stok Akhir')
                             ->numeric()
@@ -97,7 +97,7 @@ class SparepartResource extends Resource
                             ->required(),
                     ])
                     ->action(function (array $data) {
-                        $filePath = storage_path('app/public/' . $data['file_csv']);
+                        $filePath = storage_path('app/public/'.$data['file_csv']);
                         $rows = Excel::toArray([], $filePath)[0];
                         array_shift($rows); // Buang header
 
@@ -106,12 +106,14 @@ class SparepartResource extends Resource
                                 ['no_part' => $row[1]], // Kunci: No Part
                                 [
                                     'nama_sparepart' => $row[0],
-                                    'stok'           => $row[2],
-                                    'code_part'      => $row[3],
+                                    'stok' => $row[2],
+                                    'code_part' => $row[3],
                                 ]
                             );
                         }
-                        if(file_exists($filePath)) unlink($filePath);
+                        if (file_exists($filePath)) {
+                            unlink($filePath);
+                        }
 
                         \Filament\Notifications\Notification::make()
                             ->title('Import Berhasil!')
