@@ -9,13 +9,15 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 
 class ServiceLogResource extends Resource
 {
     protected static ?string $model = ServiceLog::class;
+
     protected static ?string $navigationLabel = 'Input Servis Teknisi';
+
     protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
+
     protected static ?string $navigationGroup = 'Transaksi';
 
     public static function form(Form $form): Form
@@ -37,11 +39,11 @@ class ServiceLogResource extends Resource
                                     $set('color_lalu', $lastLog->counter_color);
                                 }
                             }),
-                        
+
                         Forms\Components\Select::make('tipe_kunjungan')
                             ->options([
-                                'RN' => 'RN (Intal Baru)', 'CM' => 'CM (Call Maintenance)', 
-                                'RM' => 'RM (Kunjungan Rutin)', 'RR' => 'RR (Ganti Mesin)', 
+                                'RN' => 'RN (Intal Baru)', 'CM' => 'CM (Call Maintenance)',
+                                'RM' => 'RM (Kunjungan Rutin)', 'RR' => 'RR (Ganti Mesin)',
                                 'JK' => 'JK (Jaringan komputer)', 'L' => 'L (Lanjut)',
                             ])->required(),
 
@@ -60,12 +62,12 @@ class ServiceLogResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('bw_lalu')->label('BW Lalu')->numeric()->readOnly(),
                         Forms\Components\TextInput::make('counter_bw')->label('BW Sekarang')->numeric()->required()->reactive()
-                            ->afterStateUpdated(fn ($state, $get, $set) => $set('usage_bw', (int)$state - (int)$get('bw_lalu'))),
+                            ->afterStateUpdated(fn ($state, $get, $set) => $set('usage_bw', (int) $state - (int) $get('bw_lalu'))),
                         Forms\Components\TextInput::make('usage_bw')->label('Usage BW')->numeric()->readOnly(),
 
                         Forms\Components\TextInput::make('color_lalu')->label('Color Lalu')->numeric()->readOnly(),
                         Forms\Components\TextInput::make('counter_color')->label('Color Sekarang')->numeric()->reactive()
-                            ->afterStateUpdated(fn ($state, $get, $set) => $set('usage_color', (int)$state - (int)$get('color_lalu'))),
+                            ->afterStateUpdated(fn ($state, $get, $set) => $set('usage_color', (int) $state - (int) $get('color_lalu'))),
                         Forms\Components\TextInput::make('usage_color')->label('Usage Color')->numeric()->readOnly(),
                     ])->columns(3),
 
@@ -92,11 +94,11 @@ class ServiceLogResource extends Resource
                     ->schema([
                         Forms\Components\Textarea::make('kerusakan')->required(),
                         Forms\Components\Textarea::make('perbaikan')->required(),
-                        
+
                         Forms\Components\Select::make('technician_id')
                             ->relationship('technician', 'nama_technician')
                             ->label('Teknisi Utama')->required(),
-                        
+
                         Forms\Components\TextInput::make('nama_teknisi_manual')
                             ->label('Teknisi Partner (Manual)'),
                     ])->columns(2),
@@ -109,7 +111,7 @@ class ServiceLogResource extends Resource
             ->headerActions([
                 // 1. Tombol Rekap Rayon
                 Tables\Actions\Action::make('cetak_rekap_rayon')
-                    ->label('Rekap Rayon')
+                    ->label('Cetak Laporan  Perayon')
                     ->icon('heroicon-o-map')
                     ->color('info')
                     ->form([
@@ -152,13 +154,13 @@ class ServiceLogResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('machine.deployment.customer.nama_customer')
                     ->label('Customer / Model')
-                    ->description(fn ($record): string => "Model: " . ($record->machine?->tipe_model ?? '-'))
+                    ->description(fn ($record): string => 'Model: '.($record->machine?->tipe_model ?? '-'))
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('machine.serial_number')
                     ->label('SN / Tgl Pasang')
-                    ->description(fn ($record) => "Instal: " . ($record->machine?->deployment?->tanggal_instal?->format('d/m/Y') ?? '-'))
+                    ->description(fn ($record) => 'Instal: '.($record->machine?->deployment?->tanggal_instal?->format('d/m/Y') ?? '-'))
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('tanggal')
@@ -169,25 +171,23 @@ class ServiceLogResource extends Resource
                 Tables\Columns\TextColumn::make('counter_bw')
                     ->label('Counter (BW/CL)')
                     ->html()
-                    ->formatStateUsing(fn ($record) => 
-                        "BW: " . number_format($record->counter_bw) . "<br>CL: " . number_format($record->counter_color)
+                    ->formatStateUsing(fn ($record) => 'BW: '.number_format($record->counter_bw).'<br>CL: '.number_format($record->counter_color)
                     ),
 
                 Tables\Columns\TextColumn::make('usage_bw')
                     ->label('Usage (BW/CL)')
                     ->html()
-                    ->formatStateUsing(fn ($record) => 
-                        "<span style='color:#3b82f6; font-weight:bold;'>BW: " . number_format($record->usage_bw) . "</span><br>" .
-                        "<span style='color:#ef4444; font-weight:bold;'>CL: " . number_format($record->usage_color) . "</span>"
+                    ->formatStateUsing(fn ($record) => "<span style='color:#3b82f6; font-weight:bold;'>BW: ".number_format($record->usage_bw).'</span><br>'.
+                        "<span style='color:#ef4444; font-weight:bold;'>CL: ".number_format($record->usage_color).'</span>'
                     ),
 
                 Tables\Columns\TextColumn::make('tipe_kunjungan')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'RN' => 'success', 'CM' => 'danger', 'RM' => 'info', 
+                        'RN' => 'success', 'CM' => 'danger', 'RM' => 'info',
                         'RR' => 'amber', 'JK' => 'primary', default => 'gray',
                     }),
-                
+
                 Tables\Columns\TextColumn::make('technician.nama_technician')
                     ->label('Teknisi'),
             ])

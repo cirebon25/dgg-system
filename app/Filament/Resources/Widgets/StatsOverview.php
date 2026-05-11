@@ -5,14 +5,15 @@ namespace App\Filament\Widgets;
 use App\Models\Customer;
 use App\Models\Machine;
 use App\Models\ServiceLog; // WAJIB ADA INI
+use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Carbon\Carbon;
 
 class StatsOverview extends BaseWidget
 {
     protected static ?int $sort = 1;
-    protected int | string | array $columnSpan = 'full';
+
+    protected int|string|array $columnSpan = 'full';
 
     protected function getStats(): array
     {
@@ -33,15 +34,15 @@ class StatsOverview extends BaseWidget
                 ->color('info'),
 
             // Statistik Pemakaian Color
-            Stat::make('Usage Color (' . Carbon::now()->format('M') . ')', 
-                number_format(ServiceLog::whereMonth('tanggal', now()->month)->sum('usage_color')) . ' Lbr')
+            Stat::make('Usage Color ('.Carbon::now()->format('M').')',
+                number_format(ServiceLog::whereMonth('tanggal', now()->month)->sum('usage_color')).' Lbr')
                 ->description('Total cetak warna bulan ini')
                 ->descriptionIcon('heroicon-m-presentation-chart-line')
                 ->color('warning'),
 
             // Statistik Pemakaian BW
-            Stat::make('Usage BW (' . Carbon::now()->format('M') . ')', 
-                number_format(ServiceLog::whereMonth('tanggal', now()->month)->sum('usage_bw')) . ' Lbr')
+            Stat::make('Usage BW ('.Carbon::now()->format('M').')',
+                number_format(ServiceLog::whereMonth('tanggal', now()->month)->sum('usage_bw')).' Lbr')
                 ->description('Total cetak hitam-putih')
                 ->descriptionIcon('heroicon-m-document-text')
                 ->color('gray'),

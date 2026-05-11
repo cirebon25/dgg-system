@@ -11,9 +11,12 @@ use Illuminate\Support\Facades\DB;
 class PartLifespanAlert extends BaseWidget
 {
     protected static ?string $heading = '🚨 Peringatan Umur Part (>90%)';
+
     protected static bool $isLazy = true;
+
     protected static ?int $sort = 2;
-    protected int | string | array $columnSpan = 'full';
+
+    protected int|string|array $columnSpan = 'full';
 
     // Solusi Error TypeError: Return value must be string
     public function getTableRecordKey($record): string
@@ -43,16 +46,19 @@ class PartLifespanAlert extends BaseWidget
                 Tables\Columns\TextColumn::make('usage_percentage')
                     ->label('Pemakaian')
                     ->getStateUsing(function ($record) {
-                        if ($record->limit_usage <= 0) return '0%';
+                        if ($record->limit_usage <= 0) {
+                            return '0%';
+                        }
                         $percent = ($record->current_usage / $record->limit_usage) * 100;
-                        return number_format($percent, 0) . '%';
+
+                        return number_format($percent, 0).'%';
                     })
                     ->badge()
-                    ->color(fn ($state) => (int)$state >= 95 ? 'danger' : 'warning'),
+                    ->color(fn ($state) => (int) $state >= 95 ? 'danger' : 'warning'),
 
                 Tables\Columns\TextColumn::make('remaining')
                     ->label('Sisa Umur')
-                    ->getStateUsing(fn ($record) => ($record->limit_usage - $record->current_usage) . ' Klik')
+                    ->getStateUsing(fn ($record) => ($record->limit_usage - $record->current_usage).' Klik')
                     ->icon('heroicon-m-clock'),
 
                 Tables\Columns\TextColumn::make('machine.deployment.customer.nama_customer')

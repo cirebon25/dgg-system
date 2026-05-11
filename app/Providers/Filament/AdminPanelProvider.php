@@ -42,8 +42,8 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 Widgets\AccountWidget::class,
                 \App\Filament\Widgets\DeploymentChart::class,
-                \App\Filament\Widgets\StatsOverview::class, 
-                \App\Filament\Widgets\StockAlert::class,   
+                \App\Filament\Widgets\StatsOverview::class,
+                \App\Filament\Widgets\StockAlert::class,
                 \App\Filament\Widgets\RecentServiceLogs::class,
                 \App\Filament\Widgets\LowStockParts::class,
                 \App\Filament\Widgets\TopSpareparts::class,

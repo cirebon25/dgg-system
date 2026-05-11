@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-    Schema::create('spareparts', function (Blueprint $table) {
-        $table->id();
-        $table->string('nama_sparepart');
-        $table->integer('stok')->default(0);
-        $table->decimal('harga_beli', 15, 2)->nullable(); // Opsional buat audit
-        $table->timestamps();
-    });
+        Schema::create('spareparts', function (Blueprint $table) {
+            $table->id();
+            $table->string('nama_sparepart');
+            $table->integer('stok')->default(0);
+            $table->decimal('harga_beli', 15, 2)->nullable(); // Opsional buat audit
+            $table->timestamps();
+        });
     }
 
     /**

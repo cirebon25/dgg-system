@@ -8,10 +8,9 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\Summarizers\Count;
-use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 
 class CustomerResource extends Resource
 {
@@ -29,7 +28,7 @@ class CustomerResource extends Resource
                     ->relationship('rayon', 'nama_rayon')
                     ->required()
                     ->preload(),
-                    
+
                 Forms\Components\TextInput::make('nama_customer')
                     ->label('Nama Instansi / Perorangan')
                     ->required(),
@@ -54,10 +53,10 @@ class CustomerResource extends Resource
                     ->badge()
                     ->color(fn (string $state): string => match (trim(strtolower($state))) {
                         'barat daya' => 'info',  // 🔴 Merah
-                        'barat'      => 'success', // 🟢 Hijau
-                        'utara'      => 'warning', // 🟡 Kuning
-                        'timur'      => 'danger',    // 🔵 Biru
-                        default      => 'gray',    // ⚪ Abu-abu jika tidak cocok
+                        'barat' => 'success', // 🟢 Hijau
+                        'utara' => 'warning', // 🟡 Kuning
+                        'timur' => 'danger',    // 🔵 Biru
+                        default => 'gray',    // ⚪ Abu-abu jika tidak cocok
                     }) // ✨ SUDAH DITUTUP DI SINI BOSS
                     ->sortable()
                     ->searchable(), // Tambah koma di akhir jika di dalam array columns,
@@ -78,7 +77,7 @@ class CustomerResource extends Resource
                 // MENAMPILKAN JUMLAH MESIN YANG DISEWA
                 TextColumn::make('deployments_count')
                     ->label('Unit Terpasang')
-                    ->counts('deployments') 
+                    ->counts('deployments')
                     ->suffix(' Unit')
                     ->badge()
                     ->color(fn (int $state): string => $state > 0 ? 'success' : 'gray'),

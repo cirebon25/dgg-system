@@ -16,7 +16,7 @@ class MachineLocationStats extends BaseWidget
 
     protected static ?int $sort = 3;
 
-    protected int | string | array $columnSpan = 1;
+    protected int|string|array $columnSpan = 1;
 
     public function table(Table $table): Table
     {
@@ -34,7 +34,7 @@ class MachineLocationStats extends BaseWidget
                     ->label('Kota / Kabupaten')
                     ->icon('heroicon-m-map-pin')
                     ->iconColor('danger'),
-                
+
                 Tables\Columns\TextColumn::make('total_unit')
                     ->label('Unit Terpasang')
                     ->badge()
@@ -42,6 +42,7 @@ class MachineLocationStats extends BaseWidget
                     ->suffix(' Mesin'),
             ]);
     }
+
     public function getTableRecordKey($record): string
     {
         return (string) $record->kota;

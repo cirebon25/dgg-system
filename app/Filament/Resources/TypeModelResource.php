@@ -13,8 +13,11 @@ use Filament\Tables\Table;
 class TypeModelResource extends Resource
 {
     protected static ?string $model = TypeModel::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-group';
+
     protected static ?string $navigationGroup = 'Master Data'; // Mengelompokkan ke Master Data
+
     protected static ?string $modelLabel = 'Tipe Model';
 
     public static function form(Form $form): Form
@@ -28,7 +31,7 @@ class TypeModelResource extends Resource
                             ->placeholder('Contoh: iR 2525 atau M 2040 dn')
                             ->required()
                             ->unique(ignoreRecord: true),
-                    ])
+                    ]),
             ]);
     }
 

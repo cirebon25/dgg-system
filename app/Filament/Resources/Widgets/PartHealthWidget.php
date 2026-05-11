@@ -6,7 +6,6 @@ use App\Models\MachinePartHealth;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Illuminate\Database\Eloquent\Builder;
 
 class PartHealthWidget extends BaseWidget
 {
@@ -17,7 +16,7 @@ class PartHealthWidget extends BaseWidget
     protected static ?int $sort = 3;
 
     // Lebar Widget (full agar enak dibaca)
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     public function table(Table $table): Table
     {
@@ -38,14 +37,14 @@ class PartHealthWidget extends BaseWidget
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('current_usage')
-                ->label('Pemakaian')
-                ->numeric()
-                ->badge()
-                ->color(fn (int $state): string => match (true) {
-                    $state >= 80000 => 'danger',
-                    $state >= 40000 => 'warning',
-                    default => 'success', // Data 0 akan berwarna HIJAU
-                }),
+                    ->label('Pemakaian')
+                    ->numeric()
+                    ->badge()
+                    ->color(fn (int $state): string => match (true) {
+                        $state >= 80000 => 'danger',
+                        $state >= 40000 => 'warning',
+                        default => 'success', // Data 0 akan berwarna HIJAU
+                    }),
 
                 Tables\Columns\TextColumn::make('last_replaced_counter')
                     ->label('Counter Terakhir Ganti')

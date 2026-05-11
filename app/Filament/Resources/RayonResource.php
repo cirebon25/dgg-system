@@ -13,7 +13,7 @@ use Filament\Tables\Table;
 class RayonResource extends Resource
 {
     protected static ?string $navigationLabel = 'Rayon';
-    
+
     protected static ?string $model = Rayon::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-map-pin';

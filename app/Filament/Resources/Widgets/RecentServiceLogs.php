@@ -10,9 +10,12 @@ use Filament\Widgets\TableWidget as BaseWidget;
 class RecentServiceLogs extends BaseWidget
 {
     protected static ?string $heading = '🔧 Aktivitas Servis Terakhir';
+
     protected static bool $isLazy = true;
+
     protected static ?int $sort = 7;
-    protected int | string | array $columnSpan = 'full'; // Biar lebar di bawah
+
+    protected int|string|array $columnSpan = 'full'; // Biar lebar di bawah
 
     public function table(Table $table): Table
     {

@@ -14,11 +14,11 @@ class MachineFactory extends Factory
      *
      * @return array<string, mixed>
      */
-   public function definition(): array
+    public function definition(): array
     {
-    return [
-        'nama_model' => fake()->randomElement(['iR 2525', 'iRA 4545', 'iRA 6275', 'Sindoh N610']),
-        'brand' => 'Canon',
-    ];
+        return [
+            'nama_model' => fake()->randomElement(['iR 2525', 'iRA 4545', 'iRA 6275', 'Sindoh N610']),
+            'brand' => 'Canon',
+        ];
     }
 }

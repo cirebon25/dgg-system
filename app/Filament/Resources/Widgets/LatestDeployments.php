@@ -10,14 +10,16 @@ use Filament\Widgets\TableWidget as BaseWidget;
 class LatestDeployments extends BaseWidget
 {
     protected static ?int $sort = 3;
-    protected int | string | array $columnSpan = 'full';
+
+    protected int|string|array $columnSpan = 'full';
+
     protected static ?string $heading = '10 Penempatan Mesin Terakhir'; // Judulnya juga kita ganti
 
     public function table(Table $table): Table
     {
         return $table
             // Angka 5 diganti jadi 10 di sini
-            ->query(Deployment::query()->latest()->limit(10)) 
+            ->query(Deployment::query()->latest()->limit(10))
             ->columns([
                 Tables\Columns\TextColumn::make('customer.nama_customer')
                     ->label('Nama Customer')

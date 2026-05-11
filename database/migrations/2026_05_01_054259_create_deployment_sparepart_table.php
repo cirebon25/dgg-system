@@ -12,11 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('deployment_sparepart', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('deployment_id')->constrained()->cascadeOnDelete();
-    $table->foreignId('sparepart_id')->constrained()->cascadeOnDelete();
-    $table->integer('jumlah')->default(1);
-    $table->timestamps();
+            $table->id();
+            $table->foreignId('deployment_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('sparepart_id')->constrained()->cascadeOnDelete();
+            $table->integer('jumlah')->default(1);
+            $table->timestamps();
         });
     }
 

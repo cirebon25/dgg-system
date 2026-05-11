@@ -16,7 +16,7 @@ class TopSpareparts extends BaseWidget
 
     protected static ?int $sort = 4;
 
-    protected int | string | array $columnSpan = 1;
+    protected int|string|array $columnSpan = 1;
 
     public function table(Table $table): Table
     {
@@ -33,13 +33,13 @@ class TopSpareparts extends BaseWidget
                 Tables\Columns\TextColumn::make('sparepart.nama_sparepart')
                     ->label('Nama Barang')
                     ->weight('bold'),
-                
+
                 Tables\Columns\TextColumn::make('total_out')
                     ->label('Total Keluar')
                     ->badge()
                     ->color('info')
                     ->suffix(' Unit'),
-                
+
                 Tables\Columns\TextColumn::make('sparepart.stok')
                     ->label('Sisa Gudang')
                     ->numeric()

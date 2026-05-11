@@ -15,7 +15,7 @@ class LatestCustomers extends BaseWidget
 
     protected static ?int $sort = 5;
 
-    protected int | string | array $columnSpan = 1;
+    protected int|string|array $columnSpan = 1;
 
     public function table(Table $table): Table
     {
@@ -27,12 +27,12 @@ class LatestCustomers extends BaseWidget
                 Tables\Columns\TextColumn::make('nama_customer')
                     ->label('Nama Customer')
                     ->searchable(),
-                
+
                 Tables\Columns\TextColumn::make('kota')
                     ->label('Wilayah')
                     ->badge()
                     ->color('gray'),
-                
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Tgl Install')
                     ->dateTime('d M Y')

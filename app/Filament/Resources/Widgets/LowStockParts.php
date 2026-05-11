@@ -19,7 +19,7 @@ class LowStockParts extends BaseWidget
     protected static bool $isLazy = true;
 
     // 4. LEBAR SETENGAH LAYAR
-    protected int | string | array $columnSpan = 1;
+    protected int|string|array $columnSpan = 1;
 
     public function table(Table $table): Table
     {
@@ -33,14 +33,14 @@ class LowStockParts extends BaseWidget
                     ->label('Nama Barang')
                     ->weight('bold') // Biar lebih kebaca
                     ->searchable(),
-                
+
                 Tables\Columns\TextColumn::make('stok')
                     ->label('Sisa')
                     ->badge()
                     ->color('danger')
                     ->suffix(' Unit')
                     ->alignCenter(),
-                
+
                 Tables\Columns\TextColumn::make('code_part')
                     ->label('Kode Part')
                     ->copyable() // Bonus: Biar Boss bisa klik & copy kode part-nya

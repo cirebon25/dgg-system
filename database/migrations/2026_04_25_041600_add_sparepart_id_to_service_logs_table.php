@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-    Schema::table('service_logs', function (Blueprint $table) {
-        $table->foreignId('sparepart_id')->nullable()->constrained('spareparts');
-        $table->integer('jumlah_sparepart')->default(0);
-    });
+        Schema::table('service_logs', function (Blueprint $table) {
+            $table->foreignId('sparepart_id')->nullable()->constrained('spareparts');
+            $table->integer('jumlah_sparepart')->default(0);
+        });
     }
 
     /**

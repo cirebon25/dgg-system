@@ -17,7 +17,7 @@ class DeploymentResource extends Resource
     protected static ?string $model = Deployment::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-truck';
-    
+
     protected static ?string $navigationGroup = 'Transaksi';
 
     protected static ?string $pluralLabel = 'Pemasangan Mesin';
@@ -69,8 +69,8 @@ class DeploymentResource extends Resource
                             ->label('Counter Awal Color (CL)')
                             ->numeric()
                             ->default(0)
-                            ->required(),  
-                            
+                            ->required(),
+
                         Forms\Components\TextInput::make('volt')
                             ->label('Tegangan Listrik (Volt)')
                             ->numeric()
@@ -89,8 +89,8 @@ class DeploymentResource extends Resource
                     ->description('Item yang disertakan dalam pengiriman.')
                     ->schema([
                         // ✨ PERBAIKAN DI SINI: Gunakan 'spareparts' agar sinkron dengan Model
-                        Forms\Components\Repeater::make('spareparts') 
-                            ->relationship('spareparts') 
+                        Forms\Components\Repeater::make('spareparts')
+                            ->relationship('spareparts')
                             ->defaultItems(0)
                             ->schema([
                                 Forms\Components\Select::make('sparepart_id')

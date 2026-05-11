@@ -24,6 +24,6 @@ return new class extends Migration
         Schema::table('service_logs', function (Blueprint $table) {
             $table->foreignId('sparepart_id')->nullable()->constrained()->onDelete('set null');
             $table->integer('jumlah_sparepart')->default(0);
-         });
+        });
     }
 };

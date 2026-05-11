@@ -34,7 +34,7 @@ class MachineImporter extends Importer
 
     public static function resolveRecord(): ?Machine
     {
-        // LOGIKA BIAR TIDAK DUPLIKAT: 
+        // LOGIKA BIAR TIDAK DUPLIKAT:
         // Jika SN sudah ada di database, sistem akan mengupdate datanya.
         // Jika belum ada, sistem akan memasukkan data baru.
         return Machine::firstOrNew([
@@ -44,10 +44,10 @@ class MachineImporter extends Importer
 
     public static function getCompletedNotificationBody(Import $import): string
     {
-        $body = 'Impor data mesin selesai. ' . number_format($import->successful_rows) . ' baris berhasil diimpor.';
+        $body = 'Impor data mesin selesai. '.number_format($import->successful_rows).' baris berhasil diimpor.';
 
         if ($failedRowsCount = $import->getFailedRowsCount()) {
-            $body .= ' ' . number_format($failedRowsCount) . ' baris gagal dimasukkan.';
+            $body .= ' '.number_format($failedRowsCount).' baris gagal dimasukkan.';
         }
 
         return $body;

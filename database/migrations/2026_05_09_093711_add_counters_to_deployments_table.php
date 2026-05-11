@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('service_logs', function (Blueprint $table) {
-            $table->integer('usage_color')->default(0)->after('counter_color');
-            $table->integer('usage_bw')->default(0)->after('counter_bw');
-        });
+    Schema::table('deployments', function (Blueprint $table) {
+        $table->integer('counter_bw')->default(0)->after('technician_id');
+        $table->integer('counter_color')->default(0)->after('counter_bw');
+    });
     }
 
     /**
@@ -22,7 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('service_logs', function (Blueprint $table) {
+        Schema::table('deployments', function (Blueprint $table) {
             //
         });
     }
