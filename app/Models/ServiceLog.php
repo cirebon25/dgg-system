@@ -13,7 +13,7 @@ class ServiceLog extends Model
     protected $fillable = [
         'machine_id', 'technician_id', 'tanggal', 'jam_mulai', 'jam_selesai',
         'tipe_kunjungan', 'counter_bw', 'usage_bw', 'counter_color', 'usage_color',
-        'kerusakan', 'perbaikan', 'sparepart_id', 'jumlah_sparepart'
+        'kerusakan', 'perbaikan', 'sparepart_id', 'jumlah_sparepart', 'customer_id',
     ];
 
     protected $casts = [

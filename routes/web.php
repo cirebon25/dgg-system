@@ -228,11 +228,9 @@ Route::get('/cetak-alokasi-mesin', function () {
 })->name('cetak.alokasi');
 
 Route::get('/cetak-tukar-guling', function () {
-    // Kueri diperbaiki: Service Log -> Machine -> Deployment -> Customer
     $data = DB::table('service_logs')
         ->join('machines', 'service_logs.machine_id', '=', 'machines.id')
-        ->join('deployments', 'machines.id', '=', 'deployments.machine_id') // Jembatan ke Customer
-        ->join('customers', 'deployments.customer_id', '=', 'customers.id')
+        ->leftJoin('customers', 'service_logs.customer_id', '=', 'customers.id') // Pakai leftJoin biar aman
         ->join('technicians', 'service_logs.technician_id', '=', 'technicians.id')
         ->where('service_logs.perbaikan', 'LIKE', '%Tukar Guling%') 
         ->select(
@@ -246,9 +244,6 @@ Route::get('/cetak-tukar-guling', function () {
         )
         ->orderBy('service_logs.tanggal', 'desc')
         ->get();
-
-    // Bagian HTML ke bawah tetap sama seperti sebelumnya...
-    // (Gunakan kode HTML Full yang sudah saya berikan di pesan sebelumnya)
 
     $html = "
     <html>
