@@ -45,6 +45,7 @@ class ServiceLogResource extends Resource
                                 'RN' => 'RN (Intal Baru)', 'CM' => 'CM (Call Maintenance)',
                                 'RM' => 'RM (Kunjungan Rutin)', 'RR' => 'RR (Ganti Mesin)',
                                 'JK' => 'JK (Jaringan komputer)', 'L' => 'L (Lanjut)',
+                                'TN' => 'TN (Call Toner )',
                             ])->required(),
 
                         Forms\Components\DatePicker::make('tanggal')
@@ -99,8 +100,9 @@ class ServiceLogResource extends Resource
                             ->relationship('technician', 'nama_technician')
                             ->label('Teknisi Utama')->required(),
 
-                        Forms\Components\TextInput::make('nama_teknisi_manual')
-                            ->label('Teknisi Partner (Manual)'),
+                       Forms\Components\TextInput::make('nama_teknisi_2')
+                            ->label('Teknisi Pembantu (Ketik Manual)')
+                            ->placeholder('Contoh: Rudi / Ahmad'),
                     ])->columns(2),
             ]);
     }
@@ -183,9 +185,15 @@ class ServiceLogResource extends Resource
 
                 Tables\Columns\TextColumn::make('tipe_kunjungan')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'RN' => 'success', 'CM' => 'danger', 'RM' => 'info',
-                        'RR' => 'amber', 'JK' => 'primary', default => 'gray',
+                   ->color(fn (string $state): string => match ($state) {
+                        'CM' => 'danger',   // Merah Tua
+                        'RN' => 'success',  // Hijau
+                        'RM' => 'info',     // Biru
+                        'TN' => 'warning',  // Kuning
+                        'JK' => 'primary',  // Ungu (Warna Utama Filament)
+                        'L'  => 'warning',  // Oren (Di Filament warning itu antara Kuning/Oren)
+                        'RR' => 'rose',     // Merah Muda (Tersedia di Filament v3)
+                        default => 'gray',
                     }),
 
                 Tables\Columns\TextColumn::make('technician.nama_technician')

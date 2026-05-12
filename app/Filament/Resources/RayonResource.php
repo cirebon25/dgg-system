@@ -13,52 +13,67 @@ use Filament\Tables\Table;
 class RayonResource extends Resource
 {
     protected static ?string $navigationLabel = 'Rayon';
-
     protected static ?string $model = Rayon::class;
-
     protected static ?string $navigationIcon = 'heroicon-o-map-pin';
 
-    // Pengaturan Form Input (Saat Tambah Data)
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('nama_rayon')
-                    ->required()
-                    ->maxLength(255),
+                Forms\Components\Section::make('Setting Wilayah')
+                    ->description('Tentukan nama wilayah dan tim teknisi yang bertugas.')
+                    ->schema([
+                        Forms\Components\TextInput::make('nama_rayon')
+                            ->label('Nama Rayon')
+                            ->required()
+                            ->maxLength(255),
+
+                        // Fokus ke relasi JAMAK (technicians)
+                        Forms\Components\Select::make('technicians')
+                            ->label('Tim Teknisi Penanggung Jawab')
+                            ->relationship('technicians', 'nama_technician')
+                            ->multiple() // Wajib untuk Many-to-Many
+                            ->preload()
+                            ->searchable()
+                            ->required(),
+                    ])->columns(2),
             ]);
     }
 
-    // Pengaturan Tabel (Saat Lihat Daftar Data)
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('nama_rayon')
+                    ->label('Wilayah Rayon')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->weight('bold'),
+
+                // Menampilkan daftar nama teknisi dengan badge biru
+                Tables\Columns\TextColumn::make('technicians.nama_technician')
+                    ->label('Tim Teknisi')
+                    ->badge()
+                    ->color('info')
+                    ->separator(','),
+                
                 Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->label('Tanggal Dibuat'),
+                    ->dateTime('d/m/Y')
+                    ->label('Dibuat Pada')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 //
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
     }
 
     public static function getPages(): array

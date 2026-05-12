@@ -15,4 +15,9 @@ class Technician extends Model
     {
         return $this->belongsTo(Rayon::class);
     }
+
+    public function rayons()
+    {
+    return $this->belongsToMany(Rayon::class, 'rayon_technician');
+    }
 }

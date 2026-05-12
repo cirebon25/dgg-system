@@ -20,7 +20,7 @@ class Deployment extends Model
         'keterangan',
         'counter_bw',
         'counter_color',
-        'volt', // Pastikan kecil semua agar aman di database
+        'volt', 
     ];
 
     protected $casts = [
@@ -28,15 +28,31 @@ class Deployment extends Model
     ];
 
     /**
-     * Logika Otomatis Sinkronisasi Status Mesin
+     * Logika Otomatis: Sinkronisasi Status Mesin & Auto Create Service Log
      */
     protected static function booted()
     {
-        // 1. Saat Deployment BARU DIBUAT -> Ubah Status Mesin jadi 'Rented'
+        // 1. SAAT DEPLOYMENT BARU DIBUAT
         static::created(function ($deployment) {
+            // A. Ubah Status Mesin jadi 'Rented'
             if ($deployment->machine) {
                 $deployment->machine->update(['status' => 'Rented']);
             }
+
+            // B. OTOMATIS MASUK KE SERVICE LOG (RN)
+            \App\Models\ServiceLog::create([
+                'machine_id'      => $deployment->machine_id,
+                'customer_id'     => $deployment->customer_id,
+                'technician_id'   => $deployment->technician_id,
+                'tanggal'         => $deployment->tanggal_instal,
+                'tipe_kunjungan'  => 'RN', // <--- Sesuai permintaan Boss
+                'counter_bw'      => $deployment->counter_bw ?? 0,
+                'counter_color'   => $deployment->counter_color ?? 0,
+                'usage_bw'        => 0,
+                'usage_color'     => 0,
+                'perbaikan'       => "INSTALASI UNIT BARU (RN) - NO KONTRAK: " . $deployment->no_kontrak,
+                'kerusakan'       => 'PEMASANGAN AWAL',
+            ]);
         });
 
         // 2. Saat Deployment DIUPDATE
@@ -70,27 +86,7 @@ class Deployment extends Model
             ->withTimestamps();
     }
 
-    /**
-     * RELASI: Milik Customer
-     */
-    public function customer(): BelongsTo
-    {
-        return $this->belongsTo(Customer::class);
-    }
-
-    /**
-     * RELASI: Menggunakan Mesin
-     */
-    public function machine(): BelongsTo
-    {
-        return $this->belongsTo(Machine::class);
-    }
-
-    /**
-     * RELASI: Dipasang oleh Teknisi
-     */
-    public function technician(): BelongsTo
-    {
-        return $this->belongsTo(Technician::class);
-    }
+    public function customer(): BelongsTo { return $this->belongsTo(Customer::class); }
+    public function machine(): BelongsTo { return $this->belongsTo(Machine::class); }
+    public function technician(): BelongsTo { return $this->belongsTo(Technician::class); }
 }

@@ -12,8 +12,9 @@ class ServiceLog extends Model
 
     protected $fillable = [
         'machine_id', 
-        'customer_id', // SUDAH BERSIH & DITAMBAHKAN
+        'customer_id', 
         'technician_id', 
+        'nama_teknisi_2',
         'tanggal', 
         'jam_mulai', 
         'jam_selesai',
@@ -32,47 +33,19 @@ class ServiceLog extends Model
         'tanggal' => 'date',
     ];
 
-    protected static function booted()
-    {
-        static::created(function ($serviceLog) {
-            // JEMBATAN OTOMATIS: Update angka pemakaian part setiap ada servis baru
-            $healthRecords = \App\Models\MachinePartHealth::where('machine_id', $serviceLog->machine_id)->get();
-
-            foreach ($healthRecords as $health) {
-                // Pemakaian = Counter Sekarang (BW) - Counter saat terakhir ganti
-                $currentCounter = $serviceLog->counter_bw ?? 0;
-                $usage = $currentCounter - $health->last_replaced_counter;
-
-                $health->update([
-                    'current_usage' => $usage > 0 ? $usage : 0,
-                ]);
-            }
-        });
-    }
-
-    // RELASI KE CUSTOMER (Wajib ada buat Laporan Tukar Guling)
-    public function customer(): BelongsTo
-    {
-        return $this->belongsTo(Customer::class);
-    }
-
-    public function machine(): BelongsTo
-    {
-        return $this->belongsTo(Machine::class);
-    }
-
+    // Relasi Teknisi Utama
     public function technician(): BelongsTo
     {
-        return $this->belongsTo(Technician::class);
+        return $this->belongsTo(Technician::class, 'technician_id');
     }
 
-    public function sparepart(): BelongsTo
+    // Relasi Teknisi Kedua (Partner)
+    public function technician2(): BelongsTo
     {
-        return $this->belongsTo(Sparepart::class);
+        return $this->belongsTo(Technician::class, 'technician_2_id');
     }
 
-    public function serviceLogSpareparts()
-    {
-        return $this->hasMany(ServiceLogSparepart::class);
-    }
+    public function customer(): BelongsTo { return $this->belongsTo(Customer::class); }
+    public function machine(): BelongsTo { return $this->belongsTo(Machine::class); }
+    public function serviceLogSpareparts() { return $this->hasMany(ServiceLogSparepart::class); }
 }
