@@ -17,4 +17,9 @@ class Rayon extends Model
     {
         return $this->hasMany(Customer::class);
     }
+
+    public function technician()
+    {
+    return $this->belongsTo(Technician::class);
+    }
 }

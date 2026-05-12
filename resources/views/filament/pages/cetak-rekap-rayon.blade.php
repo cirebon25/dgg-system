@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Laporan Operasional DGG</title>
+    <title>Laporan Operasional DGG - {{ $namaBulan }} {{ $year }}</title>
     <style>
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -21,17 +21,22 @@
         .header h2 { margin: 0; text-transform: uppercase; font-size: 18px; }
         .header p { margin: 5px 0 0 0; font-size: 12px; font-weight: bold; }
 
+        /* HEADER RAYON: Nama Wilayah & Info Teknisi */
         .rayon-header {
-            background-color: #74e969; color: white; padding: 6px 10px;
+            background-color: #1e293b; color: white; padding: 8px 12px;
             font-weight: bold; font-size: 11px; margin-top: 20px;
+            display: flex; justify-content: space-between; align-items: center;
             text-transform: uppercase; -webkit-print-color-adjust: exact;
         }
+        .rayon-meta { color: #facc15; font-size: 10px; }
 
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 5px; }
         th, td { border: 1px solid #000; padding: 5px 3px; text-align: center; vertical-align: middle; word-wrap: break-word; }
         th { background-color: #f2f2f2 !important; font-size: 8px; text-transform: uppercase; -webkit-print-color-adjust: exact; }
         
-        /* Badge Status */
+        .text-left { text-align: left; padding-left: 5px; }
+
+        /* Badge Status Kunjungan */
         .badge { padding: 2px 4px; border-radius: 3px; font-weight: bold; color: white !important; display: inline-block; font-size: 8px; -webkit-print-color-adjust: exact; }
         .bg-success { background-color: #16a34a !important; }
         .bg-info { background-color: #2563eb !important; }
@@ -41,116 +46,131 @@
 
         .footer { margin-top: 30px; width: 100%; }
         .ttd-container { float: right; width: 220px; text-align: center; }
-        .text-left { text-align: left; }
 
         @media print {
             @page { size: landscape; margin: 0.8cm; }
-            .no-print { display: none; }
+            .rayon-box { page-break-inside: avoid; }
         }
     </style>
 </head>
 <body onload="window.print()">
     
-    <div class="title-atas-kanan">DGG Cirebon | Periode: {{ $namaBulan }} {{ $year }}</div>
+    <div class="title-atas-kanan">DGG Cirebon | Cetak: {{ date('d/m/Y H:i') }}</div>
 
     <div class="header">
         <h2>DINAMIKA GLOBAL GEMILANG (DGG)</h2>
-        <p>LAPORAN PENGERJAAN UNIT & MAINTENANCE PER RAYON</p>
+        <p>LAPORAN PENGERJAAN UNIT & MAINTENANCE PER RAYON ({{ strtoupper($namaBulan) }} {{ $year }})</p>
     </div>
 
     @foreach($rayons as $rayon)
-        <div class="rayon-header"> RAYON: {{ strtoupper($rayon->nama_rayon) }}</div>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 25px;">No</th>
-                    <th style="width: 60px;">Tanggal</th>
-                    <th style="width: 80px;">No. Kontrak</th>
-                    <th style="width: 70px;">SN Mesin</th>
-                    <th style="width: 130px;">Customer</th>
-                    <th style="width: 30px;">Tipe</th>
-                    <th style="width: 80px;">Counter Akhir</th>
-                    <th style="width: 70px;">Usage (Lbr)</th>
-                    <th style="width: 90px;">Sparepart</th>
-                    <th>Tindakan / Perbaikan</th>
-                    <th style="width: 70px;">Teknisi</th>
-                </tr>
-            </thead>
-            <tbody>
-                @php $no = 1; @endphp
-                @foreach($rayon->customers as $customer)
-                    @foreach($customer->deployments as $dep)
-                        @php
-                            $logs = \App\Models\ServiceLog::where('machine_id', $dep->machine_id)
-                                ->whereMonth('tanggal', $month)
-                                ->whereYear('tanggal', $year)
-                                ->with(['technician', 'serviceLogSpareparts.sparepart'])
-                                ->get();
-                        @endphp
+        @php
+            // Hitung populasi unit di rayon ini
+            $populasiUnit = 0;
+            foreach($rayon->customers as $c) {
+                $populasiUnit += $c->deployments->count();
+            }
+        @endphp
 
-                        @if($logs->isEmpty())
-                            {{-- BARIS UNIT NORMAL (TIDAK BOLEH PAKAI VARIABLE $log DI SINI) --}}
-                            <tr>
-                                <td>{{ $no++ }}</td>
-                                <td>-</td>
-                                <td>{{ $dep->no_kontrak ?? '-' }}</td>
-                                <td>{{ $dep->machine->serial_number }}</td>
-                                <td class="text-left"><strong>{{ $customer->nama_customer }}</strong></td>
-                                <td>-</td>
-                                <td>-</td>
-                                <td>-</td>
-                                <td>-</td>
-                                <td style="color: #16a34a; font-style: italic;"> </td>
-                                <td>-</td>
-                            </tr>
-                        @else
-                            {{-- BARIS ADA SERVICE (VARIABLE $log HANYA ADA DI SINI) --}}
-                            @foreach($logs as $log)
-                            <tr>
-                                <td>{{ $no++ }}</td>
-                                <td>{{ \Carbon\Carbon::parse($log->tanggal)->format('d/m/Y') }}</td>
-                                <td>{{ $dep->no_kontrak ?? '-' }}</td>
-                                <td><strong>{{ $log->machine->serial_number }}</strong></td>
-                                <td class="text-left"><strong>{{ $customer->nama_customer }}</strong></td>
-                                <td>
-                                    <span class="badge 
-                                        {{ $log->tipe_kunjungan == 'RN' ? 'bg-success' : '' }}
-                                        {{ $log->tipe_kunjungan == 'RM' ? 'bg-info' : '' }}
-                                        {{ $log->tipe_kunjungan == 'CM' ? 'bg-danger' : '' }}
-                                        {{ $log->tipe_kunjungan == 'RR' ? 'bg-warning' : '' }}
-                                        {{ !in_array($log->tipe_kunjungan, ['RN','RM','CM','RR']) ? 'bg-gray' : '' }}">
-                                        {{ $log->tipe_kunjungan }}
-                                    </span>
-                                </td>
-                                {{-- WARNA FONT COUNTER --}}
-                                <td>
-                                    <span style="color: #e11d48;">CL: {{ number_format($log->counter_color) }}</span><br>
-                                    <span style="color: #2563eb;">BW: {{ number_format($log->counter_bw) }}</span>
-                                </td>
-                                {{-- WARNA FONT USAGE --}}
-                                <td>
-                                    <strong style="color: #e11d48;">CL: {{ number_format($log->usage_color) }}</strong><br>
-                                    <strong style="color: #2563eb;">BW: {{ number_format($log->usage_bw) }}</strong>
-                                </td>
-                                <td class="text-left">
-                                    @foreach($log->serviceLogSpareparts as $sp)
-                                        • {{ $sp->sparepart->nama_sparepart }} ({{ $sp->jumlah }})<br>
-                                    @endforeach
-                                </td>
-                                <td class="text-left">{{ $log->perbaikan }}</td>
-                                <td>{{ $log->technician->nama_technician }}</td>
-                            </tr>
-                            @endforeach
-                        @endif
+        <div class="rayon-box">
+            <div class="rayon-header">
+                <span>📍 RAYON: {{ strtoupper($rayon->nama_rayon) }}</span>
+                <span class="rayon-meta">
+                     {{-- TEKNISI: {{ $rayon->technician->nama_technician ?? ' ' }}  --}}
+                    |  POPULASI: {{ $populasiUnit }} UNIT
+                </span>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 25px;">No</th>
+                        <th style="width: 60px;">Tanggal</th>
+                        <th style="width: 80px;">No. Kontrak</th>
+                        <th style="width: 70px;">SN Mesin</th>
+                        <th style="width: 130px;">Customer</th>
+                        <th style="width: 35px;">Tipe</th>
+                        <th style="width: 80px;">Counter Akhir</th>
+                        <th style="width: 75px;">Usage (Lbr)</th>
+                        <th style="width: 90px;">Sparepart</th>
+                        <th>Tindakan / Perbaikan</th>
+                        <th style="width: 70px;">Teknisi Log</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php $no = 1; @endphp
+                    @foreach($rayon->customers as $customer)
+                        @foreach($customer->deployments as $dep)
+                            @php
+                                // Ambil histori servis di bulan terpilih
+                                $logs = \App\Models\ServiceLog::where('machine_id', $dep->machine_id)
+                                    ->whereMonth('tanggal', $month)
+                                    ->whereYear('tanggal', $year)
+                                    ->with(['technician', 'serviceLogSpareparts.sparepart'])
+                                    ->get();
+                            @endphp
+
+                            @if($logs->isEmpty())
+                                {{-- BARIS JIKA UNIT NORMAL / TIDAK ADA SERVIS --}}
+                                <tr>
+                                    <td>{{ $no++ }}</td>
+                                    <td style="color: #999;">-</td>
+                                    <td>{{ $dep->no_kontrak ?? '-' }}</td>
+                                    <td>{{ $dep->machine->serial_number }}</td>
+                                    <td class="text-left"><strong>{{ $customer->nama_customer }}</strong></td>
+                                    <td>-</td>
+                                    <td style="color: #999;">-</td>
+                                    <td style="color: #999;">-</td>
+                                    <td style="color: #999;">-</td>
+                                    <td style="color: #16a34a; font-style: italic;"></td>
+                                    <td style="color: #999;">-</td>
+                                </tr>
+                            @else
+                                {{-- BARIS JIKA ADA SERVIS --}}
+                                @foreach($logs as $log)
+                                <tr>
+                                    <td>{{ $no++ }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($log->tanggal)->format('d/m/Y') }}</td>
+                                    <td>{{ $dep->no_kontrak ?? '-' }}</td>
+                                    <td><strong>{{ $dep->machine->serial_number }}</strong></td>
+                                    <td class="text-left"><strong>{{ $customer->nama_customer }}</strong></td>
+                                    <td>
+                                        <span class="badge 
+                                            {{ $log->tipe_kunjungan == 'RN' ? 'bg-success' : '' }}
+                                            {{ $log->tipe_kunjungan == 'RM' ? 'bg-info' : '' }}
+                                            {{ $log->tipe_kunjungan == 'CM' ? 'bg-danger' : '' }}
+                                            {{ $log->tipe_kunjungan == 'RR' ? 'bg-warning' : '' }}
+                                            {{ !in_array($log->tipe_kunjungan, ['RN','RM','CM','RR']) ? 'bg-gray' : '' }}">
+                                            {{ $log->tipe_kunjungan }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span style="color: #e11d48;">CL: {{ number_format($log->counter_color) }}</span><br>
+                                        <span style="color: #2563eb;">BW: {{ number_format($log->counter_bw) }}</span>
+                                    </td>
+                                    <td>
+                                        <strong style="color: #e11d48;">CL: {{ number_format($log->usage_color) }}</strong><br>
+                                        <strong style="color: #2563eb;">BW: {{ number_format($log->usage_bw) }}</strong>
+                                    </td>
+                                    <td class="text-left">
+                                        @foreach($log->serviceLogSpareparts as $sp)
+                                            • {{ $sp->sparepart->nama_sparepart }} ({{ $sp->jumlah }})<br>
+                                        @endforeach
+                                    </td>
+                                    <td class="text-left">{{ $log->perbaikan }}</td>
+                                    <td>{{ $log->technician->nama_technician ?? '-' }}</td>
+                                </tr>
+                                @endforeach
+                            @endif
+                        @endforeach
                     @endforeach
-                @endforeach
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     @endforeach
 
     <div class="footer">
         <div class="ttd-container">
-            <p>Cirebon, {{ date('d F Y') }}</p>
+            <p>Indramayu, {{ date('d F Y') }}</p>
             <p>Admin Operasional,</p>
             <br><br><br>
             <p><strong>( ________________________ )</strong></p>
