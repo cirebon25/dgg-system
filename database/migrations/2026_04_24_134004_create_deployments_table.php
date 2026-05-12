@@ -21,6 +21,8 @@ return new class extends Migration
             $table->text('keterangan')->nullable();
             $table->integer('counter_bw')->default(0);
             $table->timestamps();
+            $table->integer('counter_bw')->default(0);
+            $table->integer('counter_color')->default(0); // PASTIKAN ADA BARIS INI
         });
     }
 

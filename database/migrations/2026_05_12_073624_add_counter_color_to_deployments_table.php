@@ -12,12 +12,7 @@ return new class extends Migration
     public function up(): void
     {
     Schema::table('deployments', function (Blueprint $table) {
-        // Cek dulu, kalau counter_bw belum ada baru buat
-        if (!Schema::hasColumn('deployments', 'counter_bw')) {
-            $table->integer('counter_bw')->default(0)->after('technician_id');
-        }
-        
-        // Cek juga untuk counter_color
+        // Cek dulu biar gak duplikat lagi
         if (!Schema::hasColumn('deployments', 'counter_color')) {
             $table->integer('counter_color')->default(0)->after('counter_bw');
         }

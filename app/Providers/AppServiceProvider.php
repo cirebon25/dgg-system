@@ -14,11 +14,10 @@ class AppServiceProvider extends ServiceProvider
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
-    public function boot(): void
+   
+
+   public function boot(): void
     {
-        //
+        \App\Models\MachineReplacement::observe(\App\Observers\ReplacementObserver::class);
     }
 }

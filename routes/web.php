@@ -197,23 +197,26 @@ Route::get('/cetak-alokasi-mesin', function () {
 })->name('cetak.alokasi');
 
 Route::get('/cetak-tukar-guling', function () {
-    $data = DB::table('service_logs')
-        ->join('machines', 'service_logs.machine_id', '=', 'machines.id')
-        ->leftJoin('customers', 'service_logs.customer_id', '=', 'customers.id') // Pakai leftJoin biar aman
-        ->join('technicians', 'service_logs.technician_id', '=', 'technicians.id')
-        ->where('service_logs.perbaikan', 'LIKE', '%Tukar Guling%')
+    // Kueri diarahkan ke tabel MachineReplacements yang baru kita buat
+    $data = DB::table('machine_replacements')
+        ->join('customers', 'machine_replacements.customer_id', '=', 'customers.id')
+        ->join('machines as m_old', 'machine_replacements.old_machine_id', '=', 'm_old.id')
+        ->join('machines as m_new', 'machine_replacements.new_machine_id', '=', 'm_new.id')
+        ->join('technicians', 'machine_replacements.technician_id', '=', 'technicians.id')
         ->select(
-            'service_logs.tanggal',
+            'machine_replacements.tanggal',
             'customers.nama_customer',
             'customers.kota',
-            'machines.serial_number as sn_lama',
-            'machines.tipe_model as tipe_lama',
-            'service_logs.perbaikan as unit_pengganti',
+            'm_old.serial_number as sn_lama',
+            'm_old.tipe_model as tipe_lama',
+            'm_new.serial_number as sn_baru',
+            'm_new.tipe_model as tipe_baru',
             'technicians.nama_technician'
         )
-        ->orderBy('service_logs.tanggal', 'desc')
+        ->orderBy('machine_replacements.tanggal', 'desc')
         ->get();
 
+    // Bagian HTML (CSS tetap sama)
     $html = "
     <html>
     <head>
@@ -233,7 +236,7 @@ Route::get('/cetak-tukar-guling', function () {
         <div class='header-box'>
             <h1 style='margin:0;'>DGG SYSTEM - OPERATIONAL HUB</h1>
             <h2 style='margin:5px 0;'>BERITA ACARA & LAPORAN TUKAR GULING (SWAP)</h2>
-            <p>Periode Laporan: ".date('M Y')."</p>
+            <p>Periode Laporan: " . date('M Y') . "</p>
         </div>
 
         <table>
@@ -251,7 +254,7 @@ Route::get('/cetak-tukar-guling', function () {
     foreach ($data as $row) {
         $html .= "
         <tr>
-            <td class='text-center'>".date('d/m/Y', strtotime($row->tanggal))."</td>
+            <td class='text-center'>" . date('d/m/Y', strtotime($row->tanggal)) . "</td>
             <td>
                 <strong>$row->nama_customer</strong><br>
                 <small>$row->kota</small>
@@ -261,7 +264,8 @@ Route::get('/cetak-tukar-guling', function () {
                 <small>$row->tipe_lama</small>
             </td>
             <td>
-                <span class='badge-in'>[IN]</span> $row->unit_pengganti
+                <span class='badge-in'>[IN]</span> $row->sn_baru<br>
+                <small>$row->tipe_baru</small>
             </td>
             <td>$row->nama_technician</td>
         </tr>";
@@ -271,7 +275,7 @@ Route::get('/cetak-tukar-guling', function () {
             </tbody>
         </table>
         <div style='margin-top: 30px; float: right; width: 200px; text-align: center;'>
-            <p>Indramayu, ".date('d M Y')."</p>
+            <p>Indramayu, " . date('d M Y') . "</p>
             <br><br><br>
             <strong>( ________________ )</strong><br>
             <p>Admin Operasional</p>

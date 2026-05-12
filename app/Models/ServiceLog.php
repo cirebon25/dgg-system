@@ -11,29 +11,35 @@ class ServiceLog extends Model
     use HasFactory;
 
     protected $fillable = [
-        'machine_id', 'technician_id', 'tanggal', 'jam_mulai', 'jam_selesai',
-        'tipe_kunjungan', 'counter_bw', 'usage_bw', 'counter_color', 'usage_color',
-<<<<<<< HEAD
-        'kerusakan', 'perbaikan', 'sparepart_id', 'jumlah_sparepart', 'customer_id',
-=======
-        'kerusakan', 'perbaikan', 'sparepart_id', 'jumlah_sparepart',
->>>>>>> f41bd1044f6ae3be2a4691dfebf2fd15a6021f97
+        'machine_id', 
+        'customer_id', // SUDAH BERSIH & DITAMBAHKAN
+        'technician_id', 
+        'tanggal', 
+        'jam_mulai', 
+        'jam_selesai',
+        'tipe_kunjungan', 
+        'counter_bw', 
+        'usage_bw', 
+        'counter_color', 
+        'usage_color',
+        'kerusakan', 
+        'perbaikan', 
+        'sparepart_id', 
+        'jumlah_sparepart',
     ];
 
     protected $casts = [
-        'tanggal' => 'date', // Sesuaikan nama kolomnya (tadi di fillable 'tanggal')
+        'tanggal' => 'date',
     ];
 
     protected static function booted()
     {
         static::created(function ($serviceLog) {
             // JEMBATAN OTOMATIS: Update angka pemakaian part setiap ada servis baru
-            // Kita ambil semua catatan kesehatan part untuk mesin ini
             $healthRecords = \App\Models\MachinePartHealth::where('machine_id', $serviceLog->machine_id)->get();
 
             foreach ($healthRecords as $health) {
                 // Pemakaian = Counter Sekarang (BW) - Counter saat terakhir ganti
-                // Boss bisa ganti ke counter_color jika partnya spesifik warna
                 $currentCounter = $serviceLog->counter_bw ?? 0;
                 $usage = $currentCounter - $health->last_replaced_counter;
 
@@ -42,6 +48,12 @@ class ServiceLog extends Model
                 ]);
             }
         });
+    }
+
+    // RELASI KE CUSTOMER (Wajib ada buat Laporan Tukar Guling)
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
     }
 
     public function machine(): BelongsTo
