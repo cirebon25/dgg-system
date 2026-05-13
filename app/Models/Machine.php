@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes; // <--- 1. PANGGIL MANTRANYA
 
 class Machine extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes; // <--- 2. AKTIFKAN MANTRANYA DI SINI
 
     protected $fillable = [
         'serial_number',
@@ -18,8 +19,8 @@ class Machine extends Model
         'finisher',
         'cover',
         'kaset',
-        'rayon_id',    // Tambahkan ini agar bisa simpan data wilayah
-        'customer_id', // Tambahkan ini agar bisa simpan data customer
+        'rayon_id',    
+        'customer_id', 
     ];
 
     // --- RELASI KE RAYON (WAJIB ADA UNTUK LAPORAN ALOKASI) ---

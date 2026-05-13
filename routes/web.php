@@ -1069,3 +1069,4 @@ Route::get('/cetak-stok-gudang', function () {
 
     return response($html);
 })->name('cetak.stok-gudang');
+

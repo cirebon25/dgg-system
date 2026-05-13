@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes; // <--- 1. PANGGIL MANTRANYA
 
 class ServiceLog extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes; // <--- 2. PASANG MANTRANYA DI SINI
 
     protected $fillable = [
         'machine_id', 
@@ -39,7 +40,7 @@ class ServiceLog extends Model
         return $this->belongsTo(Technician::class, 'technician_id');
     }
 
-    // Relasi Teknisi Kedua (Partner)
+    // Relasi Teknisi Kedua (Partner) - Pastikan nama kolom di DB sesuai (technician_2_id)
     public function technician2(): BelongsTo
     {
         return $this->belongsTo(Technician::class, 'technician_2_id');

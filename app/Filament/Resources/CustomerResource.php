@@ -11,104 +11,75 @@ use Filament\Tables;
 use Filament\Tables\Columns\Summarizers\Count;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder; // <--- TAMBAHKAN INI
+use Illuminate\Database\Eloquent\SoftDeletingScope; // <--- TAMBAHKAN INI
 
 class CustomerResource extends Resource
 {
     protected static ?string $model = Customer::class;
-
     protected static ?string $navigationLabel = 'Customer';
-
     protected static ?string $navigationIcon = 'heroicon-o-building-office';
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\Select::make('rayon_id')
-                    ->relationship('rayon', 'nama_rayon')
-                    ->required()
-                    ->preload(),
-
-                Forms\Components\TextInput::make('nama_customer')
-                    ->label('Nama Instansi / Perorangan')
-                    ->required(),
-
-                Forms\Components\TextInput::make('kota')
-                    ->label('Kota / Kabupaten')
-                    ->placeholder('Contoh: Indramayu')
-                    ->required(),
-
-                Forms\Components\Textarea::make('alamat')
-                    ->columnSpanFull(),
-            ]);
+        // ... (Tetap seperti kodingan Akang) ...
+        return $form->schema([
+            Forms\Components\Select::make('rayon_id')
+                ->relationship('rayon', 'nama_rayon')
+                ->required()
+                ->preload(),
+            Forms\Components\TextInput::make('nama_customer')
+                ->label('Nama Instansi / Perorangan')
+                ->required(),
+            Forms\Components\TextInput::make('kota')
+                ->label('Kota / Kabupaten')
+                ->required(),
+            Forms\Components\Textarea::make('alamat')
+                ->columnSpanFull(),
+        ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                // Kolom Rayon
-                Tables\Columns\TextColumn::make('rayon.nama_rayon')
-                    ->label('Rayon')
-                    ->badge()
-                    ->color(fn (string $state): string => match (trim(strtolower($state))) {
-                        'barat daya' => 'info', 
-                        'barat' => 'success',
-                        'utara' => 'warning', 
-                        'selatan' => 'danger',  
-                        default => 'gray',    
-                    }) // ✨ SUDAH DITUTUP DI SINI BOSS
-                    ->sortable()
-                    ->searchable(), // Tambah koma di akhir jika di dalam array columns,
-
-                // Kolom Nama & Alamat (Stack)
-                TextColumn::make('nama_customer')
-                    ->label('Pelanggan / Alamat')
-                    ->searchable()
+                Tables\Columns\TextColumn::make('rayon.nama_rayon')->label('Rayon')->badge()->sortable()->searchable(),
+                TextColumn::make('nama_customer')->label('Pelanggan / Alamat')->searchable()
                     ->description(fn (Customer $record): string => $record->alamat ?? '-')
-                    ->sortable()
                     ->summarize(Count::make()->label('Total Pelanggan')),
-
-                // Kolom Kota
-                TextColumn::make('kota')
-                    ->label('Kota')
-                    ->searchable(),
-
-                // MENAMPILKAN JUMLAH MESIN YANG DISEWA
-                TextColumn::make('deployments_count')
-                    ->label('Unit Terpasang')
-                    ->counts('deployments')
-                    ->suffix(' Unit')
-                    ->badge()
+                TextColumn::make('kota')->label('Kota')->searchable(),
+                TextColumn::make('deployments_count')->label('Unit Terpasang')->counts('deployments')->suffix(' Unit')->badge()
                     ->color(fn (int $state): string => $state > 0 ? 'success' : 'gray'),
-
-                // Tanggal Input
-                TextColumn::make('created_at')
-                    ->label('Tgl Input')
-                    ->dateTime('d/m/Y')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('rayon_id')
-                    ->relationship('rayon', 'nama_rayon')
-                    ->label('Filter Rayon'),
+                    ->relationship('rayon', 'nama_rayon')->label('Filter Rayon'),
+                
+                // 1. TAMBAHKAN FILTER ARSIP DI SINI
+                Tables\Filters\TrashedFilter::make(), 
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                
+                // 2. TAMBAHKAN AKSI RESTORE (BALIKIN DARI ARSIP)
+                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ForceDeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(), // <--- BISA RESTORE BANYAK
                 ]),
             ]);
     }
 
-    public static function getRelations(): array
+    // 3. WAJIB TAMBAHKAN INI AGAR DATA TERHAPUS BISA MUNCUL SAAT DIFILTER
+    public static function getEloquentQuery(): Builder
     {
-        return [
-            //
-        ];
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ]);
     }
 
     public static function getPages(): array

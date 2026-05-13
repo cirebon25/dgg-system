@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\SoftDeletes; // <--- 1. SUNTIK MANTRANYA DI SINI
 
 class Deployment extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes; // <--- 2. AKTIFKAN MANTRANYA DI SINI
 
     protected $fillable = [
         'no_kontrak',
@@ -45,7 +46,7 @@ class Deployment extends Model
                 'customer_id'     => $deployment->customer_id,
                 'technician_id'   => $deployment->technician_id,
                 'tanggal'         => $deployment->tanggal_instal,
-                'tipe_kunjungan'  => 'RN', // <--- Sesuai permintaan Boss
+                'tipe_kunjungan'  => 'RN',
                 'counter_bw'      => $deployment->counter_bw ?? 0,
                 'counter_color'   => $deployment->counter_color ?? 0,
                 'usage_bw'        => 0,

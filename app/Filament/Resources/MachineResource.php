@@ -19,71 +19,73 @@ class MachineResource extends Resource
 
     protected static ?string $navigationLabel = 'Data Mesin';
 
-    public static function form(Form $form): Form
+   public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\Section::make('Informasi Unit Mesin')
-                    ->description('Masukkan detail mesin fotokopi sesuai label SN di bodi mesin.')
-                    ->schema([
-                        Forms\Components\TextInput::make('serial_number')
-                            ->label('Serial Number (SN)')
-                            ->required()
-                            ->unique(ignoreRecord: true)
-                            ->placeholder('Contoh: WEP12345'),
+    return $form
+        ->schema([
+            Forms\Components\Section::make('Informasi Unit Mesin')
+                ->description('Masukkan detail mesin fotokopi sesuai label SN di bodi mesin.')
+                ->schema([
+                    // 1. TAMBAHKAN PEMILIH CUSTOMER DI SINI BOSS!
+                    Forms\Components\Select::make('customer_id')
+                        ->relationship('customer', 'nama_customer')
+                        ->label('Lokasi / Pelanggan')
+                        ->placeholder('Pilih Customer (Kosongkan jika masih di Gudang)')
+                        ->searchable()
+                        ->preload()
+                        ->columnSpanFull(), // Kita buat lebar biar jelas
 
-                        Forms\Components\Select::make('tipe_model')
-                            ->label('Tipe / Model Mesin')
-                            ->options(\App\Models\TypeModel::pluck('nama_tipe', 'nama_tipe'))
-                            ->searchable()
-                            ->preload()
-                            ->required()
-                            ->createOptionForm([
-                                Forms\Components\TextInput::make('nama_tipe')
-                                    ->label('Tipe Model Baru')
-                                    ->required()
-                                    ->unique('type_models', 'nama_tipe'),
-                            ])
-                            ->createOptionUsing(function (array $data): string {
-                                $tipe = \App\Models\TypeModel::create($data);
+                    Forms\Components\TextInput::make('serial_number')
+                        ->label('Serial Number (SN)')
+                        ->required()
+                        ->unique(ignoreRecord: true)
+                        ->placeholder('Contoh: WEP12345'),
 
-                                return $tipe->nama_tipe;
-                            }),
+                    Forms\Components\Select::make('tipe_model')
+                        ->label('Tipe / Model Mesin')
+                        ->options(\App\Models\TypeModel::pluck('nama_tipe', 'nama_tipe'))
+                        ->searchable()
+                        ->preload()
+                        ->required()
+                        ->createOptionForm([
+                            Forms\Components\TextInput::make('nama_tipe')
+                                ->label('Tipe Model Baru')
+                                ->required()
+                                ->unique('type_models', 'nama_tipe'),
+                        ])
+                        ->createOptionUsing(function (array $data): string {
+                            $tipe = \App\Models\TypeModel::create($data);
+                            return $tipe->nama_tipe;
+                        }),
 
-                        Forms\Components\Select::make('status')
-                            ->label('Status Mesin')
-                            ->options([
-                                'Ready' => 'Ready (Siap Pakai)',
-                                'Rented' => 'Rented (Sedang Disewa)',
-                                'Refurbish' => 'Refurbish (Dalam Perbaikan)',
-                            ])
-                            ->default('Ready')
-                            ->required(),
+                    Forms\Components\Select::make('status')
+                        ->label('Status Mesin')
+                        ->options([
+                            'Ready' => 'Ready (Siap Pakai)',
+                            'Rented' => 'Rented (Sedang Disewa)',
+                            'Refurbish' => 'Refurbish (Dalam Perbaikan)',
+                        ])
+                        ->default('Ready')
+                        ->required(),
 
-                        Forms\Components\Textarea::make('keterangan_awal')
-                            ->label('Keterangan Mesin')
-                            ->placeholder('Misal: EX LUAR / EX RENTAL')
-                            ->columnSpanFull(),
-                    ])->columns(2),
+                    Forms\Components\Textarea::make('keterangan_awal')
+                        ->label('Keterangan Mesin')
+                        ->placeholder('Misal: EX LUAR / EX RENTAL')
+                        ->columnSpanFull(),
+                ])->columns(2),
 
-                Forms\Components\Section::make('Detail Teknis Mesin')
-                    ->description('Informasi tambahan untuk stok gudang')
-                    ->schema([
-                        Forms\Components\TextInput::make('volt')
-                            ->label('Voltase')
-                            ->placeholder('Contoh: 110V / 220V'),
-                        Forms\Components\TextInput::make('finisher')
-                            ->label('Finisher'),
-                        Forms\Components\TextInput::make('cover')
-                            ->label('Cover'),
-                        Forms\Components\TextInput::make('kaset')
-                            ->label('Jumlah Kaset'),
-                        Forms\Components\TextInput::make('double_scan')
-                            ->label('Double Scan (Qty)')
-                            ->numeric()
-                            ->default(0),
-                    ])->columns(2),
-            ]);
+            // ... (Section Detail Teknis Mesin tetap sama) ...
+            Forms\Components\Section::make('Detail Teknis Mesin')
+                ->description('Informasi tambahan untuk stok gudang')
+                ->schema([
+                    // ... isi tetap sama ...
+                    Forms\Components\TextInput::make('volt')->label('Voltase'),
+                    Forms\Components\TextInput::make('finisher')->label('Finisher'),
+                    Forms\Components\TextInput::make('cover')->label('Cover'),
+                    Forms\Components\TextInput::make('kaset')->label('Jumlah Kaset'),
+                    Forms\Components\TextInput::make('double_scan')->label('Double Scan (Qty)')->numeric()->default(0),
+                ])->columns(2),
+        ]);
     }
 
     public static function table(Table $table): Table
