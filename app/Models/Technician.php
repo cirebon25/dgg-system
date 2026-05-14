@@ -20,4 +20,17 @@ class Technician extends Model
     {
     return $this->belongsToMany(Rayon::class, 'rayon_technician');
     }
+
+    // Jembatan ke Kartu Stok
+    public function technicianStocks()
+    {
+        return $this->hasMany(TechnicianStock::class);
+    }
+
+    // Jembatan ke Histori Tabungan
+    public function histories()
+    {
+        return $this->hasMany(TechnicianStockHistory::class);
+    }
+
 }

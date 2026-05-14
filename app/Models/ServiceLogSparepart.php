@@ -2,75 +2,61 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ServiceLogSparepart extends Model
 {
     use HasFactory;
+    protected $guarded = [];
 
-    // Pastikan ada titik koma (;) di akhir baris ini
-    protected $fillable = ['service_log_id', 'sparepart_id', 'jumlah'];
-
-    protected static function booted()
+protected static function booted()
     {
-        // 1. SAAT INPUT BARANG BARU
         static::created(function ($item) {
-            $sparepart = $item->sparepart;
-            if ($sparepart) {
-                // Update Stok (Logika Boss)
-                $sparepart->saldo_keluar += $item->jumlah;
-                $sparepart->save();
+            // 1. Ambil data induk (ServiceLog) beserta jalur mesin, deployment, dan customernya
+            $serviceLog = \App\Models\ServiceLog::with(['machine.deployment.customer'])->find($item->service_log_id);
 
-                // Update Jembatan Kesehatan Mesin (Logika Baru)
-                $serviceLog = $item->serviceLog;
-                if ($serviceLog) {
-                    \App\Models\MachinePartHealth::updateOrInsert(
-                        [
-                            'machine_id' => $serviceLog->machine_id,
+            if ($serviceLog) {
+                $techId = $serviceLog->technician_id;
+
+                if ($techId) {
+                    // Cari atau buat Tas Teknisi
+                    $techStock = \App\Models\TechnicianStock::where('technician_id', $techId)
+                        ->where('sparepart_id', $item->sparepart_id)
+                        ->first();
+
+                    if ($techStock) {
+                        $techStock->decrement('jumlah', $item->jumlah);
+                    } else {
+                        $techStock = \App\Models\TechnicianStock::create([
+                            'technician_id' => $techId,
                             'sparepart_id' => $item->sparepart_id,
-                        ],
-                        [
-                            'last_replaced_counter' => $serviceLog->counter_akhir ?? 0,
-                            'last_replaced_at' => $serviceLog->tanggal,
-                            'current_usage' => 0, // Reset karena part baru dipasang
-                            'updated_at' => now(),
-                        ]
-                    );
+                            'jumlah' => -$item->jumlah,
+                        ]);
+                    }
+
+                    // 2. JALUR PRESISI AMBIL DATA SESUAI RESOURCE AKANG
+                    $machineObj = $serviceLog->machine;
+                    
+                    // Ambil serial_number dari mesin
+                    $noSeri = $machineObj ? $machineObj->serial_number : '-';
+                    
+                    // Ambil nama_customer lewat jalur Machine -> Deployment -> Customer
+                    $customerName = $machineObj?->deployment?->customer?->nama_customer ?? 'Unknown Customer';
+
+                    // 3. CATAT KE HISTORI
+                    \App\Models\TechnicianStockHistory::create([
+                        'technician_id' => $techId,
+                        'sparepart_id' => $item->sparepart_id,
+                        'keluar' => $item->jumlah,
+                        'saldo_akhir' => $techStock->jumlah,
+                        'keterangan' => "Servis: {$customerName} (No Seri: {$noSeri})",
+                    ]);
                 }
             }
         });
-
-        // 2. SAAT JUMLAH BARANG DIEDIT
-        static::updated(function ($item) {
-            $sparepart = $item->sparepart;
-            if ($sparepart) {
-                $selisih = $item->jumlah - $item->getOriginal('jumlah');
-                $sparepart->saldo_keluar += $selisih;
-                $sparepart->save();
-            }
-        });
-
-        // 3. SAAT DATA SERVIS DIHAPUS
-        static::deleted(function ($item) {
-            $sparepart = $item->sparepart;
-            if ($sparepart) {
-                $sparepart->saldo_keluar -= $item->jumlah;
-                $sparepart->save();
-
-                // Opsional: Jika data dihapus, mungkin Boss ingin reset health-nya juga?
-                // Biasanya dibiarkan saja agar tetap ada record penggantian terakhir.
-            }
-        });
     }
 
-    public function serviceLog()
-    {
-        return $this->belongsTo(ServiceLog::class);
-    }
-
-    public function sparepart()
-    {
-        return $this->belongsTo(Sparepart::class);
-    }
+    public function serviceLog() { return $this->belongsTo(ServiceLog::class, 'service_log_id'); }
+    public function sparepart() { return $this->belongsTo(Sparepart::class); }
 }

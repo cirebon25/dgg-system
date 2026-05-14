@@ -54,13 +54,13 @@ class ServiceLogResource extends Resource
                             ->required(),
 
                         Forms\Components\Grid::make(2)->schema([
-                            Forms\Components\TimePicker::make('jam_mulai'),
-                            Forms\Components\TimePicker::make('jam_selesai'),
-                        ]),
-                    ])->columns(2),
+                        Forms\Components\TimePicker::make('jam_mulai'),
+                        Forms\Components\TimePicker::make('jam_selesai'),
+                              ]),
+                             ])->columns(2),
 
-                Forms\Components\Section::make('Pencatatan Counter')
-                    ->schema([
+                        Forms\Components\Section::make('Pencatatan Counter')
+                            ->schema([
                         Forms\Components\TextInput::make('bw_lalu')->label('BW Lalu')->numeric()->readOnly(),
                         Forms\Components\TextInput::make('counter_bw')->label('BW Sekarang')->numeric()->required()->reactive()
                             ->afterStateUpdated(fn ($state, $get, $set) => $set('usage_bw', (int) $state - (int) $get('bw_lalu'))),
@@ -70,10 +70,10 @@ class ServiceLogResource extends Resource
                         Forms\Components\TextInput::make('counter_color')->label('Color Sekarang')->numeric()->reactive()
                             ->afterStateUpdated(fn ($state, $get, $set) => $set('usage_color', (int) $state - (int) $get('color_lalu'))),
                         Forms\Components\TextInput::make('usage_color')->label('Usage Color')->numeric()->readOnly(),
-                    ])->columns(3),
+                              ])->columns(3),
 
-                Forms\Components\Section::make('Sparepart yang Diganti')
-                    ->schema([
+                         Forms\Components\Section::make('Sparepart yang Diganti')
+                          ->schema([
                         Forms\Components\Repeater::make('serviceLogSpareparts')
                             ->relationship()
                             ->schema([
@@ -82,17 +82,61 @@ class ServiceLogResource extends Resource
                                     ->label('Pilih Sparepart')
                                     ->searchable()
                                     ->preload(),
-                                Forms\Components\TextInput::make('jumlah')
-                                    ->numeric()
-                                    ->default(1),
+                                // Di dalam Schema Repeater, cari TextInput::make('jumlah')
+
+                        Forms\Components\TextInput::make('jumlah')
+    ->label('Jumlah Pakai')
+    ->numeric()
+    ->required()
+    ->minValue(1) // <--- GEMBOK 1: Browser langsung nolak kalau angka 0 atau minus!
+    ->reactive()
+    ->rules([
+        fn (Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
+            // Jalur aman deteksi ID Teknisi
+            $techId = $get('../../technician_id') ?? $get('../../../technician_id'); 
+            $partId = $get('sparepart_id');
+
+            if (!$partId) return;
+
+            if (!$techId) {
+                $fail("Pilih 'Teknisi Utama' terlebih dahulu di bagian bawah form!");
+                return;
+            }
+
+            // GEMBOK 2: Validasi back-end kalau admin maksa ngetik angka 0 / kosong
+            if ((int)$value <= 0) {
+                $fail("Jumlah pakai tidak boleh 0 atau minus Boss! Minimal harus 1.");
+                return;
+            }
+
+            // Ambil data stok di tas teknisi
+            $stock = \App\Models\TechnicianStock::where('technician_id', $techId)
+                ->where('sparepart_id', $partId)
+                ->first();
+
+            $currentStock = $stock ? $stock->jumlah : 0;
+
+            // GEMBOK 3: Jika teknisi sama sekali gak punya barang itu di tas (stoknya 0)
+            if ($currentStock <= 0) {
+                $fail("Gagal! Teknisi tidak memiliki stok part ini di dalam tas (Stok: 0). Wajib Pinjam Part dulu!");
+                return;
+            }
+
+            // GEMBOK 4: Jika stok ada tapi kurang (misal stok 3 tapi dipaksa input 5)
+            if ((int)$value > $currentStock) {
+                $fail("Stok di tas tidak cukup! Teknisi cuma bawa {$currentStock} pcs.");
+                return;
+            }
+        },
+    ]),
                             ])
-                            ->columns(2)
-                            ->defaultItems(0)
-                            ->addActionLabel('Tambah Sparepart'),
+                                    ->columns(2)
+                                    ->defaultItems(0)
+                                    ->addActionLabel('Tambah Sparepart'),
                     ]),
 
-                Forms\Components\Section::make('Detail Teknisi & Perbaikan')
-                    ->schema([
+                        Forms\Components\Section::make('Detail Teknisi & Perbaikan')
+                          ->schema([
                         Forms\Components\Textarea::make('kerusakan')->required(),
                         Forms\Components\Textarea::make('perbaikan')->required(),
 

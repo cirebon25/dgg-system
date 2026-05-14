@@ -64,7 +64,9 @@ class TechnicianResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            // Pakai alamat lengkap (Fully Qualified Class Name) biar sistem gak nyasar!
+            \App\Filament\Resources\TechnicianResource\RelationManagers\TechnicianStocksRelationManager::class,
+            \App\Filament\Resources\TechnicianResource\RelationManagers\HistoriesRelationManager::class,
         ];
     }
 

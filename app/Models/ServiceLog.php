@@ -49,4 +49,9 @@ class ServiceLog extends Model
     public function customer(): BelongsTo { return $this->belongsTo(Customer::class); }
     public function machine(): BelongsTo { return $this->belongsTo(Machine::class); }
     public function serviceLogSpareparts() { return $this->hasMany(ServiceLogSparepart::class); }
+    public function deployment()
+    {
+        return $this->belongsTo(Deployment::class);
+    }
+
 }

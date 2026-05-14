@@ -35,7 +35,6 @@ class RayonResource extends Resource
                             ->multiple() // Wajib untuk Many-to-Many
                             ->preload()
                             ->searchable()
-                            ->required(),
                     ])->columns(2),
             ]);
     }

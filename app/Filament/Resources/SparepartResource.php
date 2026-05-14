@@ -39,9 +39,11 @@ class SparepartResource extends Resource
                 Forms\Components\Section::make('Manajemen Stok')
                     ->schema([
                         Forms\Components\TextInput::make('saldo_masuk')
-                            ->label('Saldo Masuk (Stok Baru)')
-                            ->numeric()
-                            ->default(0),
+                            ->label(fn (string $context): string => $context === 'edit' ? 'Tambah Stok Baru (Kulakan)' : 'Saldo Masuk (Stok Awal)')
+                            ->helperText(fn (string $context): string => $context === 'edit' ? 'Ketik jumlah barang baru yang datang untuk MENAMBAH stok lama.' : 'Masukkan stok awal barang.')
+                            ->readOnly()
+                            // Trik khusus: kalau lagi edit, form dikosongkan jadi angka 0 biar admin tinggal ngetik tambahannya aja
+                            ->formatStateUsing(fn (string $context, $state) => $context === 'edit' ? 0 : $state),
                         Forms\Components\TextInput::make('saldo_keluar')
                             ->label('Saldo Keluar (Terpakai)')
                             ->numeric()
