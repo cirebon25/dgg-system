@@ -9,53 +9,41 @@ class Sparepart extends Model
 {
     use HasFactory;
 
-    // Proteksi kolom database agar aman saat insert/update
     protected $fillable = [
         'nama_sparepart',
         'code_part',
         'no_part',
-        'saldo_masuk',
-        'saldo_keluar',
-        'stok',
         'harga_beli',
         'keterangan',
+        // Kolom stok, saldo_masuk, saldo_keluar dibiarkan di DB tapi kalkulasinya kita handle via Accessor bawah ini
     ];
 
-    // Relasi ke Service Log Sparepart
-    public function serviceLogSpareparts()
-    {
-        return $this->hasMany(ServiceLogSparepart::class);
+    // --- RELASI-RELASI PENDUKUNG ---
+    public function sparepartEntries() {
+        return $this->hasMany(SparepartEntry::class);
     }
 
-    // --- LOGIKA KALKULATOR GUDANG OTOMATIS (ANTI-TUMPANG TINDID) ---
-    protected static function booted()
+    public function partBorrowings() {
+        return $this->hasMany(PartBorrowing::class);
+    }
+
+    // --- MANTRANYA DI SINI BOSS (REAL-TIME ACCESSOR) ---
+    
+    // 1. Hitung Otomatis Total Saldo Masuk dari Inputan Supplier
+    public function getCalculatedSaldoMasukAttribute(): int
     {
-        // 1. KETIKA BARANG BARU PERTAMA KALI DIBUAT (CREATE)
-        static::creating(function ($sparepart) {
-            $masuk = (int)($sparepart->saldo_masuk ?? 0);
-            $keluar = (int)($sparepart->saldo_keluar ?? 0);
-            
-            // Stok awal langsung dikalkulasi
-            $sparepart->stok = $masuk - $keluar;
-        });
+        return (int) $this->sparepartEntries()->sum('jumlah');
+    }
 
-        // 2. KETIKA STOK LAMA MAU DITAMBAH KULAKAN BARU (EDIT / UPDATE)
-        static::updating(function ($sparepart) {
-            // Kita cek, apakah admin mengetik angka baru di kolom saldo_masuk?
-            if ($sparepart->isDirty('saldo_masuk')) {
-                // Ambil nilai stok terakhir sebelum di-save
-                $stokLama = (int)$sparepart->getOriginal('stok');
-                
-                // Ambil angka tambahan kulakan yang baru diketik admin di form
-                $tambahanStok = (int)$sparepart->saldo_masuk;
+    // 2. Hitung Otomatis Total Keluar (Barang yang dipinjam Teknisi)
+    public function getCalculatedSaldoKeluarAttribute(): int
+    {
+        return (int) $this->partBorrowings()->sum('jumlah');
+    }
 
-                // KALKULASI: Stok Akhir Gudang = Stok Lama + Tambahan Baru
-                $sparepart->stok = $stokLama + $tambahanStok;
-
-                // Agar data total barang masuk sepanjang masa akurat, kita akumulasikan di DB
-                $totalSaldoMasukLama = (int)$sparepart->getOriginal('saldo_masuk');
-                $sparepart->saldo_masuk = $totalSaldoMasukLama + $tambahanStok;
-            }
-        });
+    // 3. Sisa Stok Gudang Pusat Saat Ini = Total Masuk - Total Keluar
+    public function getCalculatedStokAttribute(): int
+    {
+        return $this->calculated_saldo_masuk - $this->calculated_saldo_keluar;
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+namespace App\Playground; // Sesuaikan namespace aplikasi Akang jika bukan Playground (biasanya App\Filament\Resources)
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SparepartResource\Pages;
@@ -10,7 +11,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Maatwebsite\Excel\Facades\Excel; // Pastikan library excel sudah terinstall
+use Maatwebsite\Excel\Facades\Excel;
 
 class SparepartResource extends Resource
 {
@@ -33,28 +34,11 @@ class SparepartResource extends Resource
                             ->label('Code Part'),
                         Forms\Components\TextInput::make('no_part')
                             ->label('No Part')
-                            ->required(), // Diwajibkan karena jadi kunci saat import
+                            ->required(),
                     ])->columns(3),
-
-                Forms\Components\Section::make('Manajemen Stok')
-                    ->schema([
-                        Forms\Components\TextInput::make('saldo_masuk')
-                            ->label(fn (string $context): string => $context === 'edit' ? 'Tambah Stok Baru (Kulakan)' : 'Saldo Masuk (Stok Awal)')
-                            ->helperText(fn (string $context): string => $context === 'edit' ? 'Ketik jumlah barang baru yang datang untuk MENAMBAH stok lama.' : 'Masukkan stok awal barang.')
-                            ->readOnly()
-                            // Trik khusus: kalau lagi edit, form dikosongkan jadi angka 0 biar admin tinggal ngetik tambahannya aja
-                            ->formatStateUsing(fn (string $context, $state) => $context === 'edit' ? 0 : $state),
-                        Forms\Components\TextInput::make('saldo_keluar')
-                            ->label('Saldo Keluar (Terpakai)')
-                            ->numeric()
-                            ->default(0)
-                            ->readOnly(),
-                        Forms\Components\TextInput::make('stok')
-                            ->label('Sisa Saldo / Stok Akhir')
-                            ->numeric()
-                            ->readOnly()
-                            ->placeholder('Otomatis'),
-                    ])->columns(3),
+                
+                // Bagian Manajemen Stok manual kita buang dari form Create/Edit 
+                // Karena sekarang input barang masuk sudah pakai menu "Input Stok Masuk" tersendiri!
             ]);
     }
 
@@ -75,18 +59,32 @@ class SparepartResource extends Resource
                     ->label('No Part')
                     ->searchable(),
 
-                TextColumn::make('stok')
-                    ->label('Stok')
+                // 🌟 TAMPILKAN TOTAL MASUK REAL-TIME DARI SUPPLIER
+                TextColumn::make('calculated_saldo_masuk')
+                    ->label('Total Masuk')
                     ->badge()
-                    ->color(fn (string $state): string => match (true) {
-                        $state <= 2 => 'danger',  // Merah kalau kritis
-                        $state <= 5 => 'warning', // Kuning kalau menipis
-                        default => 'success',     // Hijau kalau aman
+                    ->color('info'),
+
+                // 🌟 TAMPILKAN TOTAL KELUAR REAL-TIME (DIPINJAM TEKNISI)
+                TextColumn::make('calculated_saldo_keluar')
+                    ->label('Total Keluar')
+                    ->badge()
+                    ->color('warning'),
+
+                // 🌟 TAMPILKAN SISA STOK FISIK DI GUDANG PUSAT (REAL-TIME)
+                TextColumn::make('calculated_stok')
+                    ->label('Stok Gudang')
+                    ->badge()
+                    ->color(fn (int $state): string => match (true) {
+                        $state <= 2 => 'danger',   // Merah kalau kritis
+                        $state <= 5 => 'warning',  // Kuning kalau menipis
+                        default => 'success',      // Hijau kalau aman
                     })
+                    ->weight('bold')
                     ->sortable(),
             ])
             ->headerActions([
-                // 🟢 1. TOMBOL IMPORT CSV (Ditambahkan sesuai permintaan sebelumnya)
+                // 🟢 1. TOMBOL IMPORT CSV
                 Tables\Actions\Action::make('import_sparepart')
                     ->label('Import CSV')
                     ->icon('heroicon-m-arrow-up-tray')
@@ -108,10 +106,23 @@ class SparepartResource extends Resource
                                 ['no_part' => $row[1]], // Kunci: No Part
                                 [
                                     'nama_sparepart' => $row[0],
-                                    'stok' => $row[2],
-                                    'code_part' => $row[3],
+                                    'code_part' => $row[3] ?? null,
                                 ]
                             );
+                            
+                            // Agar stok masuk dari hasil import CSV juga tercatat resmi di riwayat, 
+                            // Kita buatkan langsung record transaksinya di tabel Entries jika jumlahnya > 0
+                            if ((int)$row[2] > 0) {
+                                $sp = Sparepart::where('no_part', $row[1])->first();
+                                if ($sp) {
+                                    \App\Models\SparepartEntry::create([
+                                        'sparepart_id' => $sp->id,
+                                        'jumlah' => (int)$row[2],
+                                        'supplier' => 'Import Awal CSV',
+                                        'keterangan' => 'Inisialisasi stok awal via file CSV',
+                                    ]);
+                                }
+                            }
                         }
                         if (file_exists($filePath)) {
                             unlink($filePath);
@@ -126,7 +137,7 @@ class SparepartResource extends Resource
                 // 🔵 2. TOMBOL REKAP KELUAR BULANAN
                 Tables\Actions\Action::make('rekapKeluar')
                     ->label('Cetak Rekap Keluar')
-                    ->color('success')
+                    ->color('danger')
                     ->icon('heroicon-o-printer')
                     ->form([
                         Forms\Components\Select::make('month')
@@ -143,11 +154,16 @@ class SparepartResource extends Resource
                             ->required()->default(date('Y')),
                     ])
                     ->action(function (array $data) {
-                        return redirect()->route('sparepart.report.outflow', [
-                            'month' => $data['month'],
-                            'year' => $data['year'],
-                        ]);
+                        return redirect()->route('sparepart.report.outflow', $data);
                     }),
+
+                        Tables\Actions\Action::make('cetakRealtime')
+                    ->label('Cetak Rekap Realtime')
+                    ->color('warning') // Warna kuning oranye biar mencolok dan beda sendiri
+                    ->icon('heroicon-o-printer')
+                    ->url(fn () => route('cetak.rekap-sparepart')) // Mengarah ke jalur cetak langsung
+                    ->openUrlInNewTab(), // Buka di tab baru biar halaman inputan gak hilang
+
 
                 Tables\Actions\CreateAction::make(),
             ])
