@@ -16,7 +16,7 @@ class TypeModelResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-group';
 
-    protected static ?string $navigationGroup = 'Master Data'; // Mengelompokkan ke Master Data
+   protected static ?string $navigationGroup = 'DATA MASTER';
 
     protected static ?string $modelLabel = 'Tipe Model';
 

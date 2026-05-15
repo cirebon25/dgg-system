@@ -17,6 +17,8 @@ class TechnicianResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
+    protected static ?string $navigationGroup = 'DATA MASTER';
+
     public static function form(Form $form): Form
     {
         return $form

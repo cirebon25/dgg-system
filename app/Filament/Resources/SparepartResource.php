@@ -19,8 +19,7 @@ class SparepartResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
 
-    protected static ?string $navigationGroup = 'Master Data';
-
+    protected static ?string $navigationGroup = 'DATA MASTER';
     public static function form(Form $form): Form
     {
         return $form

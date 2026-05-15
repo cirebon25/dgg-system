@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\SoftDeletes; // <--- 1. SUNTIK MANTRANYA DI SINI
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Deployment extends Model
 {
-    use HasFactory, SoftDeletes; // <--- 2. AKTIFKAN MANTRANYA DI SINI
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'no_kontrak',
@@ -29,18 +29,22 @@ class Deployment extends Model
     ];
 
     /**
-     * Logika Otomatis: Sinkronisasi Status Mesin & Auto Create Service Log
+     * Logika Otomatis: Sinkronisasi Status Mesin, Lokasi, Teknisi & Auto Create Service Log
      */
     protected static function booted()
     {
-        // 1. SAAT DEPLOYMENT BARU DIBUAT
+        // 1. SAAT DEPLOYMENT BARU DIBUAT (CREATE)
         static::created(function ($deployment) {
-            // A. Ubah Status Mesin jadi 'Rented'
+            // A. UPDATE DATA MESIN (Status, Lokasi Customer, & Teknisi Penanggung Jawab)
             if ($deployment->machine) {
-                $deployment->machine->update(['status' => 'Rented']);
+                $deployment->machine->update([
+                    'status'        => 'Rented',
+                    'customer_id'   => $deployment->customer_id,   // OTOMATIS TERISI
+                    'technician_id' => $deployment->technician_id, // OTOMATIS TERISI
+                ]);
             }
 
-            // B. OTOMATIS MASUK KE SERVICE LOG (RN)
+            // B. OTOMATIS MASUK KE SERVICE LOG (RN - INSTALASI AWAL)
             \App\Models\ServiceLog::create([
                 'machine_id'      => $deployment->machine_id,
                 'customer_id'     => $deployment->customer_id,
@@ -56,29 +60,51 @@ class Deployment extends Model
             ]);
         });
 
-        // 2. Saat Deployment DIUPDATE
+        // 2. SAAT DATA DEPLOYMENT DIUBAH (UPDATE)
         static::updated(function ($deployment) {
+            // Jika mesin diganti (Tukar Mesin lewat form Deploy)
             if ($deployment->wasChanged('machine_id')) {
-                // Mesin lama balik jadi Ready
+                // Mesin LAMA balik ke Gudang (Status Ready, Lokasi & Teknisi dihapus)
                 $oldMachineId = $deployment->getOriginal('machine_id');
                 if ($oldMachineId) {
-                    Machine::find($oldMachineId)?->update(['status' => 'Ready']);
+                    Machine::find($oldMachineId)?->update([
+                        'status'        => 'Ready',
+                        'customer_id'   => null,
+                        'technician_id' => null,
+                    ]);
                 }
-                // Mesin baru jadi Rented
-                $deployment->machine?->update(['status' => 'Rented']);
+                
+                // Mesin BARU dikirim ke Customer (Status Rented, Lokasi & Teknisi diisi)
+                $deployment->machine?->update([
+                    'status'        => 'Rented',
+                    'customer_id'   => $deployment->customer_id,
+                    'technician_id' => $deployment->technician_id,
+                ]);
+            }
+
+            // Jika hanya Teknisi atau Customer yang berubah di form Deploy
+            if ($deployment->wasChanged(['technician_id', 'customer_id'])) {
+                $deployment->machine?->update([
+                    'customer_id'   => $deployment->customer_id,
+                    'technician_id' => $deployment->technician_id,
+                ]);
             }
         });
 
-        // 3. Saat Deployment DIHAPUS -> Kembalikan Status Mesin jadi 'Ready'
+        // 3. SAAT DEPLOYMENT DIHAPUS (Kembalikan Unit ke Gudang)
         static::deleted(function ($deployment) {
             if ($deployment->machine) {
-                $deployment->machine->update(['status' => 'Ready']);
+                $deployment->machine->update([
+                    'status'        => 'Ready',
+                    'customer_id'   => null,
+                    'technician_id' => null,
+                ]);
             }
         });
     }
 
     /**
-     * RELASI: Sparepart yang disertakan (Many-to-Many)
+     * RELASI
      */
     public function spareparts(): BelongsToMany
     {

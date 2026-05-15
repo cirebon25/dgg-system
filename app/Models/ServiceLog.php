@@ -53,5 +53,8 @@ class ServiceLog extends Model
     {
         return $this->belongsTo(Deployment::class);
     }
-
+    public function technician()
+{
+    return $this->belongsTo(Technician::class, 'technician_id');
+}
 }

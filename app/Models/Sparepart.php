@@ -13,6 +13,7 @@ class Sparepart extends Model
         'nama_sparepart',
         'code_part',
         'no_part',
+        'stok',
         'harga_beli',
         'keterangan',
         // Kolom stok, saldo_masuk, saldo_keluar dibiarkan di DB tapi kalkulasinya kita handle via Accessor bawah ini

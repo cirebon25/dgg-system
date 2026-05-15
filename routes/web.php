@@ -1070,3 +1070,10 @@ Route::get('/cetak-stok-gudang', function () {
     return response($html);
 })->name('cetak.stok-gudang');
 
+Route::get('/admin/service-log/{serviceLog}/surat-jalan', function (\App\Models\ServiceLog $serviceLog) {
+    // Kita panggil view khusus surat jalan yang sudah kita buat kemarin
+    return view('reports.surat-jalan', ['log' => $serviceLog]);
+})->name('service-log.surat-jalan')->middleware(['auth']);
+
+Route::get('/admin/rekap-horizontal', [App\Http\Controllers\ReportController::class, 'rekapHorizontal'])
+    ->name('rekap.horizontal')->middleware(['auth']);
