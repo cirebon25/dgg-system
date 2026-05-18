@@ -5,56 +5,58 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes; // <--- 1. PANGGIL MANTRANYA
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ServiceLog extends Model
 {
-    use HasFactory, SoftDeletes; // <--- 2. PASANG MANTRANYA DI SINI
+    use HasFactory;
 
     protected $fillable = [
-        'machine_id', 
-        'customer_id', 
-        'technician_id', 
+        'machine_id',
+        'customer_id',
+        'technician_id',
+        'tanggal',
+        'tipe_kunjungan',
+        'counter_bw',
+        'counter_color',
+        'kerusakan',
+        'perbaikan',
         'nama_teknisi_2',
-        'tanggal', 
-        'jam_mulai', 
-        'jam_selesai',
-        'tipe_kunjungan', 
-        'counter_bw', 
-        'usage_bw', 
-        'counter_color', 
-        'usage_color',
-        'kerusakan', 
-        'perbaikan', 
-        'sparepart_id', 
-        'jumlah_sparepart',
     ];
 
     protected $casts = [
         'tanggal' => 'date',
     ];
 
-    // Relasi Teknisi Utama
+    /**
+     * RELASI KE TEKNISI (HANYA BOLEH ADA SATU DI SINI BOSS!)
+     */
     public function technician(): BelongsTo
     {
         return $this->belongsTo(Technician::class, 'technician_id');
     }
 
-    // Relasi Teknisi Kedua (Partner) - Pastikan nama kolom di DB sesuai (technician_2_id)
-    public function technician2(): BelongsTo
+    /**
+     * RELASI KE CUSTOMER
+     */
+    public function customer(): BelongsTo
     {
-        return $this->belongsTo(Technician::class, 'technician_2_id');
+        return $this->belongsTo(Customer::class, 'customer_id');
     }
 
-    public function customer(): BelongsTo { return $this->belongsTo(Customer::class); }
-    public function machine(): BelongsTo { return $this->belongsTo(Machine::class); }
-    public function serviceLogSpareparts() { return $this->hasMany(ServiceLogSparepart::class); }
-    public function deployment()
+    /**
+     * RELASI KE MESIN
+     */
+    public function machine(): BelongsTo
     {
-        return $this->belongsTo(Deployment::class);
+        return $this->belongsTo(Machine::class, 'machine_id');
     }
-    public function technician()
-{
-    return $this->belongsTo(Technician::class, 'technician_id');
-}
+
+    /**
+     * RELASI KE PENGGUNAAN SPAREPART
+     */
+    public function serviceLogSpareparts(): HasMany
+    {
+        return $this->hasMany(ServiceLogSparepart::class, 'service_log_id');
+    }
 }

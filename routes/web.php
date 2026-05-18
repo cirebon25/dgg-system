@@ -287,7 +287,7 @@ Route::get('/cetak-tukar-guling', function () {
 })->name('cetak.swap');
 
 Route::get('/cetak-pemasangan-baru/{bulan}/{tahun}', function ($bulan, $tahun) {
-    // 1. AMBIL DATA MENGGUNAKAN ELOQUENT MODEL (Jauh lebih pintar & otomatis)
+    // 1. AMBIL DATA MENGGUNAKAN ELOQUENT MODEL
     $data = Deployment::with(['machine', 'customer.rayon', 'technician', 'spareparts'])
         ->whereMonth('created_at', $bulan)
         ->whereYear('created_at', $tahun)
@@ -313,7 +313,7 @@ Route::get('/cetak-pemasangan-baru/{bulan}/{tahun}', function ($bulan, $tahun) {
             .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 15px; }
             .header h1 { margin: 0; font-size: 20px; color: #1e40af; }
             table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th { background-color: #1e40af; color: white; text-transform: uppercase; padding: 10px 5px; border: 1px solid #000; }
+            th { background-color: #1e40af; color: white; text-transform: uppercase; padding: 10px 5px; border: 1px solid #000; font-size: 10px; }
             td { padding: 8px 5px; border: 1px solid #666; vertical-align: middle; }
             tr:nth-child(even) { background-color: #f8fafc; }
             .text-center { text-align: center; }
@@ -333,15 +333,15 @@ Route::get('/cetak-pemasangan-baru/{bulan}/{tahun}', function ($bulan, $tahun) {
             <thead>
                 <tr>
                     <th width='30'>No</th>
-                    <th width='80'>Tgl Pasang</th>
-                    <th width='110'>SN Mesin</th>
-                    <th width='110'>Tipe Model</th>
+                    <th width='75'>Tgl Pasang</th>
                     <th>Nama Customer</th>
-                    <th width='120'>Wilayah / Rayon</th>
-                    <th width='100'>Counter (BW/CL)</th>
+                    <th width='100'>Tipe Model</th>
+                    <th width='110'>NS / SN</th>
                     <th width='50'>Volt</th>
+                    <th width='90'>Ctr Awal</th>
                     <th width='100'>Teknisi</th>
-                    <th width='140'>Sparepart</th>
+                    <th width='140'>Part</th>
+                    <th width='150'>Keterangan</th>
                 </tr>
             </thead>
             <tbody>";
@@ -353,32 +353,31 @@ Route::get('/cetak-pemasangan-baru/{bulan}/{tahun}', function ($bulan, $tahun) {
             $no = $index + 1;
             $tgl = date('d-m-Y', strtotime($row->created_at));
 
-            // Mengambil data relasi dengan aman menggunakan tanda tanya (?) milik Laravel mencegah eror null
             $sn = $row->machine->serial_number ?? '-';
             $model = $row->machine->tipe_model ?? '-';
             $customer = $row->customer->nama_customer ?? '-';
-            $kota = $row->customer->kota ?? '-';
-            $rayon = $row->customer->rayon->nama_rayon ?? '-';
 
             $bw = isset($row->counter_bw) ? number_format($row->counter_bw) : '0';
             $cl = isset($row->counter_color) ? number_format($row->counter_color) : '0';
             $voltase = ! empty($row->volt) ? $row->volt.' V' : '-';
             $teknisi = $row->technician->nama_technician ?? '-';
+            
+            // Mengambil kolom keterangan dari tabel deployments (jika ada kolomnya di DB)
+            $keterangan = $row->keterangan ?? '-'; 
 
             $html .= "
             <tr>
                 <td class='text-center'>$no</td>
                 <td class='text-center'>$tgl</td>
-                <td class='font-bold'>$sn</td>
-                <td>$model</td>
                 <td>$customer</td>
-                <td>$kota ($rayon)</td>
-                <td>BW: $bw <br> CL: $cl</td>
+                <td>$model</td>
+                <td class='font-bold'>$sn</td>
                 <td class='text-center'>$voltase</td>
+                <td>BW: $bw <br> CL: $cl</td>
                 <td>$teknisi</td>
                 <td>";
 
-            // 💡 SEKARANG AMBIL DATA SPAREPART LANGSUNG DARI RELASI MODEL (Pasti Tembus!)
+            // Loop Data Sparepart
             if ($row->spareparts && $row->spareparts->isNotEmpty()) {
                 $html .= "<ul style='margin:0; padding-left:12px;'>";
                 foreach ($row->spareparts as $sp) {
@@ -390,6 +389,7 @@ Route::get('/cetak-pemasangan-baru/{bulan}/{tahun}', function ($bulan, $tahun) {
             }
 
             $html .= "</td>
+                <td>$keterangan</td>
             </tr>";
         }
     }
@@ -409,7 +409,7 @@ Route::get('/cetak-pemasangan-baru/{bulan}/{tahun}', function ($bulan, $tahun) {
     </html>";
 
     return response($html);
-})->name('cetak.pemasangan');
+})->name('cetak.pemasangan-baru');
 
 Route::get('/cetak-surat-jalan/{id}', function ($id) {
     // KUNCI UTAMA: Kita panggil 'with spareparts' agar datanya ikut keambil

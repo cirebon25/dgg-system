@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ServiceLogResource\Pages;
 use App\Models\ServiceLog;
+use App\Models\Machine; // Tambahkan ini untuk deteksi otomatis
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -32,12 +33,35 @@ class ServiceLogResource extends Resource
                             ->searchable()
                             ->reactive()
                             ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                // 1. Ambil counter terakhir otomatis
                                 $lastLog = ServiceLog::where('machine_id', $state)->latest('tanggal')->first();
                                 if ($lastLog) {
                                     $set('bw_lalu', $lastLog->counter_bw);
                                     $set('color_lalu', $lastLog->counter_color);
+                                } else {
+                                    $set('bw_lalu', 0);
+                                    $set('color_lalu', 0);
+                                }
+
+                                // 🌟 2. OTOMATIS SET CUSTOMER & TEKNISI SESUAI MESIN YANG DIPILIH
+                                $machine = Machine::find($state);
+                                if ($machine) {
+                                    $set('customer_id', $machine->customer_id);
+                                    
+                                    // Jika mesin itu ada customer dan customernya punya teknisi utama, set otomatis
+                                    if ($machine->customer?->technician_id) {
+                                        $set('technician_id', $machine->customer->technician_id);
+                                    }
                                 }
                             }),
+
+                        // 🌟 INPUT CUSTOMER BARU (Bisa otomatis dari SN Mesin atau dipilih manual)
+                        Forms\Components\Select::make('customer_id')
+                            ->relationship('customer', 'nama_customer')
+                            ->label('Nama Customer / Instansi')
+                            ->searchable()
+                            ->preload()
+                            ->required(),
 
                         Forms\Components\Select::make('tipe_kunjungan')
                             ->options([
@@ -191,11 +215,39 @@ class ServiceLogResource extends Resource
                 Tables\Actions\CreateAction::make(),
             ])
             ->columns([
-                Tables\Columns\TextColumn::make('machine.deployment.customer.nama_customer')
-                    ->label('Customer / Model')
-                    ->description(fn ($record): string => 'Model: '.($record->machine?->tipe_model ?? '-'))
-                    ->searchable()
-                    ->sortable(),
+                // 🌟 FIX: JALUR BARU LANGSUNG KE CUSTOMER (TAMPIL GAGAH SEKARANG BOSS)
+                // GANTI KOLOM CUSTOMER DI UTAMA TABLE MENJADI SEPERTI INI BOSS:
+
+Tables\Columns\TextColumn::make('machine_id') // Kita ikat ke machine_id agar pencarian tetap aman
+    ->label('Customer / Model')
+    ->getStateUsing(function ($record) {
+        // Jalur 1: Ambil langsung dari relasi customer (jika data baru & ada kolomnya)
+        if ($record->customer?->nama_customer) {
+            return $record->customer->nama_customer;
+        }
+        
+        // Jalur 2: Ambil lewat Mesin -> langsung ke Customer (Sangat Akurat)
+        if ($record->machine?->customer?->nama_customer) {
+            return $record->machine->customer->nama_customer;
+        }
+
+        // Jalur 3: Ambil lewat Mesin -> Jalur lama (Deployment) -> Customer
+        if ($record->machine?->deployment?->customer?->nama_customer) {
+            return $record->machine->deployment->customer->nama_customer;
+        }
+
+        return 'Gudang DGG / Tanpa Customer';
+    })
+    ->description(fn ($record): string => 'Model: '.($record->machine?->tipe_model ?? '-'))
+    ->sortable()
+    ->searchable(query: function (Builder $query, string $search): Builder {
+        // Supaya kolom pencarian di pojok kanan atas tetap berfungsi mendeteksi teks nama customer
+        return $query->whereHas('customer', function ($q) use ($search) {
+            $q->where('nama_customer', 'like', "%{$search}%");
+        })->orWhereHas('machine.customer', function ($q) use ($search) {
+            $q->where('nama_customer', 'like', "%{$search}%");
+        });
+    }),
 
                 Tables\Columns\TextColumn::make('machine.serial_number')
                     ->label('SN Mesin')

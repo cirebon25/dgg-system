@@ -1,144 +1,502 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <title>Rekap Horizontal Per Rayon - DGG System</title>
     <style>
-        body { font-family: 'Helvetica', Arial, sans-serif; font-size: 9px; margin: 0; padding: 15px; color: #222; }
-        header { text-align: center; border-bottom: 4px double #000; padding-bottom: 10px; margin-bottom: 15px; }
-        
-        .rayon-title { background: #000; color: #fff; padding: 8px; font-weight: bold; font-size: 12px; margin-top: 20px; text-transform: uppercase; }
-        
-        /* Tabel Statistik */
-        .stat-table { width: 35%; margin: 10px 0; border-collapse: collapse; }
-        .stat-table th, .stat-table td { border: 1px solid #000; padding: 4px; text-align: center; }
-        .stat-table th { background: #eee; font-size: 8px; }
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            font-size: 8px;
+            margin: 0;
+            padding: 10px;
+            color: #222;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 4px double #000;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        .rayon-title {
+            background: #000;
+            color: #fff;
+            padding: 6px;
+            font-weight: bold;
+            font-size: 11px;
+            margin-top: 15px;
+            text-transform: uppercase;
+        }
+
+        /* Tabel Statistik Horizontal - Full Warna Biru, Font Putih */
+        .stat-table {
+            width: 60%;
+            margin: 15px 0 25px 0;
+            border-collapse: collapse;
+        }
+
+        .stat-table th,
+        .stat-table td {
+            border: 1px solid #000;
+            padding: 5px;
+            text-align: center;
+        }
+
+        .stat-table th {
+            background: #002766;
+            color: white;
+            font-size: 7.5px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .stat-table td {
+            background: #0050b3;
+            color: white;
+            font-weight: bold;
+            font-size: 8.5px;
+        }
 
         /* Tabel Utama */
-        table.main-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .main-table th { background: #2c3e50; color: white; border: 1px solid #000; padding: 6px; font-size: 8px; }
-        .main-table td { border: 1px solid #000; padding: 5px; vertical-align: top; word-wrap: break-word; }
+        table.main-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
 
-        /* Styling Konten */
-        .bold { font-weight: bold; color: #000; }
-        .sub-text { font-size: 8px; color: #555; display: block; margin-top: 2px; }
-        .sn-badge { background: #f1f1f1; border: 1px solid #ccc; padding: 2px; font-weight: bold; display: inline-block; margin-top: 3px; }
-        
-        .visit-box { min-height: 110px; }
-        .v-head { border-bottom: 1px solid #ddd; margin-bottom: 3px; display: flex; justify-content: space-between; font-weight: bold; }
-        .v-counter { background: #fffbe6; border: 1px solid #ffe58f; padding: 2px; font-size: 8px; margin-bottom: 3px; }
-        .v-detail { background: #e6f7ff; border: 1px solid #91d5ff; padding: 3px; font-size: 8px; font-style: italic; border-radius: 2px; }
-        .v-parts { color: #d4380d; font-size: 7.5px; margin-top: 3px; padding-left: 10px; }
-        .v-tech { font-size: 7px; color: #777; margin-top: 4px; border-top: 1px dashed #ccc; padding-top: 2px; }
+        /* Header Utama FULL Hijau */
+        .main-table th {
+            background: #1b5e20;
+            color: white;
+            border: 1px solid #000;
+            padding: 4px 1px;
+            font-size: 7px;
+            text-align: center;
+        }
 
-        @media print { @page { size: landscape; margin: 8mm; } .no-print { display: none; } }
+        .main-table td {
+            border: 1px solid #000;
+            padding: 4px 1px;
+            vertical-align: middle;
+            font-size: 7.5px;
+            word-wrap: break-word;
+            text-align: center;
+        }
+
+        .text-left {
+            text-align: left;
+            padding-left: 3px !important;
+        }
+
+        /* Baris Pemisah Kota Dalam Tabel */
+        .row-kota {
+            background-color: #eceff1 !important;
+            font-weight: bold;
+            padding: 5px;
+            font-size: 8.5px;
+            color: #1a237e;
+            text-align: left !important;
+        }
+
+        /* Background Kolom Spesifik */
+        .bg-seri {
+            background-color: #fffb8f !important;
+            color: #000 !important;
+        }
+
+        /* Kuning */
+        .bg-kontrak {
+            background-color: #f6ffed !important;
+            color: #1b5e20 !important;
+            font-weight: bold;
+        }
+
+        /* Hijau */
+
+        /* CSS Pewarnaan Kode Tanggal (Warna Pastel) */
+        .bg-rm {
+            background-color: #072cfa !important;
+            color: #f0f2f5 !important;
+            font-weight: bold;
+        }
+
+        .bg-cm {
+            background-color: #f71a06 !important;
+            color: #f8f0f0 !important;
+            font-weight: bold;
+        }
+
+        .bg-rn {
+            background-color: #09f043 !important;
+            color: #edf3eb !important;
+            font-weight: bold;
+        }
+
+        .bg-rr {
+            background-color: #fff7e6 !important;
+            color: #d46b08 !important;
+            font-weight: bold;
+        }
+
+        .bg-jk {
+            background-color: #f5e8df !important;
+            color: #614700 !important;
+            font-weight: bold;
+        }
+
+        .bg-l {
+            background-color: #f9f0ff !important;
+            color: #531dab !important;
+            font-weight: bold;
+        }
+
+        .bg-tn {
+            background-color: #f5f5f5 !important;
+            color: #595959 !important;
+            font-weight: bold;
+        }
+
+        /* CSS Pewarnaan Keterangan Akhir */
+        .bg-ket-blm {
+            background-color: #fff1f0 !important;
+            color: #cf1322 !important;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .bg-ket-sudah {
+            background-color: #e6f7ff !important;
+            color: #0050b3 !important;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        /* REVISI: Class CSS untuk memisahkan halaman saat diprint */
+        .page-break {
+            page-break-after: always;
+            break-after: page;
+
+            /* Pewarnaan Khusus Tabel Statistik Bawah */
+            .stat-rm {
+                background-color: #3205F8 !important;
+                color: #fffff !important;
+                font-weight: bold;
+            }
+
+            /* Biru */
+            .stat-cm {
+                background-color: #f80505 !important;
+                color: #e4dadb !important;
+                font-weight: bold;
+            }
+
+            /* Merah */
+            .stat-rn {
+                background-color: #f6ffed !important;
+                color: #389e0d !important;
+                font-weight: bold;
+            }
+
+            /* Hijau (Untuk TN/RN) */
+            .stat-rr {
+                background-color: #f6ffed !important;
+                color: #389e0d !important;
+                font-weight: bold;
+            }
+
+            /* Hijau */
+            .stat-blm {
+                background-color: #fff0f6 !important;
+                color: #c41d7f !important;
+                font-weight: bold;
+            }
+
+            /* Pink */
+            .stat-sudah {
+                background-color: #e6f7ff !important;
+                color: #0050b3 !important;
+                font-weight: bold;
+            }
+
+            /* Biru */
+            .stat-total {
+                background-color: #ffffff !important;
+                color: #222222 !important;
+                font-weight: bold;
+            }
+
+            /* Putih */
+        }
+
+        @media print {
+            @page {
+                size: landscape;
+                margin: 4mm;
+            }
+
+            .no-print {
+                display: none;
+            }
+
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
     </style>
 </head>
+
 <body onload="window.print()">
     <header>
-        <h1 style="margin:0;">PT DINAMIKA GLOBAL GEMILANG</h1>
-        <h2 style="margin:5px 0;">LAPORAN MONITORING UNIT & HISTORI SERVIS</h2>
-        <p>Periode: {{ Carbon\Carbon::create()->month($month)->translatedFormat('F') }} {{ $year }}</p>
+        <h1 style="margin:0; font-size: 16px;">PT DINAMIKA GLOBAL GEMILANG</h1>
+        <h2 style="margin:3px 0; font-size: 12px;">LAPORAN MONITORING UNIT & HISTORI SERVIS</h2>
+        <p style="margin:0; font-size: 10px;">Periode:
+            {{ Carbon\Carbon::create()->year($year)->month($month)->translatedFormat('F') }} {{ $year }}</p>
     </header>
 
-    @foreach($rayons as $rayon)
+    @foreach ($rayons as $rayon)
         @php
-            $allMachines = $rayon->customers->flatMap->machines;
-            $allLogs = $allMachines->flatMap->serviceLogs;
+            $deployments = \App\Models\Deployment::with([
+                'customer',
+                'machine.serviceLogs' => function ($query) use ($month, $year) {
+                    $query->whereMonth('tanggal', $month)->whereYear('tanggal', $year)->orderBy('tanggal', 'asc');
+                },
+            ])
+                ->whereHas('customer', function ($q) use ($rayon) {
+                    $q->where('rayon_id', $rayon->id);
+                })
+                ->get();
+
+            $allLogs = $deployments->flatMap(function ($dep) {
+                return $dep->machine ? $dep->machine->serviceLogs : collect();
+            });
+
+            // Hitung status Sudah RM / Belum RM per unit mesin
+            $sudahRmCount = 0;
+            $belumRmCount = 0;
+            foreach ($deployments as $dep) {
+                if ($dep->customer && $dep->machine) {
+                    $hasRM = $dep->machine->serviceLogs->contains(
+                        fn($log) => strtoupper($log->tipe_kunjungan) === 'RM',
+                    );
+                    $hasRM ? $sudahRmCount++ : $belumRmCount++;
+                }
+            }
+
             $stat = [
                 'RM' => $allLogs->where('tipe_kunjungan', 'RM')->count(),
                 'CM' => $allLogs->where('tipe_kunjungan', 'CM')->count(),
-                'RN' => $allLogs->where('tipe_kunjungan', 'RN')->count(),
+                'TN' => $allLogs->where('tipe_kunjungan', 'TN')->count(),
                 'RR' => $allLogs->where('tipe_kunjungan', 'RR')->count(),
+                'SUDAH_RM' => $sudahRmCount,
+                'BELUM_RM' => $belumRmCount,
+                'TOTAL_MESIN' => $deployments->whereNotNull('machine_id')->count(),
             ];
+
+            // Pisahkan berdasarkan KOTA customer
+            $deploymentsByKota = $deployments->groupBy(function ($dep) {
+                return $dep->customer->kota ? strtoupper($dep->customer->kota) : 'TANPA KOTA';
+            });
         @endphp
 
-        <div class="rayon-title">📍 RAYON: {{ $rayon->nama_rayon }}</div>
-        
-        <table class="stat-table">
-            <thead>
-                <tr>
-                    <th>RM</th><th>CM</th><th>RN</th><th>RR</th><th>TOTAL UNIT</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>{{ $stat['RM'] }}</td><td>{{ $stat['CM'] }}</td>
-                    <td>{{ $stat['RN'] }}</td><td>{{ $stat['RR'] }}</td>
-                    <td><b>{{ $allMachines->count() }}</b></td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="{{ !$loop->last ? 'page-break' : '' }}">
 
-        <table class="main-table">
-            <thead>
-                <tr>
-                    <th width="20">NO</th>
-                    <th width="140">CUSTOMER & KONTAK</th>
-                    <th width="110">SN & MODEL UNIT</th>
-                    <th>KUNJUNGAN 1</th>
-                    <th>KUNJUNGAN 2</th>
-                    <th>KUNJUNGAN 3</th>
-                    <th>KUNJUNGAN 4</th>
-                </tr>
-            </thead>
-            <tbody>
-                @php $no = 1; @endphp
-                @foreach($rayon->customers as $customer)
-                    @foreach($customer->machines as $m)
+            <div class="rayon-title">📍 RAYON: {{ $rayon->nama_rayon }}</div>
+
+            <table class="main-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2" width="18">NO</th>
+                        <th rowspan="2" width="100">NAMA CUSTOMER</th>
+                        <th rowspan="2" width="70">TIPE MESIN</th>
+                        <th rowspan="2" width="65">NO SERI</th>
+                        <th rowspan="2" width="45">TGL PASANG</th>
+                        <th colspan="31">TANGGAL KUNJUNGAN (1 SD 31)</th>
+                        <th rowspan="2" width="85">COUNTER AKHIR</th>
+                        <th rowspan="2" width="85">PERBAIKAN</th>
+                        <th colspan="2" width="120">TEKNISI</th>
+                        <th rowspan="2" width="60">NO KONTRAK</th>
+                        <th rowspan="2" width="65">KETERANGAN</th>
+                    </tr>
+                    <tr>
+                        @for ($i = 1; $i <= 31; $i++)
+                            <th width="18" style="font-size: 6.5px; padding: 1px; white-space: nowrap;">
+                                {{ $i }}</th>
+                        @endfor
+                        <th width="60">TEKNISI 1</th>
+                        <th width="60">TEKNISI 2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php $no = 1; @endphp
+
+                    @foreach ($deploymentsByKota as $kota => $itemsInKota)
                         <tr>
-                            <td style="text-align:center;"><b>{{ $no++ }}</b></td>
-                            <td>
-                                <span class="bold">{{ $customer->nama_customer }}</span>
-                                <span class="sub-text">📞 {{ $customer->no_telp ?? $customer->phone ?? '-' }}</span>
-                                <span class="sub-text">📍 {{ $customer->kota ?? '-' }}</span>
+                            <td colspan="42" class="row-kota">
+                                🏙️ KOTA / KABUPATEN: {{ $kota }}
                             </td>
-                            <td>
-                                <div class="sn-badge">SN: {{ $m->serial_number }}</div>
-                                <span class="sub-text"><b>Model:</b> {{ $m->tipe_model }}</span>
-                                <span class="sub-text"><b>Lokasi:</b> {{ $m->lokasi_mesin ?? '-' }}</span>
-                            </td>
-
-                            @php $logs = $m->serviceLogs; @endphp
-                            @for($i = 0; $i < 4; $i++)
-                                <td>
-                                    @if(isset($logs[$i]))
-                                        @php $log = $logs[$i]; @endphp
-                                        <div class="visit-box">
-                                            <div class="v-head">
-                                                <span>{{ $log->tanggal->format('d/m/y') }}</span>
-                                                <span style="color:red;">[{{ $log->tipe_kunjungan }}]</span>
-                                            </div>
-                                            <div class="v-counter">
-                                                B: {{ number_format($log->counter_bw) }} | C: {{ number_format($log->counter_color) }}
-                                            </div>
-                                            <div class="v-detail">
-                                                <b>K:</b> {{ Str::limit($log->kerusakan, 35) }}<br>
-                                                <b>T:</b> {{ Str::limit($log->perbaikan, 45) }}
-                                            </div>
-                                            @if($log->serviceLogSpareparts->count() > 0)
-                                                <div class="v-parts">
-                                                    <b>Part:</b> 
-                                                    @foreach($log->serviceLogSpareparts as $sp)
-                                                        {{ $sp->sparepart->nama_sparepart }} ({{ $sp->jumlah }}),
-                                                    @endforeach
-                                                </div>
-                                            @endif
-                                            <div class="v-tech">
-                                                👤 {{ $log->technician->nama_technician ?? '-' }}
-                                                @if($log->nama_teknisi_2) / {{ $log->nama_teknisi_2 }} @endif
-                                            </div>
-                                        </div>
-                                    @else
-                                        <div style="text-align:center; color:#ccc; padding-top:45px;">-</div>
-                                    @endif
-                                </td>
-                            @endfor
                         </tr>
+
+                        @foreach ($itemsInKota as $dep)
+                            @if ($dep->customer && $dep->machine)
+                                @php
+                                    $customer = $dep->customer;
+                                    $m = $dep->machine;
+                                    $logs = $m->serviceLogs;
+
+                                    $bwDisplay = '-';
+                                    $colorDisplay = '-';
+                                    $teknisi1Display = '-';
+                                    $teknisi2Display = '-';
+                                    $perbaikanDisplay = '-';
+
+                                    if ($logs->isNotEmpty()) {
+                                        if ($logs->count() > 5) {
+                                            $bwDisplay =
+                                                number_format($logs->first()->counter_bw) .
+                                                ' ... ' .
+                                                number_format($logs->last()->counter_bw);
+                                            $colorDisplay =
+                                                number_format($logs->first()->counter_color ?? 0) .
+                                                ' ... ' .
+                                                number_format($logs->last()->counter_color ?? 0);
+                                        } else {
+                                            $bwDisplay = $logs
+                                                ->map(fn($log) => number_format($log->counter_bw))
+                                                ->implode(' | ');
+                                            $colorDisplay = $logs
+                                                ->map(fn($log) => number_format($log->counter_color ?? 0))
+                                                ->implode(' | ');
+                                        }
+
+                                        $teknisi1Display = $logs
+                                            ->map(function ($log) {
+                                                $nama1 = $log->technician?->nama_technician ?? '-';
+                                                $tgl = \Carbon\Carbon::parse($log->tanggal)->day;
+                                                return "{$nama1}/{$tgl}";
+                                            })
+                                            ->unique()
+                                            ->implode(' | ');
+
+                                        $teknisi2Display = $logs
+                                            ->map(function ($log) {
+                                                $tgl = \Carbon\Carbon::parse($log->tanggal)->day;
+                                                $nama2 = $log->nama_teknisi_2;
+                                                return !empty($nama2) && $nama2 !== '-' ? "{$nama2}/{$tgl}" : null;
+                                            })
+                                            ->filter()
+                                            ->unique()
+                                            ->implode(' | ');
+
+                                        if (empty($teknisi2Display)) {
+                                            $teknisi2Display = '-';
+                                        }
+
+                                        $perbaikanDisplay = $logs
+                                            ->map(fn($log) => $log->perbaikan ? Str::limit($log->perbaikan, 35) : '-')
+                                            ->implode(' | ');
+                                    }
+
+                                    $hasRM = $logs->contains(fn($log) => strtoupper($log->tipe_kunjungan) === 'RM');
+                                    $textKeterangan = $hasRM ? 'sudah rm' : 'blm rm';
+                                    $classKeterangan = $hasRM ? 'bg-ket-sudah' : 'bg-ket-blm';
+                                @endphp
+                                <tr>
+                                    <td><b>{{ $no++ }}</b></td>
+                                    <td class="text-left bold">{{ $customer->nama_customer }}</td>
+                                    <td>{{ $m->tipe_model }}</td>
+                                    <td class="bold bg-seri">{{ $m->serial_number }}</td>
+                                    <td>{{ $dep->tgl_pasang ? \Carbon\Carbon::parse($dep->tgl_pasang)->format('d/m/y') : ($m->tgl_pasang ? \Carbon\Carbon::parse($m->tgl_pasang)->format('d/m/y') : '-') }}
+                                    </td>
+
+                                    @for ($day = 1; $day <= 31; $day++)
+                                        @php
+                                            $logHariIni = $logs->first(
+                                                fn($log) => \Carbon\Carbon::parse($log->tanggal)->day == $day,
+                                            );
+                                            $bgClass = '';
+                                            if ($logHariIni) {
+                                                switch (strtoupper($logHariIni->tipe_kunjungan)) {
+                                                    case 'RM':
+                                                        $bgClass = 'bg-rm';
+                                                        break;
+                                                    case 'CM':
+                                                        $bgClass = 'bg-cm';
+                                                        break;
+                                                    case 'RN':
+                                                        $bgClass = 'bg-rn';
+                                                        break;
+                                                    case 'RR':
+                                                        $bgClass = 'bg-rr';
+                                                        break;
+                                                    case 'JK':
+                                                        $bgClass = 'bg-jk';
+                                                        break;
+                                                    case 'L':
+                                                        $bgClass = 'bg-l';
+                                                        break;
+                                                    case 'TN':
+                                                        $bgClass = 'bg-tn';
+                                                        break;
+                                                }
+                                            }
+                                        @endphp
+                                        <td class="{{ $bgClass }}"
+                                            style="font-size: 6.5px; font-weight: bold; white-space: nowrap; padding: 2px 0;">
+                                            {{ $logHariIni ? $logHariIni->tipe_kunjungan : '' }}
+                                        </td>
+                                    @endfor
+
+                                    <td class="bold" style="font-size: 7px; line-height: 1.3; padding: 2px 1px;">
+                                        @if ($logs->isNotEmpty())
+                                            <div>{{ $bwDisplay }}</div>
+                                            <div style="color: #cf1322; font-weight: bold; margin-top: 2px;">
+                                                {{ $colorDisplay }}</div>
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+
+                                    <td>{{ $perbaikanDisplay }}</td>
+                                    <td>{{ $teknisi1Display }}</td>
+                                    <td>{{ $teknisi2Display }}</td>
+                                    <td class="bg-kontrak">{{ $dep->no_kontrak ?? ($m->no_kontrak ?? '-') }}</td>
+                                    <td class="{{ $classKeterangan }}">{{ $textKeterangan }}</td>
+                                </tr>
+                            @endif
+                        @endforeach
                     @endforeach
-                @endforeach
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+            <table class="stat-table">
+                <thead>
+                    <tr>
+                        <th class="stat-rm">TOTAL RM</th>
+                        <th class="stat-cm">TOTAL CM</th>
+                        <th class="stat-rn">TOTAL TN</th>
+                        <th class="stat-rr">TOTAL RR</th>
+                        <th class="stat-blm">BELUM RM</th>
+                        <th class="stat-sudah">SUDAH RM</th>
+                        <th class="stat-total">TOTAL MESIN</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="stat-rm">{{ $stat['RM'] }}</td>
+                        <td class="stat-cm">{{ $stat['CM'] }}</td>
+                        <td class="stat-rn">{{ $stat['TN'] }}</td>
+                        <td class="stat-rr">{{ $stat['RR'] }}</td>
+                        <td class="stat-blm">{{ $stat['BELUM_RM'] }}</td>
+                        <td class="stat-sudah">{{ $stat['SUDAH_RM'] }}</td>
+                        <td class="stat-total">{{ $stat['TOTAL_MESIN'] }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
     @endforeach
 </body>
+
 </html>
