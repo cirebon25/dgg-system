@@ -21,7 +21,7 @@ class Deployment extends Model
         'keterangan',
         'counter_bw',
         'counter_color',
-        'volt', 
+        'volt',
     ];
 
     protected $casts = [
@@ -73,7 +73,7 @@ class Deployment extends Model
                         'technician_id' => null,
                     ]);
                 }
-                
+
                 // Mesin BARU dikirim ke Customer (Status Rented, Lokasi & Teknisi diisi)
                 $deployment->machine?->update([
                     'status'        => 'Rented',
@@ -113,7 +113,20 @@ class Deployment extends Model
             ->withTimestamps();
     }
 
-    public function customer(): BelongsTo { return $this->belongsTo(Customer::class); }
-    public function machine(): BelongsTo { return $this->belongsTo(Machine::class); }
-    public function technician(): BelongsTo { return $this->belongsTo(Technician::class); }
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
+    public function machine(): BelongsTo
+    {
+        return $this->belongsTo(Machine::class);
+    }
+    public function technician(): BelongsTo
+    {
+        return $this->belongsTo(Technician::class);
+    }
+    public function deploymentSpareparts()
+    {
+        return $this->hasMany(DeploymentSparepart::class, 'deployment_id');
+    }
 }

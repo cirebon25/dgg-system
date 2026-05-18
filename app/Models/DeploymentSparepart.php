@@ -20,8 +20,8 @@ class DeploymentSparepart extends Model
         return $this->belongsTo(Deployment::class);
     }
 
-    public function sparepart(): BelongsTo
+    public function sparepart()
     {
-        return $this->belongsTo(Sparepart::class);
+        return $this->belongsTo(Sparepart::class, 'sparepart_id');
     }
 }

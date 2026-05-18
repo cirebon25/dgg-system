@@ -47,7 +47,7 @@ class DeploymentResource extends Resource
                                 return $query->where('status', 'Ready');
                             })
                             ->label('SN Mesin')
-                            ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->serial_number} - {$record->tipe_model}")
+                            ->getOptionLabelFromRecordUsing(fn($record) => "{$record->serial_number} - {$record->tipe_model}")
                             ->required()
                             ->searchable()
                             ->preload()
@@ -88,26 +88,102 @@ class DeploymentResource extends Resource
                 Forms\Components\Section::make('Sparepart Tambahan')
                     ->description('Item yang disertakan dalam pengiriman.')
                     ->schema([
-                        // ✨ PERBAIKAN DI SINI: Gunakan 'spareparts' agar sinkron dengan Model
-                        Forms\Components\Repeater::make('spareparts')
-                            ->relationship('spareparts')
-                            ->defaultItems(0)
+                        Forms\Components\Repeater::make('spareparts_custom')
+                            ->label('Daftar Suku Cadang')
                             ->schema([
                                 Forms\Components\Select::make('sparepart_id')
-                                    ->label('Item')
-                                    // Kita ambil data dari model Sparepart langsung
-                                    ->options(Sparepart::pluck('nama_sparepart', 'id'))
+                                    ->label('Nama Barang')
+                                    ->options(\App\Models\Sparepart::pluck('nama_sparepart', 'id'))
                                     ->searchable()
                                     ->preload()
-                                    ->required(),
+                                    ->required()
+                                    ->reactive()
+                                    ->afterStateUpdated(fn($set) => $set('jumlah', 1)),
+
                                 Forms\Components\TextInput::make('jumlah')
                                     ->label('Qty')
                                     ->numeric()
                                     ->default(1)
-                                    ->required(),
+                                    ->required()
+
+                                    // 🌟 GERBANG VALIDASI GUDANG (Blokir Otomatis Jika Stok Tidak Cukup)
+                                    ->rules([
+                                        fn(Forms\Get $get, $record): \Closure => function (string $attribute, $value, \Closure $fail) use ($get, $record) {
+                                            $sparepartId = $get('sparepart_id');
+                                            if (! $sparepartId) return;
+
+                                            $sp = \App\Models\Sparepart::find($sparepartId);
+                                            if (! $sp) return;
+
+                                            // Jika mode Edit, ambil jumlah kuota lama barang ini agar tidak memblokir diri sendiri
+                                            $kuotaLama = 0;
+                                            if ($record) {
+                                                $kuotaLama = (int) \Illuminate\Support\Facades\DB::table('deployment_sparepart')
+                                                    ->where('deployment_id', $record->id)
+                                                    ->where('sparepart_id', $sparepartId)
+                                                    ->value('jumlah');
+                                            }
+
+                                            // Batas maksimal yang boleh diinput saat ini
+                                            $maksimalTersedia = $sp->calculated_stok + $kuotaLama;
+
+                                            if ($maksimalTersedia <= 0) {
+                                                $fail("Gagal Simpan! Saldo Gudang untuk item ini sudah HABIS (0).");
+                                            } elseif ($value > $maksimalTersedia) {
+                                                $fail("Gagal Simpan! Saldo tidak mencukupi. Hanya ada sisa: {$maksimalTersedia} Pcs.");
+                                            }
+                                        },
+                                    ]),
                             ])
                             ->columns(2)
-                            ->createItemButtonLabel('Tambah Sparepart'),
+                            ->createItemButtonLabel('Tambah Sparepart')
+
+                            ->formatStateUsing(function ($record) {
+                                if (! $record) return [];
+                                return \Illuminate\Support\Facades\DB::table('deployment_sparepart')
+                                    ->where('deployment_id', $record->id)
+                                    ->get(['sparepart_id', 'jumlah'])
+                                    ->map(fn($item) => (array) $item)
+                                    ->toArray();
+                            })
+
+                            ->saveRelationshipsUsing(function ($record, $state) {
+                                // Catat daftar ID lama sebelum dibersihkan demi sinkronisasi fisik
+                                $oldPartIds = \Illuminate\Support\Facades\DB::table('deployment_sparepart')
+                                    ->where('deployment_id', $record->id)
+                                    ->pluck('sparepart_id')
+                                    ->toArray();
+
+                                // Bersihkan data lama di tabel penghubung
+                                \Illuminate\Support\Facades\DB::table('deployment_sparepart')
+                                    ->where('deployment_id', $record->id)
+                                    ->delete();
+
+                                $newPartIds = [];
+                                if (is_array($state)) {
+                                    foreach ($state as $item) {
+                                        \Illuminate\Support\Facades\DB::table('deployment_sparepart')->insert([
+                                            'deployment_id' => $record->id,
+                                            'sparepart_id' => $item['sparepart_id'],
+                                            'jumlah' => $item['jumlah'],
+                                            'created_at' => now(),
+                                            'updated_at' => now(),
+                                        ]);
+                                        $newPartIds[] = $item['sparepart_id'];
+                                    }
+                                }
+
+                                // 🌟 UPDATE OTOMATIS: Tembak perubahan langsung ke kolom fisik 'stok' di DB biar sinkron total!
+                                $allAffectedIds = array_unique(array_merge($oldPartIds, $newPartIds));
+                                foreach ($allAffectedIds as $spId) {
+                                    $itemSparepart = \App\Models\Sparepart::find($spId);
+                                    if ($itemSparepart) {
+                                        \Illuminate\Support\Facades\DB::table('spareparts')
+                                            ->where('id', $spId)
+                                            ->update(['stok' => $itemSparepart->calculated_stok]);
+                                    }
+                                }
+                            }),
 
                         Forms\Components\Textarea::make('keterangan')
                             ->label('Catatan Tambahan')
@@ -133,7 +209,7 @@ class DeploymentResource extends Resource
 
                 Tables\Columns\TextColumn::make('machine.serial_number')
                     ->label('SN Mesin')
-                    ->description(fn (Deployment $record): string => $record->machine->tipe_model ?? '')
+                    ->description(fn(Deployment $record): string => $record->machine->tipe_model ?? '')
                     ->searchable()
                     ->sortable(),
 
@@ -149,7 +225,7 @@ class DeploymentResource extends Resource
                 Tables\Columns\TextColumn::make('machine.status')
                     ->label('Status Unit')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'Ready' => 'success',
                         'Rented' => 'warning',
                         'Refurbish' => 'danger',
@@ -165,7 +241,7 @@ class DeploymentResource extends Resource
                     ->label('Cetak Surat Jalan')
                     ->icon('heroicon-m-printer')
                     ->color('success')
-                    ->url(fn (Deployment $record): string => route('cetak.surat-jalan', ['id' => $record->id]))
+                    ->url(fn(Deployment $record): string => route('cetak.surat-jalan', ['id' => $record->id]))
                     ->openUrlInNewTab(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

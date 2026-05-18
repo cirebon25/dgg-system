@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PartBorrowingResource\Pages;
 use App\Models\PartBorrowing;
+use App\Models\Sparepart; // Pastikan model Sparepart di-import di sini
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -33,17 +34,47 @@ class PartBorrowingResource extends Resource
                             ->searchable(),
 
                         Forms\Components\Select::make('sparepart_id')
-                            ->relationship('sparepart', 'nama_sparepart')
+                            ->relationship(
+                                name: 'sparepart',
+                                titleAttribute: 'nama_sparepart',
+                                // Menyaring agar sparepart yang stoknya 0 tidak muncul di pilihan dropdown
+                                modifyQueryUsing: fn($query) => $query->where('stok', '>', 0)
+                            )
                             ->label('Pilih Sparepart')
                             ->required()
-                            ->searchable(),
+                            ->searchable()
+                            ->live(), // Membuat form responsif terhadap perubahan pilihan sparepart
 
                         Forms\Components\TextInput::make('jumlah')
                             ->label('Jumlah Pinjam')
                             ->numeric()
                             ->required()
                             ->minValue(1)
-                            ->default(1),
+                            ->default(1)
+                            ->rules([
+                                // Validasi kustom untuk mencocokkan jumlah input dengan stok di database
+                                fn(Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
+                                    $sparepartId = $get('sparepart_id');
+                                    if (! $sparepartId) {
+                                        return;
+                                    }
+
+                                    $sparepart = Sparepart::find($sparepartId);
+
+                                    if (! $sparepart) {
+                                        return;
+                                    }
+
+                                    // CATATAN: Jika nama kolom stok di database kamu bukan 'stok', silakan ubah properti ->stok di bawah ini
+                                    if ($sparepart->stok <= 0) {
+                                        $fail("Saldo gudang untuk sparepart ini sudah habis (0).");
+                                    }
+
+                                    if ($value > $sparepart->stok) {
+                                        $fail("Jumlah pinjam ({$value}) melebihi saldo gudang yang tersedia (Sisa: {$sparepart->stok}).");
+                                    }
+                                },
+                            ]),
                     ])->columns(3),
             ]);
     }

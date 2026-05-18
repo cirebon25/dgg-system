@@ -146,7 +146,7 @@ Route::get('/cetak-alokasi-mesin', function () {
         <header>
             <h1 style='margin:0; color: #1e3a8a;'>PT DINAMIKA GLOBAL GEMILANG</h1>
             <h2 style='margin:5px 0;'>LAPORAN TYPE-TYPE MESIN</h2>
-            <p>Dicetak pada: ".date('d-m-Y H:i')."</p>
+            <p>Dicetak pada: " . date('d-m-Y H:i') . "</p>
         </header>
         <table>
             <thead>
@@ -160,7 +160,7 @@ Route::get('/cetak-alokasi-mesin', function () {
     $grandTotal = 0;
     foreach ($data as $namaRayon => $kotas) {
         // Baris Rayon sekarang otomatis berwarna Biru Gelap yang tegas dengan teks putih
-        $html .= "<tr class='bg-rayon'><td colspan='2'>🔹 RAYON: ".strtoupper($namaRayon)."</td></tr>";
+        $html .= "<tr class='bg-rayon'><td colspan='2'>🔹 RAYON: " . strtoupper($namaRayon) . "</td></tr>";
         $totalRayon = 0;
         foreach ($kotas as $namaKota => $types) {
             // Baris Kota menggunakan warna Biru Muda yang soft agar kontrasnya enak dilihat
@@ -173,7 +173,7 @@ Route::get('/cetak-alokasi-mesin', function () {
             $html .= "<tr class='bg-total-kota'><td class='text-right'>Total Unit di $namaKota:</td><td class='text-right'>$totalKota Unit</td></tr>";
             $totalRayon += $totalKota;
         }
-        $html .= "<tr class='bg-total-rayon'><td class='text-right'>TOTAL AKUMULASI RAYON ".strtoupper($namaRayon).":</td><td class='text-right'>$totalRayon Unit</td></tr>";
+        $html .= "<tr class='bg-total-rayon'><td class='text-right'>TOTAL AKUMULASI RAYON " . strtoupper($namaRayon) . ":</td><td class='text-right'>$totalRayon Unit</td></tr>";
 
         // ✨ MODIFIKASI UTAMA: Menyisipkan baris kosong hantu tanpa border sebagai space jeda antar Rayon
         $html .= "<tr class='spacer-row'><td colspan='2'></td></tr>";
@@ -286,122 +286,123 @@ Route::get('/cetak-tukar-guling', function () {
     return response($html);
 })->name('cetak.swap');
 
-Route::get('/cetak-surat-jalan/{id}', function ($id) {
-    // KUNCI UTAMA: Kita panggil 'with spareparts' agar datanya ikut keambil
-    $d = Deployment::with(['machine', 'customer', 'spareparts'])->findOrFail($id);
+// CETAK SJ
+// Route::get('/cetak-surat-jalan/{id}', function ($id) {
+//     // KUNCI UTAMA: Kita panggil 'with spareparts' agar datanya ikut keambil
+//     $d = Deployment::with(['machine', 'customer', 'spareparts'])->findOrFail($id);
 
-    // Logika Merk
-    $tipe = strtoupper($d->machine->tipe_model);
-    $merk = 'Mesin Fotokopi';
-    if (str_contains($tipe, 'IR') || str_contains($tipe, 'IRA') || str_contains($tipe, 'MF')) {
-        $merk = 'Mesin Fotokopi Canon';
-    } elseif (str_contains($tipe, 'M ') || str_contains($tipe, 'ECOSYS') || str_contains($tipe, 'KYOCERA')) {
-        $merk = 'Mesin Fotokopi Kyocera';
-    } elseif (str_contains($tipe, 'SINDOH') || str_contains($tipe, 'D') || str_contains($tipe, 'C')) {
-        $merk = 'Mesin Fotokopi Sindoh';
-    }
+//     // Logika Merk
+//     $tipe = strtoupper($d->machine->tipe_model);
+//     $merk = 'Mesin Fotokopi';
+//     if (str_contains($tipe, 'IR') || str_contains($tipe, 'IRA') || str_contains($tipe, 'MF')) {
+//         $merk = 'Mesin Fotokopi Canon';
+//     } elseif (str_contains($tipe, 'M ') || str_contains($tipe, 'ECOSYS') || str_contains($tipe, 'KYOCERA')) {
+//         $merk = 'Mesin Fotokopi Kyocera';
+//     } elseif (str_contains($tipe, 'SINDOH') || str_contains($tipe, 'D') || str_contains($tipe, 'C')) {
+//         $merk = 'Mesin Fotokopi Sindoh';
+//     }
 
-    $bulanData = date('m', strtotime($d->created_at));
-    $tahunData = date('Y', strtotime($d->created_at));
+//     $bulanData = date('m', strtotime($d->created_at));
+//     $tahunData = date('Y', strtotime($d->created_at));
 
-    // Rumus menghitung jumlah surat jalan khusus di bulan & tahun ini saja (Reset tiap bulan)
-    $urutanBulan = DB::table('deployments')
-        ->whereMonth('created_at', $bulanData)
-        ->whereYear('created_at', $tahunData)
-        ->where('id', '<=', $d->id)
-        ->count();
+//     // Rumus menghitung jumlah surat jalan khusus di bulan & tahun ini saja (Reset tiap bulan)
+//     $urutanBulan = DB::table('deployments')
+//         ->whereMonth('created_at', $bulanData)
+//         ->whereYear('created_at', $tahunData)
+//         ->where('id', '<=', $d->id)
+//         ->count();
 
-    $tahunData = date('Y', strtotime($d->created_at));
+//     $tahunData = date('Y', strtotime($d->created_at));
 
-    $html = "
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>SJ - {$d->machine->serial_number}</title>
-        <style>
-            @page {size: A5 landscape; margin: 0mm;}
-            body { font-family: sans-serif; font-size: 11px; border: 2px solid #000; padding: 20px; }
-            .header { border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 15px; display: flex; justify-content: space-between; }
-            table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-            th { background: #f2f2f2; text-transform: uppercase; }
-        </style>
-    </head>
-    <body onload='window.print()'>
-        <div class='header'>
-            <div>
-                <h2 style='margin:0;'>PT. DINAMIKA GLOBAL GEMILANG</h2>
-                <p style='margin:0;'>Depo Cirebon - SURAT JALAN</p>
-            </div>
-            <div style='text-align: right;'>
-                <p style='margin:0;'><b>Nomor: SJ/FC/CRB/".date('dmy', strtotime($d->created_at))."/".str_pad($d->id, 3, '0', STR_PAD_LEFT)."</b></p>
-                <p style='margin:0;'>Tanggal: ".date('d-m-Y', strtotime($d->created_at))."</p>
-            </div>
-        </div>
-        
-        <p>
-          <b>Penerima:</b> {$d->customer->nama_customer} 
-          <br></br>
-            <br> <b>Alamat :</b> {$d->customer->alamat} - {$d->customer->kota} <br/>
-        </p>
+//     $html = "
+//     <!DOCTYPE html>
+//     <html>
+//     <head>
+//         <title>SJ - {$d->machine->serial_number}</title>
+//         <style>
+//             @page {size: A5 landscape; margin: 0mm;}
+//             body { font-family: sans-serif; font-size: 11px; border: 2px solid #000; padding: 20px; }
+//             .header { border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 15px; display: flex; justify-content: space-between; }
+//             table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+//             th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+//             th { background: #f2f2f2; text-transform: uppercase; }
+//         </style>
+//     </head>
+//     <body onload='window.print()'>
+//         <div class='header'>
+//             <div>
+//                 <h2 style='margin:0;'>PT. DINAMIKA GLOBAL GEMILANG</h2>
+//                 <p style='margin:0;'>Depo Cirebon - SURAT JALAN</p>
+//             </div>
+//             <div style='text-align: right;'>
+//                 <p style='margin:0;'><b>Nomor: SJ/FC/CRB/" . date('dmy', strtotime($d->created_at)) . "/" . str_pad($d->id, 3, '0', STR_PAD_LEFT) . "</b></p>
+//                 <p style='margin:0;'>Tanggal: " . date('d-m-Y', strtotime($d->created_at)) . "</p>
+//             </div>
+//         </div>
 
-       <table style='width: 100%; height: 80mm; border-collapse: collapse;'>
-            <thead>
-                <tr>
-                    <th width='10'>NO</th>
-                    <th width='100'>NAMA BARANG / DESKRIPSI</th>
-                    <th width='70'>SN / KODE PART</th>
-                    <th width='60'>JUMLAH</th>
-                    <th width='50'>KETERANGAN / COUNTER</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr style='height: 30px;'>
-                    <td style='text-align: center;'>1</td>
-                    <td><b>$merk {$d->machine->tipe_model}</b></td>
-                    <td>{$d->machine->serial_number}</td>
-                    <td>1 Unit</td>
-                    <td> </td>
-                </tr>";
+//         <p>
+//           <b>Penerima:</b> {$d->customer->nama_customer} 
+//           <br></br>
+//             <br> <b>Alamat :</b> {$d->customer->alamat} - {$d->customer->kota} <br/>
+//         </p>
 
-    // --- BAGIAN INI YANG MENAMPILKAN SPAREPART ---
-    $no = 2;
-    foreach ($d->spareparts as $part) {
-        // 3. Kunci juga tinggi baris sparepart (30px)
-        $html .= "<tr style='height: 30px;'>
-            <td style='text-align: center;'>$no</td>
-            <td>{$part->nama_sparepart}</td>
-            <td>".($part->code_part ?: $part->no_part ?: '-')."</td>
-            <td>{$part->pivot->jumlah} Pcs</td>
-            <td> </td>
-        </tr>";
-        $no++;
-    }
+//        <table style='width: 100%; height: 80mm; border-collapse: collapse;'>
+//             <thead>
+//                 <tr>
+//                     <th width='10'>NO</th>
+//                     <th width='100'>NAMA BARANG / DESKRIPSI</th>
+//                     <th width='70'>SN / KODE PART</th>
+//                     <th width='60'>JUMLAH</th>
+//                     <th width='50'>KETERANGAN / COUNTER</th>
+//                 </tr>
+//             </thead>
+//             <tbody>
+//                 <tr style='height: 30px;'>
+//                     <td style='text-align: center;'>1</td>
+//                     <td><b>$merk {$d->machine->tipe_model}</b></td>
+//                     <td>{$d->machine->serial_number}</td>
+//                     <td>1 Unit</td>
+//                     <td> </td>
+//                 </tr>";
 
-    // 💡 4. TRIK UTAMA: Tambahkan baris kosong tanpa ukuran (height: auto) sebelum tutup tbody.
-    // Baris ini akan melar otomatis menyerap sisa ruang kertas dan menarik semua garis kolom lurus ke bawah!
-    $html .= "
-                <tr style='height: auto;'>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-            </tbody>
-        </table>
+//     // --- BAGIAN INI YANG MENAMPILKAN SPAREPART ---
+//     $no = 2;
+//     foreach ($d->spareparts as $part) {
+//         // 3. Kunci juga tinggi baris sparepart (30px)
+//         $html .= "<tr style='height: 30px;'>
+//             <td style='text-align: center;'>$no</td>
+//             <td>{$part->nama_sparepart}</td>
+//             <td>" . ($part->code_part ?: $part->no_part ?: '-') . "</td>
+//             <td>{$part->pivot->jumlah} Pcs</td>
+//             <td> </td>
+//         </tr>";
+//         $no++;
+//     }
 
-        <div style='display: flex; justify-content: space-around; margin-top: 25px; text-align: center;'>
-            <div>Admin,<br><br><br>( ____________ )</div>
-            <div>Disetujui,<br><br><br>( ____________ )</div>
-            <div>Teknisi,<br><br><br>( ____________ )</div>
-            <div>Penerima,<br><br><br>( ____________ )</div>
-        </div>
-    </body>
-    </html>";
+//     // 💡 4. TRIK UTAMA: Tambahkan baris kosong tanpa ukuran (height: auto) sebelum tutup tbody.
+//     // Baris ini akan melar otomatis menyerap sisa ruang kertas dan menarik semua garis kolom lurus ke bawah!
+//     $html .= "
+//                 <tr style='height: auto;'>
+//                     <td></td>
+//                     <td></td>
+//                     <td></td>
+//                     <td></td>
+//                     <td></td>
+//                 </tr>
+//             </tbody>
+//         </table>
 
-    return response($html);
-})->name('cetak.surat-jalan');
+//         <div style='display: flex; justify-content: space-around; margin-top: 25px; text-align: center;'>
+//             <div>Admin,<br><br><br>( ____________ )</div>
+//             <div>Disetujui,<br><br><br>( ____________ )</div>
+//             <div>Teknisi,<br><br><br>( ____________ )</div>
+//             <div>Penerima,<br><br><br>( ____________ )</div>
+//         </div>
+//     </body>
+//     </html>";
+
+//     return response($html);
+// })->name('cetak.surat-jalan');
 
 // FITUR 2: LAPORAN ALOKASI CUSTOMER (Mesin yang sedang terpasang)
 Route::get('/cetak-alokasi-customer', function () {
@@ -433,10 +434,10 @@ Route::get('/cetak-alokasi-customer', function () {
 
     foreach ($data as $d) {
         $html .= "<tr>
-            <td>".($d->customer->nama_customer ?? '-')."</td>
-            <td>".($d->machine->serial_number ?? '-')."</td>
-            <td>".($d->tanggal_pasang ?? '-')."</td>
-            <td>Rp ".number_format($d->harga_sewa, 0, ',', '.')."</td>
+            <td>" . ($d->customer->nama_customer ?? '-') . "</td>
+            <td>" . ($d->machine->serial_number ?? '-') . "</td>
+            <td>" . ($d->tanggal_pasang ?? '-') . "</td>
+            <td>Rp " . number_format($d->harga_sewa, 0, ',', '.') . "</td>
         </tr>";
     }
 
@@ -502,10 +503,10 @@ Route::get('/cetak-rekap-sparepart', function (Request $request) {
     foreach ($spareparts as $s) {
         $html .= "<tr>
             <td>$no</td>
-            <td>".($s->code_part ?: '-')."</td>
-            <td>".($s->no_part ?: '-')."</td>
-            <td class='text-left'>".($s->nama_sparepart ?: '-')."</td>
-            <td class='font-bold' style='font-size: 12px;'>".($s->stok ?? 0)." Unit</td>
+            <td>" . ($s->code_part ?: '-') . "</td>
+            <td>" . ($s->no_part ?: '-') . "</td>
+            <td class='text-left'>" . ($s->nama_sparepart ?: '-') . "</td>
+            <td class='font-bold' style='font-size: 12px;'>" . ($s->stok ?? 0) . " Unit</td>
         </tr>";
         $no++;
     }
@@ -515,7 +516,7 @@ Route::get('/cetak-rekap-sparepart', function (Request $request) {
         </table>
 
         <div style='margin-top: 40px; float: right; text-align: center; width: 250px;'>
-            <p>Cirebon, ".date('d-m-Y')."</p>
+            <p>Cirebon, " . date('d-m-Y') . "</p>
             <br><br><br><br>
             <p><b>( _________________ )</b></p>
             <p>Admin Gudang</p>
@@ -695,7 +696,7 @@ Route::get('/mesin/{id}/histori', function ($id) {
                             <div class='text-xs text-slate-500'>📍 Lokasi: {$dep->kota}</div>
                             <div class='grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-slate-100 text-[11px] text-slate-600'>
                                 <div><b>Tanggal Pasang:</b><br>$tglPasang</div>
-                                <div><b>Counter Awal:</b><br>BW: ".number_format($dep->counter_bw)."<br>CL: ".number_format($dep->counter_color)."</div>
+                                <div><b>Counter Awal:</b><br>BW: " . number_format($dep->counter_bw) . "<br>CL: " . number_format($dep->counter_color) . "</div>
                             </div>
                             <div class='text-[10px] text-slate-400 mt-2 border-t border-dashed border-slate-100 pt-1'>👷 Teknisi Pasang: {$dep->nama_technician}</div>
                         </div>";
@@ -746,7 +747,7 @@ Route::get('/cetak-rekap-rayon', function (Request $request) {
 
     foreach ($rayons as $rayon) {
         $html .= "<div class='rayon-box'>
-                    <div class='rayon-title'>📍 RAYON: ".strtoupper($rayon->nama_rayon)."</div>
+                    <div class='rayon-title'>📍 RAYON: " . strtoupper($rayon->nama_rayon) . "</div>
                     <table>
                         <thead>
                             <tr>
@@ -830,10 +831,13 @@ Route::get('/cetak-top-usage', function (Request $request) {
         ->join('machines', 'service_logs.machine_id', '=', 'machines.id')
         ->join('deployments', 'machines.id', '=', 'deployments.machine_id')
         ->join('customers', 'deployments.customer_id', '=', 'customers.id')
-        ->select('customers.nama_customer', 'machines.serial_number',
+        ->select(
+            'customers.nama_customer',
+            'machines.serial_number',
             DB::raw('SUM(usage_bw) as total_bw'),
             DB::raw('SUM(usage_color) as total_color'),
-            DB::raw('SUM(usage_bw + usage_color) as total_semua'))
+            DB::raw('SUM(usage_bw + usage_color) as total_semua')
+        )
         ->whereMonth('service_logs.tanggal', $month)
         ->whereYear('service_logs.tanggal', $year)
         ->groupBy('customers.nama_customer', 'machines.serial_number')
@@ -855,17 +859,15 @@ Route::get('/cetak-sj-rolling', function () {
     return view('cetak.surat-jalan-rolling', [
         'd' => $data,
         'tanggal' => date('d/m/Y'),
-        'nomor_sj' => 'SJ-RR/'.date('Ymd/Hi'),
+        'nomor_sj' => 'SJ-RR/' . date('Ymd/Hi'),
     ]);
 })->name('cetak.sj-rolling');
-
-
 
 Route::get('/cetak-stok-gudang', function () {
     // 1. KUNCINYA: Grouping HANYA berdasarkan tipe_model dan volt
     $stocks = Machine::where('status', 'Ready')
         ->select(
-             'tipe_model',
+            'tipe_model',
             'volt',
             'kaset',
             'finisher',
@@ -899,7 +901,7 @@ Route::get('/cetak-stok-gudang', function () {
         <header>
             <h1 style='margin:0;'>DINAMIKA GLOBAL GEMILANG (DGG)</h1>
             <h2 style='margin:5px 0;'>REKAPITULASI STOK UNIT GUDANG</h2>
-            <p>Posisi Stok: ".date('d-m-Y H:i')."</p>
+            <p>Posisi Stok: " . date('d-m-Y H:i') . "</p>
         </header>
 
         <table>
@@ -917,20 +919,20 @@ Route::get('/cetak-stok-gudang', function () {
             </thead>
             <tbody>";
 
-   foreach ($stocks as $index => $s) {
+    foreach ($stocks as $index => $s) {
         $no = $index + 1;
         $html .= "
             <tr>
                 <td>$no</td>
                 <td class='text-left font-bold'>{$s->tipe_model}</td>
-                <td><span class='font-bold'>".($s->volt ?: '-')."V</span></td>
+                <td><span class='font-bold'>" . ($s->volt ?: '-') . "V</span></td>
                 <td class='bg-blue'>{$s->total_unit} UNIT</td>
-                <td>".($s->kaset ?: 0)."</td>
-                <td>".($s->finisher ?: 0)."</td>
-                <td>".($s->double_scan ?: 0)."</td>
+                <td>" . ($s->kaset ?: 0) . "</td>
+                <td>" . ($s->finisher ?: 0) . "</td>
+                <td>" . ($s->double_scan ?: 0) . "</td>
                 <td class='text-left' style='font-size:9px;'>
                     <strong>SN:</strong> {$s->list_sn}<br>
-                    <small>Ket: ".($s->info ?: '-')."</small>
+                    <small>Ket: " . ($s->info ?: '-') . "</small>
                 </td>
             </tr>";
     }
@@ -955,144 +957,57 @@ Route::get('/admin/rekap-horizontal', [App\Http\Controllers\ReportController::cl
 
 
 
+
+
+
+// 1. CETAK LAPORAN PEMASANGAN BARU
 Route::get('/cetak-pemasangan-baru/{bulan?}/{tahun?}', function ($bulan = null, $tahun = null) {
-    // 🌟 REVISI 1: Kunci data agar HANYA otomatis menampilkan bulan & tahun berjalan saat ini
     $bulan = date('m');
     $tahun = date('Y');
+    $data = Deployment::with(['machine', 'customer.rayon', 'technician'])
+        ->whereMonth('created_at', $bulan)->whereYear('created_at', $tahun)
+        ->orderBy('created_at', 'asc')->get();
 
-    // Ambil data menggunakan Eloquent Model
-    $data = Deployment::with(['machine', 'customer.rayon', 'technician', 'spareparts'])
-        ->whereMonth('created_at', $bulan)
-        ->whereYear('created_at', $tahun)
-        ->orderBy('created_at', 'asc')
-        ->get();
-
-    $bulanIndo = [
-        '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
-        '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
-        '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
-    ];
+    $bulanIndo = ['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'];
     $namaBulan = $bulanIndo[$bulan] ?? 'Tidak Diketahui';
 
-    $html = "
-    <!DOCTYPE html>
-    <html lang='id'>
-    <head>
-        <meta charset='UTF-8'>
-        <title>Laporan Pemasangan Baru - DGG System</title>
-        <style>
-            @page { size: landscape; margin: 10mm; }
-            body { font-family: sans-serif; font-size: 11px; color: #333; line-height: 1.4; }
-            .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 15px; }
-            
-            /* 🌟 REVISI 2: Font Header Diubah Menjadi Hitam Pekat (Black) */
-            .header h1 { margin: 0; font-size: 20px; color: #000000; } 
-            .header h2 { margin: 5px 0 0 0; font-size: 14px; color: #000000; } 
-            .header p { margin: 5px 0 0 0; font-size: 12px; color: #000000; font-weight: bold; }
-            
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th { background-color: #1e40af; color: white; text-transform: uppercase; padding: 10px 5px; border: 1px solid #000; font-size: 10px; }
-            td { padding: 8px 5px; border: 1px solid #666; vertical-align: middle; }
-            tr:nth-child(even) { background-color: #f8fafc; }
-            .text-center { text-align: center; }
-            .font-bold { font-weight: bold; }
-            .footer { margin-top: 30px; width: 100%; }
-            .ttd-box { float: right; width: 250px; text-align: center; }
-        </style>
-    </head>
-    <body onload='window.print()'>
-        <div class='header'>
-            <h1>DGG SYSTEM - OPERATIONAL HUB</h1>
-            <h2>LAPORAN PEMASANGAN UNIT MESIN BARU</h2>
-            <p>Periode Bulan Berjalan: $namaBulan $tahun</p>
-        </div>
+    $html = "<!DOCTYPE html><html lang='id'><head><meta charset='UTF-8'><title>Laporan Pemasangan Baru</title><style>@page { size: landscape; margin: 10mm; } body { font-family: sans-serif; font-size: 11px; color: #333; } table { width: 100%; border-collapse: collapse; margin-top: 10px; } th { background-color: #1e40af; color: white; padding: 10px 5px; border: 1px solid #000; } td { padding: 8px 5px; border: 1px solid #666; vertical-align: middle; } .text-center { text-align: center; } .footer { margin-top: 30px; width: 100%; } .ttd-box { float: right; width: 250px; text-align: center; }</style></head><body onload='window.print()'><div style='text-align:center; border-bottom: 3px double #000; padding-bottom:10px;'><h1>DGG SYSTEM - OPERATIONAL HUB</h1><h2>LAPORAN PEMASANGAN UNIT MESIN BARU</h2><p>Periode: $namaBulan $tahun</p></div><table><thead><tr><th>No</th><th>Tgl Pasang</th><th>Nama Customer</th><th>Tipe Model</th><th>NS / SN</th><th>Volt</th><th>Ctr Awal</th><th>Teknisi</th><th>Part</th><th>Keterangan</th></tr></thead><tbody>";
 
-        <table>
-            <thead>
-                <tr>
-                    <th width='30'>No</th>
-                    <th width='75'>Tgl Pasang</th>
-                    <th>Nama Customer</th>
-                    <th width='100'>Tipe Model</th>
-                    <th width='110'>NS / SN</th>
-                    <th width='55'>Volt</th>
-                    <th width='90'>Ctr Awal</th>
-                    <th width='100'>Teknisi</th>
-                    <th width='140'>Part</th>
-                    <th width='150'>Keterangan</th>
-                </tr>
-            </thead>
-            <tbody>";
+    foreach ($data as $index => $row) {
+        $no = $index + 1;
+        $tgl = date('d-m-Y', strtotime($row->created_at));
+        $html .= "<tr><td class='text-center'>$no</td><td class='text-center'>$tgl</td><td>{$row->customer->nama_customer}</td><td>{$row->machine->tipe_model}</td><td><b>{$row->machine->serial_number}</b></td><td class='text-center'>{$row->volt} V</td><td>BW: " . number_format($row->counter_bw) . " <br> CL: " . number_format($row->counter_color) . "</td><td>{$row->technician->nama_technician}</td><td>";
 
-    if ($data->isEmpty()) {
-        $html .= "<tr><td colspan='10' class='text-center'>Tidak ada data pemasangan baru pada periode bulan berjalan ini ($namaBulan $tahun).</td></tr>";
-    } else {
-        foreach ($data as $index => $row) {
-            $no = $index + 1;
-            $tgl = date('d-m-Y', strtotime($row->created_at));
-
-            $sn = $row->machine->serial_number ?? '-';
-            $model = $row->machine->tipe_model ?? '-';
-            $customer = $row->customer->nama_customer ?? '-';
-
-            $bw = isset($row->counter_bw) ? number_format($row->counter_bw) : '0';
-            $cl = isset($row->counter_color) ? number_format($row->counter_color) : '0';
-            $teknisi = $row->technician->nama_technician ?? '-';
-            $keterangan = $row->keterangan ?? '-'; 
-
-            // Logika pewarnaan voltase tetap aman terjaga
-            $voltRaw = ! empty($row->volt) ? trim($row->volt) : '';
-            $voltase = ! empty($voltRaw) ? $voltRaw.' V' : '-';
-            $voltStyle = "class='text-center'";
-
-            if (str_contains($voltRaw, '220')) {
-                $voltStyle = "style='background-color: #bbf7d0; color: #166534; text-align: center; font-weight: bold;'";
-            } elseif (str_contains($voltRaw, '110')) {
-                $voltStyle = "style='background-color: #fef08a; color: #854d0e; text-align: center; font-weight: bold;'";
+        // 🌟 JOIN LANGSUNG KE TABEL MASTER SPAREPART
+        $parts = DB::table('deployment_sparepart')->join('spareparts', 'deployment_sparepart.sparepart_id', '=', 'spareparts.id')->where('deployment_sparepart.deployment_id', $row->id)->select('spareparts.nama_sparepart', 'deployment_sparepart.jumlah')->get();
+        if ($parts->isNotEmpty()) {
+            $html .= "<ul style='margin:0; padding-left:12px;'>";
+            foreach ($parts as $p) {
+                $html .= "<li><b>" . strtoupper($p->nama_sparepart) . "</b> ({$p->jumlah} Pcs)</li>";
             }
-
-            $html .= "
-            <tr>
-                <td class='text-center'>$no</td>
-                <td class='text-center'>$tgl</td>
-                <td>$customer</td>
-                <td>$model</td>
-                <td class='font-bold'>$sn</td>
-                <td $voltStyle>$voltase</td>
-                <td>BW: $bw <br> CL: $cl</td>
-                <td>$teknisi</td>
-                <td>";
-
-            // Loop Data Sparepart
-            if ($row->spareparts && $row->spareparts->isNotEmpty()) {
-                $html .= "<ul style='margin:0; padding-left:12px;'>";
-                foreach ($row->spareparts as $sp) {
-                    $html .= "<li>{$sp->nama_sparepart} ({$sp->pivot->jumlah} Pcs)</li>";
-                }
-                $html .= "</ul>";
-            } else {
-                $html .= "<span style='color: #999;'>-</span>";
-            }
-
-            $html .= "</td>
-                <td>$keterangan</td>
-            </tr>";
+            $html .= "</ul>";
+        } else {
+            $html .= "-";
         }
+
+        $html .= "</td><td>{$row->keterangan}</td></tr>";
     }
-
-    $html .= "
-            </tbody>
-        </table>
-
-        <div class='footer'>
-            <div class='ttd-box'>
-                <p>Indramayu, ".date('d F Y')."</p>
-                <p style='margin-bottom: 60px;'>Admin Operasional,</p>
-                <strong>( _________________________ )</strong>
-            </div>
-        </div>
-    </body>
-    </html>";
-
+    $html .= "</tbody></table><div class='footer'><div class='ttd-box'><p>Indramayu, " . date('d F Y') . "</p><p style='margin-bottom:60px;'>Admin Operasional,</p><strong>( _________________________ )</strong></div></div></body></html>";
     return response($html);
 })->name('cetak.pemasangan');
+
+// 2. CETAK SURAT JALAN (A5 LANDSCAPE)
+Route::get('/cetak-surat-jalan/{id}', function ($id) {
+    $d = Deployment::with(['machine', 'customer'])->findOrFail($id);
+    $html = "<!DOCTYPE html><html><head><title>SJ - {$d->machine->serial_number}</title><style>@page {size: A5 landscape; margin: 0mm;} body { font-family: sans-serif; font-size: 11px; border: 2px solid #000; padding: 20px; } table { width: 100%; border-collapse: collapse; margin: 15px 0; } th, td { border: 1px solid #000; padding: 8px; } th { background: #f2f2f2; }</style></head><body onload='window.print()'><div style='display:flex; justify-content:space-between; border-bottom:2px solid #000; padding-bottom:5px;'><div><h2>PT. DINAMIKA GLOBAL GEMILANG</h2><p>SURAT JALAN</p></div><div style='text-align:right;'><p><b>Nomor: SJ/FC/CRB/" . date('dmy', strtotime($d->created_at)) . "/" . str_pad($d->id, 3, '0', STR_PAD_LEFT) . "</b></p><p>Tanggal: " . date('d-m-Y', strtotime($d->created_at)) . "</p></div></div><p><b>Penerima:</b> {$d->customer->nama_customer}<br><b>Alamat :</b> {$d->customer->alamat}</p><table><thead><tr><th>NO</th><th>NAMA BARANG / DESKRIPSI</th><th>SN / KODE PART</th><th>JUMLAH</th><th>KETERANGAN</th></tr></thead><tbody><tr><td style='text-align:center;'>1</td><td><b>Mesin Fotokopi {$d->machine->tipe_model}</b></td><td>{$d->machine->serial_number}</td><td>1 Unit</td><td></td></tr>";
+
+    // 🌟 JOIN LANGSUNG KE TABEL MASTER SPAREPART
+    $no = 2;
+    $parts = DB::table('deployment_sparepart')->join('spareparts', 'deployment_sparepart.sparepart_id', '=', 'spareparts.id')->where('deployment_sparepart.deployment_id', $id)->select('spareparts.nama_sparepart', 'spareparts.code_part', 'deployment_sparepart.jumlah')->get();
+    foreach ($parts as $p) {
+        $html .= "<tr><td style='text-align:center;'>$no</td><td><b>" . strtoupper($p->nama_sparepart) . "</b></td><td>{$p->code_part}</td><td>{$p->jumlah} Pcs</td><td></td></tr>";
+        $no++;
+    }
+    $html .= "</tbody></table><div style='display:flex; justify-content:space-around; margin-top:25px; text-align:center;'><div>Admin,<br><br><br>( ________ )</div><div>Disetujui,<br><br><br>( ________ )</div><div>Teknisi,<br><br><br>( ________ )</div><div>Penerima,<br><br><br>( ________ )</div></div></body></html>";
+    return response($html);
+})->name('cetak.surat-jalan');
