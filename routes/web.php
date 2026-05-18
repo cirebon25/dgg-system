@@ -286,131 +286,6 @@ Route::get('/cetak-tukar-guling', function () {
     return response($html);
 })->name('cetak.swap');
 
-Route::get('/cetak-pemasangan-baru/{bulan}/{tahun}', function ($bulan, $tahun) {
-    // 1. AMBIL DATA MENGGUNAKAN ELOQUENT MODEL
-    $data = Deployment::with(['machine', 'customer.rayon', 'technician', 'spareparts'])
-        ->whereMonth('created_at', $bulan)
-        ->whereYear('created_at', $tahun)
-        ->orderBy('created_at', 'asc')
-        ->get();
-
-    $bulanIndo = [
-        '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
-        '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
-        '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
-    ];
-    $namaBulan = $bulanIndo[$bulan] ?? 'Tidak Diketahui';
-
-    $html = "
-    <!DOCTYPE html>
-    <html lang='id'>
-    <head>
-        <meta charset='UTF-8'>
-        <title>Laporan Pemasangan Baru - DGG System</title>
-        <style>
-            @page { size: landscape; margin: 10mm; }
-            body { font-family: sans-serif; font-size: 11px; color: #333; line-height: 1.4; }
-            .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 15px; }
-            .header h1 { margin: 0; font-size: 20px; color: #1e40af; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th { background-color: #1e40af; color: white; text-transform: uppercase; padding: 10px 5px; border: 1px solid #000; font-size: 10px; }
-            td { padding: 8px 5px; border: 1px solid #666; vertical-align: middle; }
-            tr:nth-child(even) { background-color: #f8fafc; }
-            .text-center { text-align: center; }
-            .font-bold { font-weight: bold; }
-            .footer { margin-top: 30px; width: 100%; }
-            .ttd-box { float: right; width: 250px; text-align: center; }
-        </style>
-    </head>
-    <body onload='window.print()'>
-        <div class='header'>
-            <h1>DGG SYSTEM - OPERATIONAL HUB</h1>
-            <h2>LAPORAN PEMASANGAN UNIT MESIN BARU</h2>
-            <p>Periode: $namaBulan $tahun</p>
-        </div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th width='30'>No</th>
-                    <th width='75'>Tgl Pasang</th>
-                    <th>Nama Customer</th>
-                    <th width='100'>Tipe Model</th>
-                    <th width='110'>NS / SN</th>
-                    <th width='50'>Volt</th>
-                    <th width='90'>Ctr Awal</th>
-                    <th width='100'>Teknisi</th>
-                    <th width='140'>Part</th>
-                    <th width='150'>Keterangan</th>
-                </tr>
-            </thead>
-            <tbody>";
-
-    if ($data->isEmpty()) {
-        $html .= "<tr><td colspan='10' class='text-center'>Tidak ada data pemasangan baru pada periode ini.</td></tr>";
-    } else {
-        foreach ($data as $index => $row) {
-            $no = $index + 1;
-            $tgl = date('d-m-Y', strtotime($row->created_at));
-
-            $sn = $row->machine->serial_number ?? '-';
-            $model = $row->machine->tipe_model ?? '-';
-            $customer = $row->customer->nama_customer ?? '-';
-
-            $bw = isset($row->counter_bw) ? number_format($row->counter_bw) : '0';
-            $cl = isset($row->counter_color) ? number_format($row->counter_color) : '0';
-            $voltase = ! empty($row->volt) ? $row->volt.' V' : '-';
-            $teknisi = $row->technician->nama_technician ?? '-';
-            
-            // Mengambil kolom keterangan dari tabel deployments (jika ada kolomnya di DB)
-            $keterangan = $row->keterangan ?? '-'; 
-
-            $html .= "
-            <tr>
-                <td class='text-center'>$no</td>
-                <td class='text-center'>$tgl</td>
-                <td>$customer</td>
-                <td>$model</td>
-                <td class='font-bold'>$sn</td>
-                <td class='text-center'>$voltase</td>
-                <td>BW: $bw <br> CL: $cl</td>
-                <td>$teknisi</td>
-                <td>";
-
-            // Loop Data Sparepart
-            if ($row->spareparts && $row->spareparts->isNotEmpty()) {
-                $html .= "<ul style='margin:0; padding-left:12px;'>";
-                foreach ($row->spareparts as $sp) {
-                    $html .= "<li>{$sp->nama_sparepart} ({$sp->pivot->jumlah} Pcs)</li>";
-                }
-                $html .= "</ul>";
-            } else {
-                $html .= "<span style='color: #999;'>-</span>";
-            }
-
-            $html .= "</td>
-                <td>$keterangan</td>
-            </tr>";
-        }
-    }
-
-    $html .= "
-            </tbody>
-        </table>
-
-        <div class='footer'>
-            <div class='ttd-box'>
-                <p>Indramayu, ".date('d F Y')."</p>
-                <p style='margin-bottom: 60px;'>Admin Operasional,</p>
-                <strong>( _________________________ )</strong>
-            </div>
-        </div>
-    </body>
-    </html>";
-
-    return response($html);
-})->name('cetak.pemasangan-baru');
-
 Route::get('/cetak-surat-jalan/{id}', function ($id) {
     // KUNCI UTAMA: Kita panggil 'with spareparts' agar datanya ikut keambil
     $d = Deployment::with(['machine', 'customer', 'spareparts'])->findOrFail($id);
@@ -1077,3 +952,147 @@ Route::get('/admin/service-log/{serviceLog}/surat-jalan', function (\App\Models\
 
 Route::get('/admin/rekap-horizontal', [App\Http\Controllers\ReportController::class, 'rekapHorizontal'])
     ->name('rekap.horizontal')->middleware(['auth']);
+
+
+
+Route::get('/cetak-pemasangan-baru/{bulan?}/{tahun?}', function ($bulan = null, $tahun = null) {
+    // 🌟 REVISI 1: Kunci data agar HANYA otomatis menampilkan bulan & tahun berjalan saat ini
+    $bulan = date('m');
+    $tahun = date('Y');
+
+    // Ambil data menggunakan Eloquent Model
+    $data = Deployment::with(['machine', 'customer.rayon', 'technician', 'spareparts'])
+        ->whereMonth('created_at', $bulan)
+        ->whereYear('created_at', $tahun)
+        ->orderBy('created_at', 'asc')
+        ->get();
+
+    $bulanIndo = [
+        '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
+        '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
+        '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+    ];
+    $namaBulan = $bulanIndo[$bulan] ?? 'Tidak Diketahui';
+
+    $html = "
+    <!DOCTYPE html>
+    <html lang='id'>
+    <head>
+        <meta charset='UTF-8'>
+        <title>Laporan Pemasangan Baru - DGG System</title>
+        <style>
+            @page { size: landscape; margin: 10mm; }
+            body { font-family: sans-serif; font-size: 11px; color: #333; line-height: 1.4; }
+            .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 15px; }
+            
+            /* 🌟 REVISI 2: Font Header Diubah Menjadi Hitam Pekat (Black) */
+            .header h1 { margin: 0; font-size: 20px; color: #000000; } 
+            .header h2 { margin: 5px 0 0 0; font-size: 14px; color: #000000; } 
+            .header p { margin: 5px 0 0 0; font-size: 12px; color: #000000; font-weight: bold; }
+            
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th { background-color: #1e40af; color: white; text-transform: uppercase; padding: 10px 5px; border: 1px solid #000; font-size: 10px; }
+            td { padding: 8px 5px; border: 1px solid #666; vertical-align: middle; }
+            tr:nth-child(even) { background-color: #f8fafc; }
+            .text-center { text-align: center; }
+            .font-bold { font-weight: bold; }
+            .footer { margin-top: 30px; width: 100%; }
+            .ttd-box { float: right; width: 250px; text-align: center; }
+        </style>
+    </head>
+    <body onload='window.print()'>
+        <div class='header'>
+            <h1>DGG SYSTEM - OPERATIONAL HUB</h1>
+            <h2>LAPORAN PEMASANGAN UNIT MESIN BARU</h2>
+            <p>Periode Bulan Berjalan: $namaBulan $tahun</p>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th width='30'>No</th>
+                    <th width='75'>Tgl Pasang</th>
+                    <th>Nama Customer</th>
+                    <th width='100'>Tipe Model</th>
+                    <th width='110'>NS / SN</th>
+                    <th width='55'>Volt</th>
+                    <th width='90'>Ctr Awal</th>
+                    <th width='100'>Teknisi</th>
+                    <th width='140'>Part</th>
+                    <th width='150'>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>";
+
+    if ($data->isEmpty()) {
+        $html .= "<tr><td colspan='10' class='text-center'>Tidak ada data pemasangan baru pada periode bulan berjalan ini ($namaBulan $tahun).</td></tr>";
+    } else {
+        foreach ($data as $index => $row) {
+            $no = $index + 1;
+            $tgl = date('d-m-Y', strtotime($row->created_at));
+
+            $sn = $row->machine->serial_number ?? '-';
+            $model = $row->machine->tipe_model ?? '-';
+            $customer = $row->customer->nama_customer ?? '-';
+
+            $bw = isset($row->counter_bw) ? number_format($row->counter_bw) : '0';
+            $cl = isset($row->counter_color) ? number_format($row->counter_color) : '0';
+            $teknisi = $row->technician->nama_technician ?? '-';
+            $keterangan = $row->keterangan ?? '-'; 
+
+            // Logika pewarnaan voltase tetap aman terjaga
+            $voltRaw = ! empty($row->volt) ? trim($row->volt) : '';
+            $voltase = ! empty($voltRaw) ? $voltRaw.' V' : '-';
+            $voltStyle = "class='text-center'";
+
+            if (str_contains($voltRaw, '220')) {
+                $voltStyle = "style='background-color: #bbf7d0; color: #166534; text-align: center; font-weight: bold;'";
+            } elseif (str_contains($voltRaw, '110')) {
+                $voltStyle = "style='background-color: #fef08a; color: #854d0e; text-align: center; font-weight: bold;'";
+            }
+
+            $html .= "
+            <tr>
+                <td class='text-center'>$no</td>
+                <td class='text-center'>$tgl</td>
+                <td>$customer</td>
+                <td>$model</td>
+                <td class='font-bold'>$sn</td>
+                <td $voltStyle>$voltase</td>
+                <td>BW: $bw <br> CL: $cl</td>
+                <td>$teknisi</td>
+                <td>";
+
+            // Loop Data Sparepart
+            if ($row->spareparts && $row->spareparts->isNotEmpty()) {
+                $html .= "<ul style='margin:0; padding-left:12px;'>";
+                foreach ($row->spareparts as $sp) {
+                    $html .= "<li>{$sp->nama_sparepart} ({$sp->pivot->jumlah} Pcs)</li>";
+                }
+                $html .= "</ul>";
+            } else {
+                $html .= "<span style='color: #999;'>-</span>";
+            }
+
+            $html .= "</td>
+                <td>$keterangan</td>
+            </tr>";
+        }
+    }
+
+    $html .= "
+            </tbody>
+        </table>
+
+        <div class='footer'>
+            <div class='ttd-box'>
+                <p>Indramayu, ".date('d F Y')."</p>
+                <p style='margin-bottom: 60px;'>Admin Operasional,</p>
+                <strong>( _________________________ )</strong>
+            </div>
+        </div>
+    </body>
+    </html>";
+
+    return response($html);
+})->name('cetak.pemasangan');
