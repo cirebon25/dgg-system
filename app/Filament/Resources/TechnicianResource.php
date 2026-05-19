@@ -33,6 +33,7 @@ class TechnicianResource extends Resource
                     ->maxLength(255),
 
                 \Filament\Forms\Components\TextInput::make('nomor_hp')
+                    ->required()
                     ->tel(), // Format nomor telepon
             ]);
     }

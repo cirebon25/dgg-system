@@ -68,16 +68,6 @@ Route::get('/service-log/report/monthly', function (Request $request) {
     ]);
 })->name('service-log.monthly');
 
-Route::get('/sparepart/report/outflow', function (Request $request) {
-    $month = $request->query('month');
-    $year = $request->query('year');
-
-    $usages = ServiceLogSparepart::whereHas('serviceLog', function ($q) use ($month, $year) {
-        $q->whereMonth('tanggal', $month)->whereYear('tanggal', $year);
-    })->with(['sparepart', 'serviceLog.machine.deployment.customer'])->get();
-
-    return view('print.sparepart-outflow', compact('usages', 'month', 'year'));
-})->name('sparepart.report.outflow');
 
 Route::get('/sparepart/monitor-umur/{machine_id}', function ($machine_id) {
     $machine = Machine::with(['deployment.customer', 'serviceLogs'])->findOrFail($machine_id);
@@ -206,17 +196,17 @@ Route::get('/cetak-tukar-guling', function () {
         ->leftJoin('machines as m_old', 'machine_replacements.old_machine_id', '=', 'm_old.id')
         ->leftJoin('machines as m_new', 'machine_replacements.new_machine_id', '=', 'm_new.id')
         ->leftJoin('technicians', 'machine_replacements.technician_id', '=', 'technicians.id')
-        ->leftJoin('service_logs as log_old', function($join) {
+        ->leftJoin('service_logs as log_old', function ($join) {
             $join->on('machine_replacements.old_machine_id', '=', 'log_old.machine_id')
-                 ->on('machine_replacements.customer_id', '=', 'log_old.customer_id')
-                 ->on('machine_replacements.tanggal', '=', 'log_old.tanggal')
-                 ->where('log_old.kerusakan', '=', 'ROLLING OUT');
+                ->on('machine_replacements.customer_id', '=', 'log_old.customer_id')
+                ->on('machine_replacements.tanggal', '=', 'log_old.tanggal')
+                ->where('log_old.kerusakan', '=', 'ROLLING OUT');
         })
-        ->leftJoin('service_logs as log_new', function($join) {
+        ->leftJoin('service_logs as log_new', function ($join) {
             $join->on('machine_replacements.new_machine_id', '=', 'log_new.machine_id')
-                 ->on('machine_replacements.customer_id', '=', 'log_new.customer_id')
-                 ->on('machine_replacements.tanggal', '=', 'log_new.tanggal')
-                 ->where('log_new.kerusakan', '=', 'ROLLING IN');
+                ->on('machine_replacements.customer_id', '=', 'log_new.customer_id')
+                ->on('machine_replacements.tanggal', '=', 'log_new.tanggal')
+                ->where('log_new.kerusakan', '=', 'ROLLING IN');
         })
         ->leftJoin('deployments', 'machine_replacements.customer_id', '=', 'deployments.customer_id')
         ->select(
@@ -311,7 +301,7 @@ Route::get('/cetak-tukar-guling', function () {
             $no = $index + 1;
             $tgl = $row->tanggal ? date('d/m/Y', strtotime($row->tanggal)) : date('d/m/Y');
             $customer = "<strong>" . strtoupper($row->nama_customer ?? 'Umum') . "</strong><br><small style='color:#555;'>$row->kota</small>";
-            $voltase = !empty($row->volt_mesin) ? trim($row->volt_mesin).' V' : '220 V';
+            $voltase = !empty($row->volt_mesin) ? trim($row->volt_mesin) . ' V' : '220 V';
 
             $html .= "
             <tr>
@@ -396,196 +386,6 @@ Route::get('/cetak-alokasi-customer', function () {
 
     return response($html);
 })->name('cetak.alokasi-customer');
-
-// REKAP SALDO SPAREPART
-Route::get('/cetak-rekap-sparepart', function (Request $request) {
-    
-    // 1. Pengaturan Periode Filter
-    $bulanNominal = $request->query('bulan', date('m'));
-    $tahun = $request->query('tahun', date('Y'));
-    
-    $bulanIndo = [
-        '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', 
-        '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', 
-        '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
-    ];
-    $namaBulan = $bulanIndo[$bulanNominal] ?? date('F');
-
-    // =========================================================================
-    // 🌟 JALUR 1: AMBIL SPAREPART KELUAR DARI LOG SERVIS (MAINTENANCE TEKNISI)
-    // =========================================================================
-    $jalurServis = DB::table('service_log_spareparts')
-        ->join('spareparts', 'service_log_spareparts.sparepart_id', '=', 'spareparts.id')
-        ->join('service_logs', 'service_log_spareparts.service_log_id', '=', 'service_logs.id')
-        ->join('technicians', 'service_logs.technician_id', '=', 'technicians.id')
-        ->join('rayons', 'technicians.rayon_id', '=', 'rayons.id')
-        ->whereMonth('service_logs.tanggal', $bulanNominal)
-        ->whereYear('service_logs.tanggal', $tahun)
-        ->select(
-            'rayons.nama_rayon',
-            'spareparts.code_part',
-            'spareparts.no_part',
-            'spareparts.nama_sparepart',
-            'service_log_spareparts.jumlah as qty_keluar'
-        );
-
-    // =========================================================================
-    // 🌟 JALUR 2: AMBIL SPAREPART KELUAR DARI DEPLOYMENT (DIIKAT KE RAYON TEKNISI)
-    // =========================================================================
-    $jalurDeploy = DB::table('deployment_sparepart')
-        ->join('spareparts', 'deployment_sparepart.sparepart_id', '=', 'spareparts.id')
-        ->join('deployments', 'deployment_sparepart.deployment_id', '=', 'deployments.id')
-        ->join('technicians', 'deployment_sparepart.technician_id', '=', 'technicians.id') 
-        ->join('rayons', 'technicians.rayon_id', '=', 'rayons.id') 
-        ->whereMonth('deployments.created_at', $bulanNominal)
-        ->whereYear('deployments.created_at', $tahun)
-        ->select(
-            'rayons.nama_rayon',
-            'spareparts.code_part',
-            'spareparts.no_part',
-            'spareparts.nama_sparepart',
-            'deployment_sparepart.jumlah as qty_keluar'
-        );
-
-    // =========================================================================
-    // 🌟 UNION ALL: Gabungkan kedua aliran data kueri murni database
-    // =========================================================================
-    $semuaSparepartKeluar = $jalurServis->unionAll($jalurDeploy)->get();
-
-    // Proses Grouping & Sum Massal biar di lembar cetak tidak ganda itemnya
-    $dataRekapFinal = $semuaSparepartKeluar->groupBy('nama_rayon')->map(function ($itemsInRayon) {
-        return $itemsInRayon->groupBy('nama_sparepart')->map(function ($groupedItems) {
-            $first = $groupedItems->first();
-            return (object) [
-                'code_part'      => $first->code_part,
-                'no_part'        => $first->no_part,
-                'nama_sparepart' => $first->nama_sparepart,
-                'total_keluar'   => $groupedItems->sum('qty_keluar')
-            ];
-        })->sortBy('nama_sparepart');
-    })->sortBy(function ($value, $key) {
-        return $key;
-    });
-
-    // 3. Output HTML (Struktur Tetap Rapi & Auto Potong Lembar Per Rayon)
-    $html = "
-    <html>
-    <head>
-        <meta charset='UTF-8'>
-        <title>Rekap Keluar Sparepart Per Rayon</title>
-        <style>
-            body { font-family: sans-serif; font-size: 11px; padding: 10px; color: #333; }
-            .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-            .header p { margin: 2px 0; font-weight: bold; }
-            .judul { font-size: 16px; margin-top: 10px; font-weight: bold; text-transform: uppercase; }
-            
-            .rayon-group-title { 
-                background-color: #facc15 !important; 
-                color: #000000 !important;
-                padding: 8px 12px; 
-                margin-top: 15px;
-                font-size: 12px; 
-                font-weight: bold; 
-                border: 1px solid #000;
-                text-transform: uppercase;
-                -webkit-print-color-adjust: exact !important; 
-                print-color-adjust: exact !important;
-            }
-            
-            table { width: 100%; border-collapse: collapse; margin-top: 5px; margin-bottom: 25px; }
-            th, td { border: 1px solid #000; padding: 7px; text-align: center; }
-            th { background: #f2f2f2; text-transform: uppercase; font-size: 10px; color: #000; font-weight: bold; }
-            
-            .text-left { text-align: left; }
-            .font-bold { font-weight: bold; }
-            
-            .page-break {
-                page-break-before: always;
-                break-before: page;
-            }
-
-            @media print {
-                @page { size: portrait; margin: 1cm; }
-                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } 
-            }
-        </style>
-    </head>
-    <body onload='window.print()'>";
-
-    if ($dataRekapFinal->isEmpty()) {
-        $html .= "
-        <div class='header'>
-            <p>PT. DINAMIKA GLOBAL GEMILANG</p>
-            <p>DEPO CIREBON</p>
-            <div class='judul'>REKAP KELUAR SPAREPART PER RAYON</div>
-            <p>PERIODE: $namaBulan $tahun</p>
-        </div>
-        <div style='text-align:center; padding:30px; border:1px solid #000; font-weight:bold; color:#666;'>
-            Belum ada data pengeluaran sparepart (Servis maupun Deploy) pada periode $namaBulan $tahun.
-        </div>";
-    } else {
-        $isFirst = true;
-
-        foreach ($dataRekapFinal as $namaRayon => $itemsSparepart) {
-            
-            $classPageBreak = $isFirst ? '' : 'page-break';
-            $isFirst = false;
-
-            $html .= "
-            <div class='{$classPageBreak}'>
-                <div class='header'>
-                    <p>PT. DINAMIKA GLOBAL GEMILANG</p>
-                    <p>DEPO CIREBON</p>
-                    <div class='judul'>REKAP KELUAR SPAREPART PER RAYON</div>
-                    <p>PERIODE: $namaBulan $tahun</p>
-                </div>
-
-                <div class='rayon-group-title'>📍 WILAYAH / RAYON: $namaRayon</div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th width='40'>NO</th>
-                            <th width='120'>KODE PART</th>
-                            <th width='120'>NO PART</th>
-                            <th>NAMA SPAREPART</th>
-                            <th width='130'>TOTAL KELUAR (PCS)</th>
-                        </tr>
-                    </thead>
-                    <tbody>";
-
-            $no = 1;
-            foreach ($itemsSparepart as $s) {
-                $html .= "<tr>
-                    <td>$no</td>
-                    <td>" . ($s->code_part ?: '-') . "</td>
-                    <td>" . ($s->no_part ?: '-') . "</td>
-                    <td class='text-left'><b>" . strtoupper($s->nama_sparepart) . "</b></td>
-                    <td class='font-bold' style='font-size: 11px; color: #2563eb;'> " . number_format($s->total_keluar) . " Pcs </td>
-                </tr>";
-                $no++;
-            }
-
-            $html .= "
-                    </tbody>
-                </table>
-                
-                <div style='margin-top: 20px; float: right; text-align: center; width: 250px;'>
-                    <p>Cirebon, " . date('d-m-Y') . "</p>
-                    <br><br><br>
-                    <p><b>( _________________ )</b></p>
-                    <p>Admin Gudang Pusat</p>
-                </div>
-                <div style='clear: both;'></div>
-            </div>";
-        }
-    }
-
-    $html .= "
-    </body>
-    </html>";
-
-    return response($html);
-})->name('cetak.rekap-sparepart');
 
 // ➡️ RUTE 1: UNTUK MENCETAK STIKER QR CODE (Ukuran Presisi Stiker)
 Route::get('/mesin/{id}/cetak-qr', function ($id) {
@@ -1030,9 +830,18 @@ Route::get('/cetak-pemasangan-baru/{bulan?}/{tahun?}', function ($bulan = null, 
         ->get();
 
     $bulanIndo = [
-        '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', 
-        '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', 
-        '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+        '01' => 'Januari',
+        '02' => 'Februari',
+        '03' => 'Maret',
+        '04' => 'April',
+        '05' => 'Mei',
+        '06' => 'Juni',
+        '07' => 'Juli',
+        '08' => 'Agustus',
+        '09' => 'September',
+        '10' => 'Oktober',
+        '11' => 'November',
+        '12' => 'Desember'
     ];
     $namaBulan = $bulanIndo[$bulan] ?? 'Tidak Diketahui';
 
@@ -1068,7 +877,7 @@ Route::get('/cetak-pemasangan-baru/{bulan?}/{tahun?}', function ($bulan = null, 
                     <th>Tgl Pasang</th>
                     <th>Nama Customer</th>
                     <th>Tipe Model</th>
-                    <th>NS / SN</th>
+                    <th>No Seri</th>
                     <th>Volt</th>
                     <th>Ctr Awal</th>
                     <th>Teknisi</th>
@@ -1084,7 +893,7 @@ Route::get('/cetak-pemasangan-baru/{bulan?}/{tahun?}', function ($bulan = null, 
         foreach ($data as $index => $row) {
             $no = $index + 1;
             $tgl = date('d-m-Y', strtotime($row->created_at));
-            
+
             $html .= "<tr>
                 <td class='text-center'>$no</td>
                 <td class='text-center'>$tgl</td>
@@ -1102,7 +911,7 @@ Route::get('/cetak-pemasangan-baru/{bulan?}/{tahun?}', function ($bulan = null, 
                 ->where('deployment_sparepart.deployment_id', $row->id)
                 ->select('spareparts.nama_sparepart', 'deployment_sparepart.jumlah')
                 ->get();
-                
+
             if ($parts->isNotEmpty()) {
                 $html .= "<ul style='margin:0; padding-left:12px;'>";
                 foreach ($parts as $p) {
@@ -1118,7 +927,7 @@ Route::get('/cetak-pemasangan-baru/{bulan?}/{tahun?}', function ($bulan = null, 
             </tr>";
         }
     }
-    
+
     $html .= "
             </tbody>
         </table>
@@ -1151,3 +960,69 @@ Route::get('/cetak-surat-jalan/{id}', function ($id) {
     $html .= "</tbody></table><div style='display:flex; justify-content:space-around; margin-top:25px; text-align:center;'><div>Admin,<br><br><br>( ________ )</div><div>Disetujui,<br><br><br>( ________ )</div><div>Teknisi,<br><br><br>( ________ )</div><div>Penerima,<br><br><br>( ________ )</div></div></body></html>";
     return response($html);
 })->name('cetak.surat-jalan');
+
+// ---------------------------------
+
+Route::get('/sparepart/report/outflow', function (Request $request) {
+
+    $month = $request->query('month', date('m'));
+    $year  = $request->query('year', date('Y'));
+
+    $usages = ServiceLogSparepart::with([
+        'sparepart',
+        'serviceLog.machine.deployment.customer',
+        'serviceLog.technician.rayon',
+    ])
+        ->whereHas('serviceLog', function ($q) use ($month, $year) {
+            $q->whereMonth('tanggal', (int) $month)
+                ->whereYear('tanggal', (int) $year);
+        })
+        ->get();
+
+    $groupedUsages = $usages->groupBy(function ($item) {
+        return optional(
+            optional(
+                optional($item->serviceLog)->technician
+            )->rayon
+        )->nama_rayon ?? 'TIDAK DIKETAHUI';
+    });
+
+    return view('print.sparepart-outflow')
+        ->with('groupedUsages', $groupedUsages)
+        ->with('month', $month)
+        ->with('year', $year);
+})->name('sparepart.report.outflow');
+
+
+/* cetak-rekap-sparepart */
+
+
+Route::get('/cetak-rekap-sparepart', function (Request $request) {
+
+    $month = str_pad($request->query('bulan', date('m')), 2, '0', STR_PAD_LEFT);
+    $year  = trim($request->query('tahun', date('Y')));
+
+    $usages = \App\Models\ServiceLogSparepart::with([
+        'sparepart',
+        'serviceLog.machine.deployment.customer',
+        'serviceLog.technician.rayon',
+    ])
+        ->whereHas('serviceLog', function ($q) use ($year, $month) {
+            $q->whereYear('tanggal', $year)
+                ->whereMonth('tanggal', (int) $month);
+        })
+        ->get();
+
+    $groupedUsages = $usages->groupBy(function ($item) {
+        return optional(
+            optional(
+                optional($item->serviceLog)->technician
+            )->rayon
+        )->nama_rayon ?? 'TIDAK DIKETAHUI';
+    });
+
+    return view('print.sparepart-outflow')
+        ->with('groupedUsages', $groupedUsages)
+        ->with('month', $month)
+        ->with('year', $year);
+})->name('cetak.rekap-sparepart');

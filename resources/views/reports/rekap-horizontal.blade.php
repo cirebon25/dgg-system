@@ -21,8 +21,8 @@
         }
 
         .rayon-title {
-            background: #000;
-            color: #fff;
+            background: #5de766;
+            color: #070707;
             padding: 6px;
             font-weight: bold;
             font-size: 11px;
@@ -68,8 +68,8 @@
 
         /* Header Utama FULL Hijau */
         .main-table th {
-            background: #1b5e20;
-            color: white;
+            background: #5de766;
+            color: rgb(15, 15, 15);
             border: 1px solid #000;
             padding: 4px 1px;
             font-size: 7px;
