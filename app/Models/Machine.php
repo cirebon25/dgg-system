@@ -33,4 +33,9 @@ class Machine extends Model
     {
         return $this->hasMany(ServiceLog::class);
     }
+
+    public function deployment()
+    {
+        return $this->hasOne(Deployment::class, 'machine_id');
+    }
 }

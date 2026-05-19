@@ -19,7 +19,7 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
-use Filament\Notifications\Actions\Action;
+use Filament\Notifications\Actions\Action; // 🌟 PENTING: Tombol Cetak Notifikasi
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
@@ -82,7 +82,7 @@ class GantiMesin extends Page implements HasForms
                     Select::make('technician_id')
                         ->label('Teknisi Pelaksana')
                         ->options(Technician::pluck('nama_technician', 'id'))
-                        ->searchable()->required()->live(), // Live agar ID teknisi terbaca oleh repeater
+                        ->searchable()->required()->live(),
                     DatePicker::make('tanggal')->label('Tanggal Rolling')->default(now())->required(),
                     TextInput::make('keterangan')->label('Alasan Rolling')->required(),
                 ])->columns(4),
@@ -130,12 +130,23 @@ class GantiMesin extends Page implements HasForms
             $oldMachine = Machine::find($input['old_machine_id']);
             $newMachine = Machine::find($input['new_machine_id']);
 
-            // --- 1. UPDATE STATUS MESIN DULU ---
+            // --- 1. UPDATE STATUS MESIN ---
             $oldMachine->update(['status' => 'Refurbish', 'customer_id' => null, 'technician_id' => null]);
             $newMachine->update(['status' => 'Rented', 'customer_id' => $deployment->customer_id, 'technician_id' => $input['technician_id']]);
             $deployment->update(['machine_id' => $newMachine->id]);
 
-            // --- 2. LOG PENARIKAN (MESIN LAMA) ---
+            // --- 2. LOG REKAP PUSAT SWAP ---
+            DB::table('machine_replacements')->insert([
+                'customer_id'    => $deployment->customer_id,
+                'old_machine_id' => $oldMachine->id,
+                'new_machine_id' => $newMachine->id,
+                'technician_id'  => $input['technician_id'],
+                'tanggal'        => $input['tanggal'],
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ]);
+
+            // --- 3. LOG PENARIKAN (MESIN LAMA) ---
             ServiceLog::create([
                 'machine_id' => $oldMachine->id,
                 'customer_id' => $deployment->customer_id,
@@ -145,22 +156,23 @@ class GantiMesin extends Page implements HasForms
                 'counter_bw' => $input['counter_bw_final'],
                 'counter_color' => $input['counter_color_final'],
                 'kerusakan' => 'ROLLING OUT',
-                'perbaikan' => "Tarik unit. Ganti ke SN: {$newMachine->serial_number}",
+                'perbaikan' => $input['keterangan'], // Kunci Alasan Ganti
             ]);
 
-            // --- 3. LOG PEMASANGAN (MESIN BARU) ---
+            // --- 4. LOG PEMASANGAN (MESIN BARU) ---
             $logBaru = ServiceLog::create([
                 'machine_id' => $newMachine->id,
                 'customer_id' => $deployment->customer_id,
                 'technician_id' => $input['technician_id'],
                 'tanggal' => $input['tanggal'],
                 'tipe_kunjungan' => 'RR',
-                'counter_bw' => 0, 'counter_color' => 0,
+                'counter_bw' => 0, 
+                'counter_color' => 0,
                 'kerusakan' => 'ROLLING IN',
-                'perbaikan' => "Pasang unit ganti SN: {$oldMachine->serial_number}",
+                'perbaikan' => "Unit Pengganti dari SN: {$oldMachine->serial_number}",
             ]);
 
-            // --- 4. SIMPAN SPAREPART (OTOMATIS POTONG STOK VIA MODEL) ---
+            // --- 5. SIMPAN SPAREPART KELENGKAPAN ---
             if (!empty($input['spareparts'])) {
                 foreach ($input['spareparts'] as $item) {
                     ServiceLogSparepart::create([
@@ -174,7 +186,20 @@ class GantiMesin extends Page implements HasForms
         });
 
         $this->form->fill();
-        Notification::make()->title('Rolling Berhasil!')->success()->persistent()
-            ->body('Data sinkron. Stok gudang & tas teknisi telah dipotong otomatis.')->send();
+
+        // 🌟 NOTIFIKASI SAKTI: TOMBOL PRINT LANGSUNG AKTIF KEMBALI 🌟
+        Notification::make()
+            ->title('Rolling Berhasil!')
+            ->success()
+            ->persistent()
+            ->body('Data sinkron. Silakan langsung cetak Berita Acara melalui tombol di bawah ini:')
+            ->actions([
+                Action::make('print')
+                    ->label('🖨️ Langsung Cetak Swap')
+                    ->button()
+                    ->color('warning')
+                    ->url(route('cetak.swap'), shouldOpenInNewTab: true),
+            ])
+            ->send();
     }
 }

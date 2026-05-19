@@ -22,24 +22,44 @@ class SparepartEntryResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Penerimaan Barang Baru')
-                    ->description('Input barang yang baru datang untuk menambah stok gudang.')
+                // 📑 BAGIAN 1: INFO NOTA & SUPPLIER (Cukup Isi Sekali di Atas)
+                Forms\Components\Section::make('Informasi Pengiriman / Supplier')
+                    ->description('Detail nota utama dari pihak supplier.')
                     ->schema([
-                        Forms\Components\Select::make('sparepart_id')
-                            ->relationship('sparepart', 'nama_sparepart')
-                            ->label('Pilih Sparepart')
-                            ->searchable()
-                            ->required(),
-                        Forms\Components\TextInput::make('jumlah')
-                            ->label('Jumlah Masuk')
-                            ->numeric()
-                            ->required()
-                            ->minValue(1),
                         Forms\Components\TextInput::make('supplier')
-                            ->label('Nama Supplier / Toko'),
+                            ->label('Nama Supplier / Toko')
+                            ->placeholder('Contoh: CV. Jaya Bersama Jakarta'),
                         Forms\Components\Textarea::make('keterangan')
-                            ->placeholder('Contoh: Barang datang dari Jakarta'),
+                            ->label('Catatan Tambahan Nota')
+                            ->placeholder('Contoh: Kiriman Paket Cargo Gelombang 2')
+                            ->rows(2),
                     ])->columns(2),
+
+                // 📦 BAGIAN 2: DAFTAR BARANG MASSAL (Bisa Tambah Sampai Berapa pun Jenisnya)
+                Forms\Components\Section::make('Daftar Suku Cadang Masuk')
+                    ->description('Masukkan semua jenis sparepart yang datang di nota ini sekaligus.')
+                    ->schema([
+                        Forms\Components\Repeater::make('items_masuk')
+                            ->label('Item Barang')
+                            ->schema([
+                                Forms\Components\Select::make('sparepart_id')
+                                    ->label('Pilih Sparepart')
+                                    ->options(\App\Models\Sparepart::pluck('nama_sparepart', 'id'))
+                                    ->searchable()
+                                    ->preload()
+                                    ->required(),
+                                Forms\Components\TextInput::make('jumlah')
+                                    ->label('Jumlah Masuk')
+                                    ->numeric()
+                                    ->minValue(1)
+                                    ->default(1)
+                                    ->required(),
+                            ])
+                            ->columns(2)
+                            ->defaultItems(1)
+                            ->createItemButtonLabel('Tambah Baris Barang Baru')
+                            ->required(),
+                    ]),
             ]);
     }
 
@@ -47,10 +67,19 @@ class SparepartEntryResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('created_at')->label('Tgl Masuk')->dateTime('d M Y'),
-                Tables\Columns\TextColumn::make('sparepart.nama_sparepart')->label('Nama Part'),
-                Tables\Columns\TextColumn::make('jumlah')->label('Jumlah')->badge()->color('success'),
-                Tables\Columns\TextColumn::make('supplier')->label('Supplier'),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Tgl Masuk')
+                    ->dateTime('d M Y'),
+                Tables\Columns\TextColumn::make('sparepart.nama_sparepart')
+                    ->label('Nama Part')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('jumlah')
+                    ->label('Jumlah')
+                    ->badge()
+                    ->color('success'),
+                Tables\Columns\TextColumn::make('supplier')
+                    ->label('Supplier')
+                    ->searchable(),
             ])
             ->defaultSort('created_at', 'desc');
     }
