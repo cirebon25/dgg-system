@@ -19,7 +19,9 @@ class MachineResource extends Resource
 
     protected static ?string $navigationLabel = 'Data Mesin';
 
-     protected static ?string $navigationGroup = 'DATA MASTER';
+    protected static ?string $navigationGroup = 'MASTER DATA';
+
+    protected static ?int $navigationSort = 2; // Urutan nomor 2
 
     public static function form(Form $form): Form
     {
@@ -83,19 +85,19 @@ class MachineResource extends Resource
                         Forms\Components\TextInput::make('volt')
                             ->label('Voltase')
                             ->placeholder('Contoh: 110V / 220V'),
-                        
+
                         Forms\Components\TextInput::make('finisher')
                             ->label('Finisher')
                             ->placeholder('Contoh: Internal Finisher / Booklet'),
-                        
+
                         Forms\Components\TextInput::make('cover')
                             ->label('Cover')
                             ->placeholder('Contoh: Platen Cover / DADF'),
-                        
+
                         Forms\Components\TextInput::make('kaset')
                             ->label('Jumlah Kaset')
                             ->placeholder('Contoh: 2 Tray / 4 Tray'),
-                        
+
                         Forms\Components\TextInput::make('double_scan')
                             ->label('Double Scan (Qty)')
                             ->numeric()
@@ -108,11 +110,11 @@ class MachineResource extends Resource
     {
         return $table
             ->modifyQueryUsing(function (Builder $query) {
-            return $query
-                // 1. Urutkan Status: 'Ready' jadi nomor 0 (paling atas), selain itu nomor 1
-                ->orderByRaw("CASE WHEN status = 'Ready' THEN 0 ELSE 1 END")
-                // 2. Urutkan berdasarkan tanggal buat terbaru
-                ->orderBy('created_at', 'desc');
+                return $query
+                    // 1. Urutkan Status: 'Ready' jadi nomor 0 (paling atas), selain itu nomor 1
+                    ->orderByRaw("CASE WHEN status = 'Ready' THEN 0 ELSE 1 END")
+                    // 2. Urutkan berdasarkan tanggal buat terbaru
+                    ->orderBy('created_at', 'desc');
             })
             ->headerActions([
                 // 🌟 TOMBOL INPUT BARU
@@ -153,7 +155,7 @@ class MachineResource extends Resource
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'Ready' => 'success',
                         'Rented' => 'warning',
                         'Refurbish' => 'danger',
@@ -170,7 +172,7 @@ class MachineResource extends Resource
                     ->label('Monitor Part')
                     ->icon('heroicon-o-cpu-chip')
                     ->color('warning')
-                    ->url(fn ($record) => route('sparepart.monitor', $record->id))
+                    ->url(fn($record) => route('sparepart.monitor', $record->id))
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([

@@ -21,8 +21,8 @@
         }
 
         .rayon-title {
-            background: #5de766;
-            color: #070707;
+            background: #000;
+            color: #fff;
             padding: 6px;
             font-weight: bold;
             font-size: 11px;
@@ -68,8 +68,8 @@
 
         /* Header Utama FULL Hijau */
         .main-table th {
-            background: #5de766;
-            color: rgb(15, 15, 15);
+            background: #1b5e20;
+            color: white;
             border: 1px solid #000;
             padding: 4px 1px;
             font-size: 7px;
@@ -106,16 +106,12 @@
             color: #000 !important;
         }
 
-        /* Kuning */
         .bg-kontrak {
             background-color: #f6ffed !important;
             color: #1b5e20 !important;
             font-weight: bold;
         }
 
-        /* Hijau */
-
-        /* CSS Pewarnaan Kode Tanggal (Warna Pastel) */
         .bg-rm {
             background-color: #072cfa !important;
             color: #f0f2f5 !important;
@@ -158,7 +154,6 @@
             font-weight: bold;
         }
 
-        /* CSS Pewarnaan Keterangan Akhir */
         .bg-ket-blm {
             background-color: #fff1f0 !important;
             color: #cf1322 !important;
@@ -173,61 +168,82 @@
             text-transform: uppercase;
         }
 
-        /* REVISI: Class CSS untuk memisahkan halaman saat diprint */
         .page-break {
             page-break-after: always;
             break-after: page;
+        }
 
-            /* Pewarnaan Khusus Tabel Statistik Bawah */
-            .stat-rm {
-                background-color: #3205F8 !important;
-                color: #fffff !important;
-                font-weight: bold;
-            }
+        /* =============================================
+           TABEL PRESTASI - HALAMAN TERAKHIR
+        ============================================= */
+        .prestasi-page {
+            padding: 10px;
+        }
 
-            /* Biru */
-            .stat-cm {
-                background-color: #f80505 !important;
-                color: #e4dadb !important;
-                font-weight: bold;
-            }
+        .prestasi-page-title {
+            background: #7b6000;
+            color: #fff200;
+            font-weight: bold;
+            font-size: 13px;
+            padding: 8px 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
 
-            /* Merah */
-            .stat-rn {
-                background-color: #f6ffed !important;
-                color: #389e0d !important;
-                font-weight: bold;
-            }
+        table.prestasi-table {
+            border-collapse: collapse;
+            font-size: 8.5px;
+            margin-bottom: 20px;
+            width: auto;
+        }
 
-            /* Hijau (Untuk TN/RN) */
-            .stat-rr {
-                background-color: #f6ffed !important;
-                color: #389e0d !important;
-                font-weight: bold;
-            }
+        .prestasi-table th,
+        .prestasi-table td {
+            border: 1px solid #555;
+            padding: 5px 10px;
+            text-align: center;
+            white-space: nowrap;
+        }
 
-            /* Hijau */
-            .stat-blm {
-                background-color: #fff0f6 !important;
-                color: #c41d7f !important;
-                font-weight: bold;
-            }
+        .pres-header-group {
+            background-color: #fff200 !important;
+            color: #000 !important;
+            font-weight: bold;
+            text-align: left;
+            min-width: 110px;
+        }
 
-            /* Pink */
-            .stat-sudah {
-                background-color: #e6f7ff !important;
-                color: #0050b3 !important;
-                font-weight: bold;
-            }
+        .pres-header-col {
+            background-color: #fff200 !important;
+            color: #000 !important;
+            font-weight: bold;
+            min-width: 70px;
+        }
 
-            /* Biru */
-            .stat-total {
-                background-color: #ffffff !important;
-                color: #222222 !important;
-                font-weight: bold;
-            }
+        .pres-header-rata {
+            background-color: #fff200 !important;
+            color: #000 !important;
+            font-weight: bold;
+            font-size: 8px;
+            min-width: 130px;
+        }
 
-            /* Putih */
+        .pres-row-data td {
+            background-color: #ffffff;
+            color: #222;
+        }
+
+        .pres-row-jumlah td {
+            background-color: #fff200 !important;
+            color: #000 !important;
+            font-weight: bold;
+        }
+
+        .pres-row-persen td {
+            background-color: #ffffff;
+            color: #222;
+            font-style: italic;
         }
 
         @media print {
@@ -256,6 +272,9 @@
             {{ Carbon\Carbon::create()->year($year)->month($month)->translatedFormat('F') }} {{ $year }}</p>
     </header>
 
+    {{-- =============================================
+         BAGIAN 1: LAPORAN PER RAYON (TIDAK DIUBAH)
+    ============================================= --}}
     @foreach ($rayons as $rayon)
         @php
             $deployments = \App\Models\Deployment::with([
@@ -273,7 +292,6 @@
                 return $dep->machine ? $dep->machine->serviceLogs : collect();
             });
 
-            // Hitung status Sudah RM / Belum RM per unit mesin
             $sudahRmCount = 0;
             $belumRmCount = 0;
             foreach ($deployments as $dep) {
@@ -295,13 +313,13 @@
                 'TOTAL_MESIN' => $deployments->whereNotNull('machine_id')->count(),
             ];
 
-            // Pisahkan berdasarkan KOTA customer
             $deploymentsByKota = $deployments->groupBy(function ($dep) {
                 return $dep->customer->kota ? strtoupper($dep->customer->kota) : 'TANPA KOTA';
             });
         @endphp
 
-        <div class="{{ !$loop->last ? 'page-break' : '' }}">
+        {{-- Setiap rayon selalu page-break (termasuk yang terakhir, karena halaman prestasi ada di bawah) --}}
+        <div class="page-break">
 
             <div class="rayon-title">📍 RAYON: {{ $rayon->nama_rayon }}</div>
 
@@ -408,8 +426,7 @@
                                     <td class="text-left bold">{{ $customer->nama_customer }}</td>
                                     <td>{{ $m->tipe_model }}</td>
                                     <td class="bold bg-seri">{{ $m->serial_number }}</td>
-                                    <td>{{ $dep->tgl_pasang ? \Carbon\Carbon::parse($dep->tgl_pasang)->format('d/m/y') : ($m->tgl_pasang ? \Carbon\Carbon::parse($m->tgl_pasang)->format('d/m/y') : '-') }}
-                                    </td>
+                                    <td>{{ $dep->tgl_pasang ? \Carbon\Carbon::parse($dep->tgl_pasang)->format('d/m/y') : ($m->tgl_pasang ? \Carbon\Carbon::parse($m->tgl_pasang)->format('d/m/y') : '-') }}</td>
 
                                     @for ($day = 1; $day <= 31; $day++)
                                         @php
@@ -419,27 +436,13 @@
                                             $bgClass = '';
                                             if ($logHariIni) {
                                                 switch (strtoupper($logHariIni->tipe_kunjungan)) {
-                                                    case 'RM':
-                                                        $bgClass = 'bg-rm';
-                                                        break;
-                                                    case 'CM':
-                                                        $bgClass = 'bg-cm';
-                                                        break;
-                                                    case 'RN':
-                                                        $bgClass = 'bg-rn';
-                                                        break;
-                                                    case 'RR':
-                                                        $bgClass = 'bg-rr';
-                                                        break;
-                                                    case 'JK':
-                                                        $bgClass = 'bg-jk';
-                                                        break;
-                                                    case 'L':
-                                                        $bgClass = 'bg-l';
-                                                        break;
-                                                    case 'TN':
-                                                        $bgClass = 'bg-tn';
-                                                        break;
+                                                    case 'RM': $bgClass = 'bg-rm'; break;
+                                                    case 'CM': $bgClass = 'bg-cm'; break;
+                                                    case 'RN': $bgClass = 'bg-rn'; break;
+                                                    case 'RR': $bgClass = 'bg-rr'; break;
+                                                    case 'JK': $bgClass = 'bg-jk'; break;
+                                                    case 'L':  $bgClass = 'bg-l';  break;
+                                                    case 'TN': $bgClass = 'bg-tn'; break;
                                                 }
                                             }
                                         @endphp
@@ -470,6 +473,7 @@
                     @endforeach
                 </tbody>
             </table>
+
             <table class="stat-table">
                 <thead>
                     <tr>
@@ -497,6 +501,171 @@
 
         </div>
     @endforeach
+
+    {{-- =============================================
+         BAGIAN 2: HALAMAN PRESTASI (LEMBAR TERPISAH PALING BAWAH)
+         Dikelompokkan per Rayon → per Kota (mengikuti kolom kota di tabel customers)
+    ============================================= --}}
+    <div class="prestasi-page">
+
+        <div class="prestasi-page-title">📊 REKAP PRESTASI SEMUA RAYON — PERIODE:
+            {{ Carbon\Carbon::create()->year($year)->month($month)->translatedFormat('F') }} {{ $year }}
+        </div>
+
+        @foreach ($rayons as $rayon)
+            @php
+                /*
+                 * Ambil semua deployment untuk rayon ini beserta serviceLogs bulan ini
+                 */
+                $depsPrestasi = \App\Models\Deployment::with([
+                    'customer',
+                    'machine.serviceLogs' => function ($query) use ($month, $year) {
+                        $query->whereMonth('tanggal', $month)->whereYear('tanggal', $year)->orderBy('tanggal', 'asc');
+                    },
+                ])
+                    ->whereHas('customer', function ($q) use ($rayon) {
+                        $q->where('rayon_id', $rayon->id);
+                    })
+                    ->get();
+
+                /*
+                 * Kelompokkan per KOTA (mengikuti kolom kota di tabel customers,
+                 * sama persis dengan pengelompokan di tabel utama atas)
+                 */
+                $depsByKotaPrestasi = $depsPrestasi->groupBy(function ($dep) {
+                    return $dep->customer->kota ? strtoupper($dep->customer->kota) : 'TANPA KOTA';
+                });
+
+                /*
+                 * Hitung statistik per kota
+                 */
+                $kotaStats = [];
+                foreach ($depsByKotaPrestasi as $kotaNama => $kotaDeps) {
+                    $kotaLogs = $kotaDeps->flatMap(function ($dep) {
+                        return $dep->machine ? $dep->machine->serviceLogs : collect();
+                    });
+
+                    $rmTertunda = $kotaDeps->filter(function ($dep) {
+                        if (!$dep->machine) return false;
+                        return !$dep->machine->serviceLogs->contains(
+                            fn($log) => strtoupper($log->tipe_kunjungan) === 'RM'
+                        );
+                    })->count();
+
+                    $kotaStats[$kotaNama] = [
+                        'CM'          => $kotaLogs->where('tipe_kunjungan', 'CM')->count(),
+                        'RM'          => $kotaLogs->where('tipe_kunjungan', 'RM')->count(),
+                        'RN'          => $kotaLogs->where('tipe_kunjungan', 'RN')->count(),
+                        'RR'          => $kotaLogs->where('tipe_kunjungan', 'RR')->count(),
+                        'TOTAL_MESIN' => $kotaDeps->whereNotNull('machine_id')->count(),
+                        'RM_TERTUNDA' => $rmTertunda,
+                    ];
+                }
+
+                /*
+                 * Baris JUMLAH (total semua kota dalam rayon ini)
+                 */
+                $jumlahPrestasi = [
+                    'CM'          => array_sum(array_column($kotaStats, 'CM')),
+                    'RM'          => array_sum(array_column($kotaStats, 'RM')),
+                    'RN'          => array_sum(array_column($kotaStats, 'RN')),
+                    'RR'          => array_sum(array_column($kotaStats, 'RR')),
+                    'TOTAL_MESIN' => array_sum(array_column($kotaStats, 'TOTAL_MESIN')),
+                    'RM_TERTUNDA' => array_sum(array_column($kotaStats, 'RM_TERTUNDA')),
+                ];
+
+                /*
+                 * Baris PERSENTASE
+                 */
+                $totalMesinPres = $jumlahPrestasi['TOTAL_MESIN'] ?: 1;
+                $persenPrestasi = [
+                    'CM'          => round(($jumlahPrestasi['CM'] / $totalMesinPres) * 100, 2) . '%',
+                    'RM'          => round(($jumlahPrestasi['RM'] / $totalMesinPres) * 100, 2) . '%',
+                    'RN'          => '',
+                    'RR'          => '',
+                    'TOTAL_MESIN' => '',
+                    'RM_TERTUNDA' => round(($jumlahPrestasi['RM_TERTUNDA'] / $totalMesinPres) * 100, 2) . '%',
+                ];
+
+                /*
+                 * Rata-rata kunjungan per hari
+                 */
+                $jumlahHari   = \Carbon\Carbon::create($year, $month)->daysInMonth;
+                $totalKunjungan = $jumlahPrestasi['CM'] + $jumlahPrestasi['RM']
+                                + $jumlahPrestasi['RN'] + $jumlahPrestasi['RR'];
+                $rataHari = $jumlahHari > 0 ? round($totalKunjungan / $jumlahHari, 1) : 0;
+            @endphp
+
+            {{-- Label Rayon --}}
+            <div style="margin-top: 14px; margin-bottom: 4px;">
+                <span style="background:#000; color:#fff; font-weight:bold; font-size:9px;
+                             padding: 3px 10px; text-transform:uppercase; letter-spacing:1px;">
+                    📍 RAYON: {{ $rayon->nama_rayon }}
+                </span>
+            </div>
+
+            <table class="prestasi-table">
+                <thead>
+                    <tr>
+                        <th class="pres-header-group">KOTA / KABUPATEN</th>
+                        <th class="pres-header-col">TOTAL<br>CM</th>
+                        <th class="pres-header-col">TOTAL<br>RM</th>
+                        <th class="pres-header-col">TOTAL<br>RN</th>
+                        <th class="pres-header-col">TOTAL<br>RR</th>
+                        <th class="pres-header-col">TOTAL<br>MESIN</th>
+                        <th class="pres-header-col">RM<br>TERTUNDA</th>
+                        <th class="pres-header-rata" rowspan="{{ count($kotaStats) + 3 }}"
+                            style="vertical-align:middle; text-align:center; padding: 8px 16px;">
+                            RATA - RATA<br>KUNJUNGAN / HARI<br>
+                            <span style="font-size: 18px; font-weight: bold; color:#000; display:block; margin-top:6px;">
+                                {{ $rataHari }}
+                            </span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{-- Baris per Kota --}}
+                    @foreach ($kotaStats as $kotaNama => $kotaStat)
+                        <tr class="pres-row-data">
+                            <td style="text-align:left; font-weight:bold;">{{ $kotaNama }}</td>
+                            <td>{{ $kotaStat['CM'] }}</td>
+                            <td>{{ $kotaStat['RM'] }}</td>
+                            <td>{{ $kotaStat['RN'] }}</td>
+                            <td>{{ $kotaStat['RR'] }}</td>
+                            <td>{{ $kotaStat['TOTAL_MESIN'] }}</td>
+                            <td>{{ $kotaStat['RM_TERTUNDA'] }}</td>
+                        </tr>
+                    @endforeach
+
+                    {{-- Baris JUMLAH --}}
+                    <tr class="pres-row-jumlah">
+                        <td style="text-align:left;">JUMLAH</td>
+                        <td>{{ $jumlahPrestasi['CM'] }}</td>
+                        <td>{{ $jumlahPrestasi['RM'] }}</td>
+                        <td>{{ $jumlahPrestasi['RN'] }}</td>
+                        <td>{{ $jumlahPrestasi['RR'] }}</td>
+                        <td>{{ $jumlahPrestasi['TOTAL_MESIN'] }}</td>
+                        <td>{{ $jumlahPrestasi['RM_TERTUNDA'] }}</td>
+                    </tr>
+
+                    {{-- Baris PERSENTASE --}}
+                    <tr class="pres-row-persen">
+                        <td style="text-align:left; font-weight:bold;">PERSENTASE</td>
+                        <td>{{ $persenPrestasi['CM'] }}</td>
+                        <td>{{ $persenPrestasi['RM'] }}</td>
+                        <td>{{ $persenPrestasi['RN'] }}</td>
+                        <td>{{ $persenPrestasi['RR'] }}</td>
+                        <td>{{ $persenPrestasi['TOTAL_MESIN'] }}</td>
+                        <td>{{ $persenPrestasi['RM_TERTUNDA'] }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        @endforeach
+
+    </div>
+    {{-- AKHIR HALAMAN PRESTASI --}}
+
 </body>
 
 </html>

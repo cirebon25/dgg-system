@@ -19,8 +19,9 @@ class CustomerResource extends Resource
 {
     protected static ?string $model = Customer::class;
     protected static ?string $navigationLabel = 'Customer';
-    protected static ?string $navigationIcon = 'heroicon-o-building-office';
-    protected static ?string $navigationGroup = 'DATA MASTER';
+    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+    protected static ?string $navigationGroup = 'MASTER DATA';
+    protected static ?int $navigationSort = 1; // Urutan nomor 1
 
     public static function form(Form $form): Form
     {
@@ -52,34 +53,34 @@ class CustomerResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('rayon.nama_rayon')->label('Rayon')->badge()->sortable()->searchable(),
                 TextColumn::make('nama_customer')->label('Pelanggan / Alamat')->searchable()
-                    ->description(fn (Customer $record): string => $record->alamat ?? '-')
+                    ->description(fn(Customer $record): string => $record->alamat ?? '-')
                     ->summarize(Count::make()->label('Total Pelanggan')),
                 TextColumn::make('kota')->label('Kota')->searchable(),
                 TextColumn::make('deployments_count')->label('Unit Terpasang')->counts('deployments')->suffix(' Unit')->badge()
-                    ->color(fn (int $state): string => $state > 0 ? 'success' : 'gray'),
+                    ->color(fn(int $state): string => $state > 0 ? 'success' : 'gray'),
                 Tables\Columns\TextColumn::make('nama_customer')->searchable(),
                 Tables\Columns\TextColumn::make('technician.nama_technician')
-                ->label('Teknisi Utama')
-                ->placeholder('Belum Diset') // Kalau kosong muncul tulisan ini
-                ->badge()
-                ->color('info'),
+                    ->label('Teknisi Utama')
+                    ->placeholder('Belum Diset') // Kalau kosong muncul tulisan ini
+                    ->badge()
+                    ->color('info'),
             ])
             ->defaultGroup(
-            Group::make('technician_id') // Pakai nama kolom foreign key-nya dulu Boss biar aman
-                ->getTitleFromRecordUsing(fn ($record) => $record->technician?->nama_technician ?? 'Tanpa Teknisi')
-                ->label('Teknisi Penanggung Jawab')
-                ->collapsible()
-        )
+                Group::make('technician_id') // Pakai nama kolom foreign key-nya dulu Boss biar aman
+                    ->getTitleFromRecordUsing(fn($record) => $record->technician?->nama_technician ?? 'Tanpa Teknisi')
+                    ->label('Teknisi Penanggung Jawab')
+                    ->collapsible()
+            )
             ->filters([
                 Tables\Filters\SelectFilter::make('rayon_id')
                     ->relationship('rayon', 'nama_rayon')->label('Filter Rayon'),
-                
+
                 // 1. TAMBAHKAN FILTER ARSIP DI SINI
-                Tables\Filters\TrashedFilter::make(), 
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                
+
                 // 2. TAMBAHKAN AKSI RESTORE (BALIKIN DARI ARSIP)
                 Tables\Actions\RestoreAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),

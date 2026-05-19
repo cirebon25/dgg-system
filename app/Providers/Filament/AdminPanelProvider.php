@@ -30,6 +30,8 @@ class AdminPanelProvider extends PanelProvider
             ->globalSearchKeyBindings(['command+k', 'ctrl+k']) // Fitur pencarian cepat
             ->sidebarCollapsibleOnDesktop()
             ->login() // Memastikan halaman login aktif
+            ->globalSearch(true)
+            // ->globalSearchKeyCooldown(300
             ->colors([
                 'primary' => Color::Amber,
             ])

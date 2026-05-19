@@ -17,9 +17,10 @@ class SparepartResource extends Resource
 {
     protected static ?string $model = Sparepart::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-tag';
+    protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
+    protected static ?string $navigationGroup = 'MASTER DATA';
+    protected static ?int $navigationSort = 3; // Urutan nomor 3
 
-    protected static ?string $navigationGroup = 'DATA MASTER';
     public static function form(Form $form): Form
     {
         return $form
@@ -35,7 +36,7 @@ class SparepartResource extends Resource
                             ->label('No Part')
                             ->required(),
                     ])->columns(3),
-                
+
                 // Bagian Manajemen Stok manual kita buang dari form Create/Edit 
                 // Karena sekarang input barang masuk sudah pakai menu "Input Stok Masuk" tersendiri!
             ]);
@@ -74,7 +75,7 @@ class SparepartResource extends Resource
                 TextColumn::make('calculated_stok')
                     ->label('Stok Gudang')
                     ->badge()
-                    ->color(fn (int $state): string => match (true) {
+                    ->color(fn(int $state): string => match (true) {
                         $state <= 2 => 'danger',   // Merah kalau kritis
                         $state <= 5 => 'warning',  // Kuning kalau menipis
                         default => 'success',      // Hijau kalau aman
@@ -96,7 +97,7 @@ class SparepartResource extends Resource
                             ->required(),
                     ])
                     ->action(function (array $data) {
-                        $filePath = storage_path('app/public/'.$data['file_csv']);
+                        $filePath = storage_path('app/public/' . $data['file_csv']);
                         $rows = Excel::toArray([], $filePath)[0];
                         array_shift($rows); // Buang header
 
@@ -108,7 +109,7 @@ class SparepartResource extends Resource
                                     'code_part' => $row[3] ?? null,
                                 ]
                             );
-                            
+
                             // Agar stok masuk dari hasil import CSV juga tercatat resmi di riwayat, 
                             // Kita buatkan langsung record transaksinya di tabel Entries jika jumlahnya > 0
                             if ((int)$row[2] > 0) {
@@ -142,10 +143,18 @@ class SparepartResource extends Resource
                         Forms\Components\Select::make('month')
                             ->label('Pilih Bulan')
                             ->options([
-                                '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
-                                '04' => 'April', '05' => 'Mei', '06' => 'Juni',
-                                '07' => 'Juli', '08' => 'Agustus', '09' => 'September',
-                                '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+                                '01' => 'Januari',
+                                '02' => 'Februari',
+                                '03' => 'Maret',
+                                '04' => 'April',
+                                '05' => 'Mei',
+                                '06' => 'Juni',
+                                '07' => 'Juli',
+                                '08' => 'Agustus',
+                                '09' => 'September',
+                                '10' => 'Oktober',
+                                '11' => 'November',
+                                '12' => 'Desember',
                             ])->required()->default(date('m')),
                         Forms\Components\Select::make('year')
                             ->label('Pilih Tahun')
@@ -156,11 +165,11 @@ class SparepartResource extends Resource
                         return redirect()->route('sparepart.report.outflow', $data);
                     }),
 
-                        Tables\Actions\Action::make('cetakRealtime')
+                Tables\Actions\Action::make('cetakRealtime')
                     ->label('Cetak Rekap Realtime')
                     ->color('warning') // Warna kuning oranye biar mencolok dan beda sendiri
                     ->icon('heroicon-o-printer')
-                    ->url(fn () => route('cetak.rekap-sparepart')) // Mengarah ke jalur cetak langsung
+                    ->url(fn() => route('cetak.rekap-sparepart')) // Mengarah ke jalur cetak langsung
                     ->openUrlInNewTab(), // Buka di tab baru biar halaman inputan gak hilang
 
 
