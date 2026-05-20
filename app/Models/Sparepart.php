@@ -19,7 +19,7 @@ class Sparepart extends Model
         'keterangan',
     ];
 
-    // --- RELASI-RELASI PENDUKUNG ---
+    // --- RELASI ---
     public function sparepartEntries()
     {
         return $this->hasMany(SparepartEntry::class);
@@ -30,7 +30,11 @@ class Sparepart extends Model
         return $this->hasMany(PartBorrowing::class);
     }
 
-    // 🌟 RELASI BARU: Hubungan langsung ke transaksi Pemasangan Mesin (Deployment)
+    public function partReturns()
+    {
+        return $this->hasMany(PartReturn::class);
+    }
+
     public function deployments()
     {
         return $this->belongsToMany(Deployment::class, 'deployment_sparepart', 'sparepart_id', 'deployment_id')
@@ -38,28 +42,26 @@ class Sparepart extends Model
             ->withTimestamps();
     }
 
-    // --- MANTRANYA DI SINI BOSS (REAL-TIME ACCESSOR - GUDANG AKURAT) ---
+    // --- ACCESSOR REAL-TIME ---
 
-    // 1. Hitung Otomatis Total Saldo Masuk dari Inputan Supplier
+    // 1. Total Masuk dari Supplier
     public function getCalculatedSaldoMasukAttribute(): int
     {
         return (int) $this->sparepartEntries()->sum('jumlah');
     }
 
-    // 2. Hitung Otomatis Total Keluar (Pinjam Teknisi + Terpasang di Mesin Deploy)
+    // 2. Total Keluar BERSIH = (Pinjam + Deploy) - Retur
     public function getCalculatedSaldoKeluarAttribute(): int
     {
-        // A. Hitung pengeluaran dari pinjaman teknisi
-        $pinjamTeknisi = (int) $this->partBorrowings()->sum('jumlah');
-
-        // B. Hitung pengeluaran dari pemasangan unit mesin baru (Deployment)
+        $pinjamTeknisi  = (int) $this->partBorrowings()->sum('jumlah');
         $terpasangMesin = (int) DB::table('deployment_sparepart')->where('sparepart_id', $this->id)->sum('jumlah');
+        $retur          = (int) $this->partReturns()->sum('jumlah');
 
-        // Gabungkan kedua pengeluaran gudang
-        return $pinjamTeknisi + $terpasangMesin;
+        // Keluar bersih = semua keluar dikurangi yang dikembalikan
+        return ($pinjamTeknisi + $terpasangMesin) - $retur;
     }
 
-    // 3. Sisa Stok Gudang Pusat Saat Ini = Total Masuk - Total Keluar
+    // 3. Stok Gudang = Total Masuk - Total Keluar Bersih
     public function getCalculatedStokAttribute(): int
     {
         return $this->calculated_saldo_masuk - $this->calculated_saldo_keluar;

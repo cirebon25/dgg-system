@@ -124,7 +124,7 @@ Route::get('/cetak-alokasi-mesin', function () {
             .text-right { text-align: right; }
             header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
             
-            @media print {
+@mediaprint {
                 * {
                     -webkit-print-color-adjust: exact !important;
                     print-color-adjust: exact !important;
@@ -234,7 +234,7 @@ Route::get('/cetak-tukar-guling', function () {
     <head>
         <title>Laporan Tukar Guling DGG</title>
         <style>
-            @page { size: landscape; margin: 8mm; }
+@page{ size: landscape; margin: 8mm; }
             body { font-family: sans-serif; font-size: 10px; padding: 10px; color: #333; }
             table { width: 100%; border-collapse: collapse; margin-top: 15px; }
             th, td { border: 1px solid #000; padding: 6px 4px; vertical-align: middle; }
@@ -408,7 +408,7 @@ Route::get('/mesin/{id}/cetak-qr', function ($id) {
         <title>QR Mesin - {$machine->serial_number}</title>
         <style>
             /* 🛠️ SETTING UKURAN STIKER THERMAL (50mm x 40mm) */
-            @page {
+@page{
                 size: 50mm 40mm; 
                 margin: 0; 
             } 
@@ -746,7 +746,7 @@ Route::get('/cetak-stok-gudang', function () {
     <head>
         <meta charset='UTF-8'>
         <style>
-            @page { size: A4 landscape; margin: 10mm; }
+@page{ size: A4 landscape; margin: 10mm; }
             body { font-family: Arial, sans-serif; font-size: 12px; }
             header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
             table { width: 100%; border-collapse: collapse; }
@@ -852,7 +852,7 @@ Route::get('/cetak-pemasangan-baru/{bulan?}/{tahun?}', function ($bulan = null, 
         <meta charset='UTF-8'>
         <title>Laporan Pemasangan Baru</title>
         <style>
-            @page { size: landscape; margin: 10mm; }
+@page{ size: landscape; margin: 10mm; }
             body { font-family: sans-serif; font-size: 11px; color: #333; } 
             table { width: 100%; border-collapse: collapse; margin-top: 10px; } 
             
@@ -897,7 +897,7 @@ Route::get('/cetak-pemasangan-baru/{bulan?}/{tahun?}', function ($bulan = null, 
             $html .= "<tr>
                 <td class='text-center'>$no</td>
                 <td class='text-center'>$tgl</td>
-                <td>{$row->customer->nama_customer}</td>
+               <td>{$row->customer?->nama_customer}</td>
                 <td>{$row->machine->tipe_model}</td>
                 <td><b>{$row->machine->serial_number}</b></td>
                 <td class='text-center'>{$row->volt} V</td>
@@ -1026,3 +1026,36 @@ Route::get('/cetak-rekap-sparepart', function (Request $request) {
         ->with('month', $month)
         ->with('year', $year);
 })->name('cetak.rekap-sparepart');
+
+
+
+// ROUTE OTOMATIS CETAK BUKTI NOTA PINJAM SPAREPART TEKNISI (DGG SYSTEM)
+Route::get('/cetak-bukti-pinjam/{id}', function ($id) {
+    
+    // Tarik detail pinjaman part harian
+    $loan = DB::table('part_borrowings') // sesuaikan dengan nama tabel pinjam part Akang (misal part_borrowings)
+        ->join('spareparts', 'part_borrowings.sparepart_id', '=', 'spareparts.id')
+        ->join('technicians', 'part_borrowings.technician_id', '=', 'technicians.id')
+        ->leftJoin('rayons', 'technicians.rayon_id', '=', 'rayons.id')
+        ->where('part_borrowings.id', $id)
+        ->select(
+            'part_borrowings.*',
+            'spareparts.nama_sparepart',
+            'spareparts.code_part',
+            'technicians.nama_technician',
+            DB::raw("COALESCE(rayons.nama_rayon, 'BARAT DAYA') as nama_rayon")
+        )
+        ->first();
+
+    if (!$loan) {
+        return "Bukti Transaksi Tidak Ditemukan!";
+    }
+
+    // Ambil saldo akhir stok teknisi saat ini setelah akumulasi
+    $sisaSaldo = DB::table('technician_stocks')
+        ->where('technician_id', $loan->technician_id)
+        ->where('sparepart_id', $loan->sparepart_id)
+        ->value('jumlah') ?? 0;
+
+    return view('print.bukti-pinjam', compact('loan', 'sisaSaldo'));
+})->name('cetak.bukti-pinjam');

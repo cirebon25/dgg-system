@@ -8,13 +8,13 @@ class TechnicianStockHistory extends Model
 {
     protected $guarded = [];
 
-    // Jembatan ke Part
-    public function sparepart() { 
-        return $this->belongsTo(Sparepart::class); 
+    public function sparepart()
+    {
+        return $this->belongsTo(Sparepart::class);
     }
 
-    // Jembatan ke Teknisi (TAMBAHKAN INI)
-    public function technician() {
+    public function technician()
+    {
         return $this->belongsTo(Technician::class);
     }
 }

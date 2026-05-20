@@ -44,7 +44,7 @@ Forms\Components\TextInput::make('jumlah')
     ->numeric()
     ->required()
     ->minValue(1)
-    ->reactive() // Biar sistem peka terhadap perubahan
+    ->reactive()
     ->rules([
         fn (Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
             $techId = $get('technician_id');
@@ -56,6 +56,7 @@ Forms\Components\TextInput::make('jumlah')
                 ->where('sparepart_id', $partId)
                 ->first();
 
+            // MENGGUNAKAN 'jumlah' sesuai hasil data Tinker Anda
             $currentStock = $stock ? $stock->jumlah : 0;
 
             if ($value > $currentStock) {
