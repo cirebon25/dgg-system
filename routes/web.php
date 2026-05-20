@@ -709,18 +709,18 @@ Route::get('/cetak-top-usage', function (Request $request) {
     ]);
 })->name('cetak.top-usage');
 
-Route::get('/cetak-sj-rolling', function () {
-    $data = session('sj_data');
-    if (! $data) {
-        return 'Data tidak ditemukan, silakan input ulang.';
-    }
+// Route::get('/cetak-sj-rolling', function () {
+//     $data = session('sj_data');
+//     if (! $data) {
+//         return 'Data tidak ditemukan, silakan input ulang.';
+//     }
 
-    return view('cetak.surat-jalan-rolling', [
-        'd' => $data,
-        'tanggal' => date('d/m/Y'),
-        'nomor_sj' => 'SJ-RR/' . date('Ymd/Hi'),
-    ]);
-})->name('cetak.sj-rolling');
+//     return view('cetak.surat-jalan-rolling', [
+//         'd' => $data,
+//         'tanggal' => date('d/m/Y'),
+//         'nomor_sj' => 'SJ-RR/' . date('Ymd/Hi'),
+//     ]);
+// })->name('cetak.sj-rolling');
 
 Route::get('/cetak-stok-gudang', function () {
     // 1. KUNCINYA: Grouping HANYA berdasarkan tipe_model dan volt
@@ -1031,7 +1031,7 @@ Route::get('/cetak-rekap-sparepart', function (Request $request) {
 
 // ROUTE OTOMATIS CETAK BUKTI NOTA PINJAM SPAREPART TEKNISI (DGG SYSTEM)
 Route::get('/cetak-bukti-pinjam/{id}', function ($id) {
-    
+
     // Tarik detail pinjaman part harian
     $loan = DB::table('part_borrowings') // sesuaikan dengan nama tabel pinjam part Akang (misal part_borrowings)
         ->join('spareparts', 'part_borrowings.sparepart_id', '=', 'spareparts.id')
@@ -1059,3 +1059,33 @@ Route::get('/cetak-bukti-pinjam/{id}', function ($id) {
 
     return view('print.bukti-pinjam', compact('loan', 'sisaSaldo'));
 })->name('cetak.bukti-pinjam');
+
+
+// =========================================================================
+// ROUTE FIX MUTLAK: CETAK SJ ROLLING KUSTOM PAYLOAD (ANTI-SESSION NULL)
+// =========================================================================
+Route::get('/cetak-sj-rolling', function (Request $request) {
+
+    $payload = $request->query('payload');
+
+    if (!$payload) {
+        return 'Gagal memuat dokumen! Data Surat Jalan kosong. Silakan ulangi proses rolling dari menu Ganti Mesin, Boss Rudi.';
+    }
+
+    try {
+        // Bongkar teks string Base64 kembali menjadi Array data riil ($d)
+        $dataDecoded = json_decode(base64_decode($payload), true);
+
+        if (!$dataDecoded) {
+            return 'Struktur data Surat Jalan rusak, silakan input kembali.';
+        }
+
+        return view('cetak.surat-jalan-rolling', [
+            'd'        => $dataDecoded,
+            'tanggal'  => date('d/m/Y'),
+            'nomor_sj' => 'SJ-RR/' . date('Ymd/Hi'),
+        ]);
+    } catch (\Exception $e) {
+        return 'Eror Membaca Payload Data: ' . $e->getMessage();
+    }
+})->name('cetak.sj-rolling');

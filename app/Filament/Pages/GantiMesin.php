@@ -19,7 +19,7 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
-use Filament\Notifications\Actions\Action; // 🌟 PENTING: Tombol Cetak Notifikasi
+use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
@@ -51,8 +51,8 @@ class GantiMesin extends Page implements HasForms
                         ->options(
                             Deployment::with(['customer', 'machine'])
                                 ->get()
-                                ->mapWithKeys(fn ($dep) => [
-                                    $dep->id => "{$dep->customer->nama_customer} (SN: {$dep->machine->serial_number})",
+                                ->mapWithKeys(fn($dep) => [
+                                    $dep->id => "{$dep->customer?->nama_customer} (SN: {$dep->machine?->serial_number})",
                                 ])
                         )
                         ->searchable()
@@ -61,9 +61,9 @@ class GantiMesin extends Page implements HasForms
                         ->afterStateUpdated(function ($state, $set) {
                             $dep = Deployment::with(['customer', 'machine'])->find($state);
                             if ($dep) {
-                                $set('customer_name', $dep->customer->nama_customer);
-                                $set('old_machine_id', $dep->machine->id);
-                                $set('old_machine_sn', $dep->machine->serial_number);
+                                $set('customer_name', $dep->customer?->nama_customer);
+                                $set('old_machine_id', $dep->machine?->id);
+                                $set('old_machine_sn', $dep->machine?->serial_number);
                             }
                         }),
                     TextInput::make('customer_name')->label('Nama Customer')->readOnly()->extraAttributes(['class' => 'bg-gray-100']),
@@ -101,7 +101,7 @@ class GantiMesin extends Page implements HasForms
                                 ->numeric()->default(1)->required()
                                 ->live(onBlur: true)
                                 ->rules([
-                                    fn (Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
+                                    fn(Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
                                         $techId = $get('../../technician_id');
                                         $partId = $get('sparepart_id');
                                         if (!$techId || !$partId) return;
@@ -124,6 +124,36 @@ class GantiMesin extends Page implements HasForms
     public function submit()
     {
         $input = $this->form->getState();
+
+        // 🌟 KUNCI 1: AMBIL DATA INFO UTK NOTA SEBELUM FORM DIBERSIHKAN
+        $deployment = Deployment::with(['customer', 'machine'])->find($input['deployment_id']);
+        $newMachine = Machine::find($input['new_machine_id']);
+
+        $partsPayload = [];
+        if (!empty($input['spareparts'])) {
+            foreach ($input['spareparts'] as $item) {
+                $sp = Sparepart::find($item['sparepart_id']);
+                $partsPayload[] = [
+                    'nama_part' => $sp?->nama_sparepart ?? 'Sparepart',
+                    'jumlah' => $item['jumlah'],
+                    'ket_part' => $item['ket_part'] ?? '',
+                ];
+            }
+        }
+
+        // 🌟 KUNCI 2: PACKING ARRAY STRUKTUR DATA UTK KEBUTUHAN SURAT JALAN BLADE LAMA AKANG
+        $rawRollingData = [
+            'cust'   => $deployment->customer?->nama_customer ?? 'Umum',
+            'alamat' => $deployment->customer?->alamat ?? '-',
+            'old_sn' => $deployment->machine?->serial_number ?? '-',
+            'new_sn' => $newMachine?->serial_number ?? '-',
+            'bw'     => $input['counter_bw_final'] ?? 0,
+            'cl'     => $input['counter_color_final'] ?? 0,
+            'parts'  => $partsPayload,
+        ];
+
+        // 🌟 KUNCI 3: ENKRIPSI PAYLOAD MASUK KE STRINGS LINK URL
+        $encodedData = base64_encode(json_encode($rawRollingData));
 
         DB::transaction(function () use ($input) {
             $deployment = Deployment::find($input['deployment_id']);
@@ -156,7 +186,7 @@ class GantiMesin extends Page implements HasForms
                 'counter_bw' => $input['counter_bw_final'],
                 'counter_color' => $input['counter_color_final'],
                 'kerusakan' => 'ROLLING OUT',
-                'perbaikan' => $input['keterangan'], // Kunci Alasan Ganti
+                'perbaikan' => $input['keterangan'],
             ]);
 
             // --- 4. LOG PEMASANGAN (MESIN BARU) ---
@@ -166,7 +196,7 @@ class GantiMesin extends Page implements HasForms
                 'technician_id' => $input['technician_id'],
                 'tanggal' => $input['tanggal'],
                 'tipe_kunjungan' => 'RR',
-                'counter_bw' => 0, 
+                'counter_bw' => 0,
                 'counter_color' => 0,
                 'kerusakan' => 'ROLLING IN',
                 'perbaikan' => "Unit Pengganti dari SN: {$oldMachine->serial_number}",
@@ -185,20 +215,21 @@ class GantiMesin extends Page implements HasForms
             }
         });
 
+        // Bersihkan form isi data setelah transaksi DB aman selesai
         $this->form->fill();
 
-        // 🌟 NOTIFIKASI SAKTI: TOMBOL PRINT LANGSUNG AKTIF KEMBALI 🌟
+        // 🌟 KUNCI 4: KIRIM NOTIFIKASI MEMBAWA PAYLOAD DATA LANGSUNG DI URL (ANTI-NULL)
         Notification::make()
-            ->title('Rolling Berhasil!')
+            ->title('Rolling Unit Berhasil!')
             ->success()
             ->persistent()
-            ->body('Data sinkron. Silakan langsung cetak Berita Acara melalui tombol di bawah ini:')
+            ->body('Data swap unit mesin fotokopi telah sinkron ke database. Silakan langsung cetak Surat Jalan (SJ) resmi melalui tombol di bawah ini:')
             ->actions([
                 Action::make('print')
-                    ->label('🖨️ Langsung Cetak Swap')
+                    ->label('🖨️ Cetak Surat Jalan (SJ)')
                     ->button()
-                    ->color('warning')
-                    ->url(route('cetak.swap'), shouldOpenInNewTab: true),
+                    ->color('success')
+                    ->url(route('cetak.sj-rolling', ['payload' => $encodedData]), shouldOpenInNewTab: true),
             ])
             ->send();
     }
