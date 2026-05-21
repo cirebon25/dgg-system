@@ -19,7 +19,7 @@ class MachineResource extends Resource
 
     protected static ?string $navigationLabel = 'Data Mesin';
 
-    protected static ?string $navigationGroup = 'MASTER DATA';
+    protected static ?string $navigationGroup = 'Master Data';
 
     protected static ?int $navigationSort = 2; // Urutan nomor 2
 

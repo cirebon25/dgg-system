@@ -18,7 +18,7 @@ class SparepartResource extends Resource
     protected static ?string $model = Sparepart::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
-    protected static ?string $navigationGroup = 'MASTER DATA';
+    protected static ?string $navigationGroup = 'Master Data';
     protected static ?int $navigationSort = 3; // Urutan nomor 3
 
     public static function form(Form $form): Form
@@ -169,7 +169,7 @@ class SparepartResource extends Resource
                     ->label('Cetak Rekap Realtime')
                     ->color('warning') // Warna kuning oranye biar mencolok dan beda sendiri
                     ->icon('heroicon-o-printer')
-                    ->url(fn() => route('cetak.rekap-sparepart')) // Mengarah ke jalur cetak langsung
+                    ->url(fn() => route('saldo-sparepart'))
                     ->openUrlInNewTab(), // Buka di tab baru biar halaman inputan gak hilang
 
 

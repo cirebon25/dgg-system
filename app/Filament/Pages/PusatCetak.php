@@ -15,4 +15,6 @@ class PusatCetak extends Page
     protected static ?int $navigationSort = 10;
 
     protected static string $view = 'filament.pages.pusat-cetak';
+    
+    protected static ?string $navigationGroup = 'Pusat Cetak';
 }

@@ -20,6 +20,9 @@ class PartBorrowingResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-arrow-right-on-rectangle';
     protected static ?string $navigationGroup = 'Gudang & Stok';
 
+    protected static bool $shouldRegisterNavigation = false;
+
+
     public static function form(Form $form): Form
     {
         return $form

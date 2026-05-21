@@ -69,6 +69,16 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class, // Menggunakan middleware milik Filament
             ])
-            ->authGuard('web');
+            ->authGuard('web')
+            // 🌟 TAROH DI SINI: MANATRA PENGUNCI URUTAN GRUP SIDEBAR KIRI DGG 🌟
+            ->navigationGroups([
+                'Transaksi',
+                'Master Data',
+                'Gudang & Stok',
+                'Sistem Arsip',
+                'Pusat Cetak',
+                'Laporan',
+                'Bantuan',
+            ]);
     }
 }

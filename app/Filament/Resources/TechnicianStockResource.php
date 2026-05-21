@@ -27,7 +27,6 @@ class TechnicianStockResource extends Resource
                 // Kolom Nama Teknisi kita sembunyikan dari baris, karena sudah ada di Judul Grup
                 Tables\Columns\TextColumn::make('sparepart.nama_sparepart')
                     ->label('Nama Sparepart')
-                    ->icon('heroicon-m-wrench-screwdriver') // Kasih ikon obeng biar mekanik banget
                     ->iconColor('primary')
                     ->weight('bold')
                     ->searchable()

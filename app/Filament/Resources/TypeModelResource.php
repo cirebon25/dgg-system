@@ -15,7 +15,7 @@ class TypeModelResource extends Resource
     protected static ?string $model = TypeModel::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-square-3-stack-3d';
-    protected static ?string $navigationGroup = 'MASTER DATA';
+    protected static ?string $navigationGroup = 'Master Data';
     protected static ?int $navigationSort = 5; // Urutan nomor 5
 
 

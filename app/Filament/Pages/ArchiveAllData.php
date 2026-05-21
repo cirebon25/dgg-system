@@ -16,7 +16,7 @@ class ArchiveAllData extends Page
     protected static ?string $navigationIcon = 'heroicon-o-archive-box';
     protected static ?string $navigationLabel = 'Arsip All Data';
     protected static ?string $title = 'Pusat Monitoring & Arsip';
-    protected static ?string $navigationGroup = 'SISTEM ARSIP';
+    protected static ?string $navigationGroup = 'Sistem Arsip';
 
     protected static string $view = 'filament.pages.archive-all-data';
 

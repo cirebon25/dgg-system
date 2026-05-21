@@ -15,7 +15,7 @@ class TechnicianResource extends Resource
 
     protected static ?string $navigationLabel = 'Teknisi';
     protected static ?string $navigationIcon = 'heroicon-o-identification';
-    protected static ?string $navigationGroup = 'MASTER DATA';
+    protected static ?string $navigationGroup = 'Master Data';
     protected static ?int $navigationSort = 4; // Urutan nomor 4
 
     public static function form(Form $form): Form
