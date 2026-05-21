@@ -12,7 +12,7 @@ class Rayon extends Model
     use HasFactory;
 
     // Bersihkan technician_id karena sudah pakai tabel pivot
-    protected $fillable = ['nama_rayon']; 
+    protected $fillable = ['nama_rayon'];
 
     /**
      * Relasi ke Customer

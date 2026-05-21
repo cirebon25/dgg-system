@@ -1,138 +1,219 @@
 <x-filament-panels::page>
-    <div class="space-y-8 bg-slate-950 p-6 rounded-3xl min-h-screen"> {{-- Background Utama Gelap --}}
-        
-        {{-- 1. HEADER STATS (WIDGETS) --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {{-- Card 1 --}}
-            <div class="bg-slate-900 border border-amber-600/50 rounded-3xl p-6 text-gray-300 shadow-xl">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-gray-500 text-xs font-bold uppercase tracking-wider">Total Pemakaian</p>
-                        <h3 class="text-3xl font-black mt-1 text-amber-500">{{ number_format($this->getUsageData()->sum('total_semua')) }}</h3>
-                        <p class="text-gray-600 text-[10px] mt-1 italic">Lembar terhitung bulan ini</p>
-                    </div>
-                    <div class="p-3 bg-amber-500/10 rounded-2xl text-amber-500"><x-heroicon-s-chart-bar class="w-6 h-6"/></div>
-                </div>
-            </div>
 
-            {{-- Card 2 --}}
-            <div class="bg-slate-900 border border-amber-600/50 rounded-3xl p-6 text-gray-300 shadow-xl">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-gray-500 text-xs font-bold uppercase tracking-wider">Rata-rata Tertinggi</p>
-                        <h3 class="text-3xl font-black mt-1 text-amber-500">{{ number_format($this->getUsageData()->max('rata_rata')) }}</h3>
-                        <p class="text-gray-600 text-[10px] mt-1 italic">Lembar / Bulan</p>
-                    </div>
-                    <div class="p-3 bg-amber-500/10 rounded-2xl text-amber-500"><x-heroicon-s-bolt class="w-6 h-6"/></div>
-                </div>
-            </div>
-
-            {{-- Card 3 --}}
-            <div class="bg-slate-900 border border-amber-600/50 rounded-3xl p-6 text-gray-300 shadow-xl">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-gray-500 text-xs font-bold uppercase tracking-wider">Unit Teraktif</p>
-                        <h3 class="text-xl font-black mt-2 uppercase truncate w-40 text-amber-500">{{ $this->getUsageData()->first()->nama_customer ?? '-' }}</h3>
-                        <p class="text-gray-600 text-[10px] mt-1 italic">Peringkat 1 bulan ini</p>
-                    </div>
-                    <div class="p-3 bg-amber-500/10 rounded-2xl text-amber-500"><x-heroicon-s-trophy class="w-6 h-6"/></div>
-                </div>
-            </div>
+    {{-- Filter Bulan & Tahun --}}
+    <div
+        class="flex flex-wrap items-end gap-4 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+        <div>
+            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Bulan</label>
+            <select wire:model.live="month"
+                class="text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                @foreach (['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'] as $val => $label)
+                    <option value="{{ $val }}">{{ $label }}</option>
+                @endforeach
+            </select>
         </div>
-
-        {{-- 2. CONTROL CENTER --}}
-        <div class="bg-slate-900 rounded-3xl shadow-sm border border-amber-600/30 p-2 flex flex-col md:flex-row items-center gap-4">
-            <div class="flex-1 flex gap-2 p-2">
-                {{-- Menggunakan Komponen Select Filament untuk Kontrol Warna yang Total --}}
-                <div class="flex-1 md:flex-none">
-                    <x-filament::input.wrapper class="border-amber-600/40 rounded-2xl overflow-hidden">
-                        <x-filament::input.select wire:model.live="month" class="bg-slate-800 text-gray-300 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-                            @foreach(range(1, 12) as $m)
-                                <option value="{{ sprintf('%02d', $m) }}" class="bg-slate-900 text-gray-300">{{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}</option>
-                            @endforeach
-                        </x-filament::input.select>
-                    </x-filament::input.wrapper>
-                </div>
-
-                <div class="flex-1 md:flex-none">
-                    <x-filament::input.wrapper class="border-amber-600/40 rounded-2xl overflow-hidden">
-                        <x-filament::input.select wire:model.live="year" class="bg-slate-800 text-gray-300 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-                            @foreach(range(date('Y'), 2024) as $y)
-                                <option value="{{ $y }}" class="bg-slate-900 text-gray-300">{{ $y }}</option>
-                            @endforeach
-                        </x-filament::input.select>
-                    </x-filament::input.wrapper>
-                </div>
-            </div>
-            
-            <div class="p-2 w-full md:w-auto">
-                <a href="{{ route('cetak.top-usage', ['month' => $month, 'year' => $year]) }}" target="_blank" 
-                   class="flex items-center justify-center gap-2 px-8 py-3 bg-amber-600 text-slate-950 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-amber-500 transition-all shadow-lg">
-                   <x-heroicon-o-printer class="w-4 h-4"/>
-                   Generate Report PDF
-                </a>
-            </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Tahun</label>
+            <select wire:model.live="year"
+                class="text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                @foreach (range(date('Y'), 2023) as $y)
+                    <option value="{{ $y }}">{{ $y }}</option>
+                @endforeach
+            </select>
         </div>
-
-        {{-- 3. THE SMART TABLE --}}
-        <div class="bg-slate-900 rounded-[2rem] shadow-2xl border border-amber-600/30 overflow-hidden">
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="bg-slate-800/80 border-b border-amber-600/20">
-                        <th class="p-5 text-[10px] font-black uppercase text-gray-500 tracking-tighter text-center">Rank</th>
-                        <th class="p-5 text-[10px] font-black uppercase text-gray-500 tracking-tighter">Customer & Unit</th>
-                        <th class="p-5 text-[10px] font-black uppercase text-gray-500 tracking-tighter text-center">Production Details</th>
-                        <th class="p-5 text-[10px] font-black uppercase text-gray-500 tracking-tighter text-center">Efficiency Score</th>
-                        <th class="p-5 text-[10px] font-black uppercase text-gray-500 tracking-tighter text-right">Quick Action</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-amber-600/10">
-                    @foreach($this->getUsageData() as $index => $row)
-                        <tr class="group hover:bg-amber-500/5 transition-all">
-                            <td class="p-5 text-center">
-                                <div class="flex flex-col items-center">
-                                    <span class="text-2xl font-black {{ $index < 3 ? 'text-amber-500' : 'text-gray-700' }}">#{{ $index + 1 }}</span>
-                                    @if($index == 0) <span class="text-[8px] font-bold text-amber-600 uppercase">Top Tier</span> @endif
-                                </div>
-                            </td>
-                            <td class="p-5">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-10 h-10 rounded-2xl bg-slate-800 border border-amber-600/20 flex items-center justify-center font-black text-amber-500">
-                                        {{ substr($row->nama_customer, 0, 1) }}
-                                    </div>
-                                    <div>
-                                        <h4 class="font-black text-gray-300 text-sm uppercase tracking-tight">{{ $row->nama_customer }}</h4>
-                                        <p class="text-[10px] text-gray-500 font-medium">SN: {{ $row->serial_number }} • {{ $row->tipe_model }}</p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="p-5 text-gray-300">
-                                <div class="flex justify-center gap-4">
-                                    <div class="text-center">
-                                        <span class="text-[10px] block font-bold text-gray-500 uppercase">Black</span>
-                                        <span class="font-black">{{ number_format($row->total_bw) }}</span>
-                                    </div>
-                                    <div class="text-center border-l border-amber-600/20 pl-4">
-                                        <span class="text-[10px] block font-bold text-amber-600 uppercase">Color</span>
-                                        <span class="font-black">{{ number_format($row->total_color) }}</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="p-5 text-center">
-                                <div class="inline-block px-4 py-2 bg-slate-800/50 rounded-2xl border border-amber-600/30">
-                                    <span class="text-sm font-black text-amber-500 block leading-none">{{ number_format($row->rata_rata) }}</span>
-                                    <span class="text-[8px] font-bold text-gray-500 uppercase tracking-tighter">Avg/Month</span>
-                                </div>
-                            </td>
-                            <td class="p-5 text-right">
-                                <button class="p-2 hover:bg-amber-500 rounded-xl border border-amber-600/20 hover:text-slate-950 transition-all text-gray-500" title="Scan QR Mesin">
-                                    <x-heroicon-o-qr-code class="w-5 h-5"/>
-                                </button>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+        <div class="text-xs text-gray-400 pb-1">
+            Menampilkan data periode <b class="text-amber-600">{{ $this->getNamaBulan($month) }} {{ $year }}</b>
         </div>
     </div>
+
+    {{-- Area Cetak --}}
+    <div id="print-area"
+        class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+
+        {{-- Header Cetak --}}
+        <div class="print-header px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-700">
+            <div class="text-center space-y-0.5">
+                <h1 class="text-base font-black text-gray-900 dark:text-white tracking-wide uppercase">
+                    Laporan Ranking Pemakaian Mesin
+                </h1>
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                    PT Dinamika Global Gemilang — DGG System
+                </p>
+                <p class="text-xs font-semibold text-amber-600">
+                    Periode: {{ $this->getNamaBulan($month) }} {{ $year }}
+                </p>
+            </div>
+        </div>
+
+        {{-- Tabel --}}
+        <div class="overflow-x-auto">
+            @php $data = $this->getUsageData(); @endphp
+
+            <table class="w-full text-xs border-collapse">
+                <thead>
+                    <tr class="bg-gray-900 dark:bg-gray-950 text-white">
+                        <th class="px-3 py-2.5 text-center font-bold border border-gray-700">No.</th>
+                        <th class="px-3 py-2.5 text-left font-bold border border-gray-700">Customer</th>
+                        <th class="px-3 py-2.5 text-left font-bold border border-gray-700">Rayon</th>
+                        <th class="px-3 py-2.5 text-left font-bold border border-gray-700">Teknisi</th>
+                        <th class="px-3 py-2.5 text-left font-bold border border-gray-700">Serial Number</th>
+                        <th class="px-3 py-2.5 text-left font-bold border border-gray-700">Tipe</th>
+                        <th class="px-3 py-2.5 text-center font-bold border border-gray-700">Tgl Instal</th>
+                        <th class="px-3 py-2.5 text-center font-bold border border-gray-700">Lama (Bln)</th>
+                        <th class="px-3 py-2.5 text-right font-bold border border-gray-700">BW</th>
+                        <th class="px-3 py-2.5 text-right font-bold border border-gray-700">Color</th>
+                        <th class="px-3 py-2.5 text-right font-bold border border-gray-700">Total Bulan</th>
+                        <th class="px-3 py-2.5 text-right font-bold border border-gray-700">Lifetime</th>
+                        <th class="px-3 py-2.5 text-right font-bold border border-gray-700">Rata-rata/Bln</th>
+                        <th class="px-3 py-2.5 text-center font-bold border border-gray-700">Kunjungan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($data as $index => $row)
+                        <tr
+                            class="{{ $index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-900' }} hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors">
+                            <td
+                                class="px-3 py-2 text-center border border-gray-100 dark:border-gray-700 font-semibold text-gray-400">
+                                {{ $index + 1 }}</td>
+                            <td
+                                class="px-3 py-2 border border-gray-100 dark:border-gray-700 font-semibold text-gray-800 dark:text-gray-200">
+                                {{ $row->nama_customer }}</td>
+                            <td class="px-3 py-2 border border-gray-100 dark:border-gray-700">
+                                <span
+                                    class="px-1.5 py-0.5 rounded text-[10px] font-bold
+                                    {{ str_contains(strtoupper($row->nama_rayon), 'UTARA')
+                                        ? 'bg-green-100 text-green-700'
+                                        : (str_contains(strtoupper($row->nama_rayon), 'SELATAN')
+                                            ? 'bg-red-100 text-red-700'
+                                            : (str_contains(strtoupper($row->nama_rayon), 'BARAT DAYA')
+                                                ? 'bg-yellow-100 text-yellow-700'
+                                                : (str_contains(strtoupper($row->nama_rayon), 'BARAT')
+                                                    ? 'bg-blue-100 text-blue-700'
+                                                    : 'bg-gray-100 text-gray-600'))) }}">
+                                    {{ $row->nama_rayon }}
+                                </span>
+                            </td>
+                            <td
+                                class="px-3 py-2 border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400">
+                                {{ $row->nama_technician ?? '-' }}</td>
+                            <td
+                                class="px-3 py-2 border border-gray-100 dark:border-gray-700 font-mono text-gray-700 dark:text-gray-300">
+                                {{ $row->serial_number }}</td>
+                            <td
+                                class="px-3 py-2 border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400">
+                                {{ $row->tipe_model }}</td>
+                            <td
+                                class="px-3 py-2 text-center border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400">
+                                {{ \Carbon\Carbon::parse($row->tanggal_instal)->format('d/m/Y') }}</td>
+                            <td
+                                class="px-3 py-2 text-center border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400">
+                                {{ $row->lama_pasang }}</td>
+                            <td
+                                class="px-3 py-2 text-right border border-gray-100 dark:border-gray-700 font-mono font-semibold text-gray-800 dark:text-gray-200">
+                                {{ number_format($row->total_bw) }}</td>
+                            <td
+                                class="px-3 py-2 text-right border border-gray-100 dark:border-gray-700 font-mono font-semibold text-blue-600 dark:text-blue-400">
+                                {{ number_format($row->total_color) }}</td>
+                            <td
+                                class="px-3 py-2 text-right border border-gray-100 dark:border-gray-700 font-mono font-bold text-amber-600">
+                                {{ number_format($row->total_bulan) }}</td>
+                            <td
+                                class="px-3 py-2 text-right border border-gray-100 dark:border-gray-700 font-mono text-gray-600 dark:text-gray-400">
+                                {{ number_format($row->total_hidup) }}</td>
+                            <td
+                                class="px-3 py-2 text-right border border-gray-100 dark:border-gray-700 font-mono text-gray-600 dark:text-gray-400">
+                                {{ number_format($row->rata_rata) }}</td>
+                            <td
+                                class="px-3 py-2 text-center border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400">
+                                {{ $row->total_kunjungan }}x</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="14" class="px-6 py-10 text-center text-gray-400 text-sm">
+                                Tidak ada data untuk periode ini.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+
+                {{-- Baris Total --}}
+                @if ($data->count() > 0)
+                    <tfoot>
+                        <tr class="bg-amber-50 dark:bg-amber-950/30 font-bold border-t-2 border-amber-300">
+                            <td colspan="8"
+                                class="px-3 py-2.5 text-right text-xs border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400">
+                                TOTAL KESELURUHAN</td>
+                            <td
+                                class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200">
+                                {{ number_format($data->sum('total_bw')) }}</td>
+                            <td
+                                class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-blue-600">
+                                {{ number_format($data->sum('total_color')) }}</td>
+                            <td
+                                class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-amber-600">
+                                {{ number_format($data->sum('total_bulan')) }}</td>
+                            <td
+                                class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-gray-600">
+                                {{ number_format($data->sum('total_hidup')) }}</td>
+                            <td
+                                class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-gray-600">
+                                -</td>
+                            <td
+                                class="px-3 py-2.5 text-center text-xs border border-gray-200 dark:border-gray-700 text-gray-600">
+                                {{ number_format($data->sum('total_kunjungan')) }}x</td>
+                        </tr>
+                    </tfoot>
+                @endif
+            </table>
+        </div>
+
+        {{-- Footer Laporan --}}
+        <div class="px-6 py-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
+            <p class="text-[10px] text-gray-400">Dicetak pada: {{ now()->format('d/m/Y H:i') }} WIB</p>
+            <p class="text-[10px] text-gray-400">DGG System v3.0 — PT Dinamika Global Gemilang</p>
+        </div>
+    </div>
+
+    {{-- CSS Cetak --}}
+    <style>
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #print-area,
+            #print-area * {
+                visibility: visible;
+            }
+
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+
+            .print-header {
+                display: block !important;
+            }
+
+            thead {
+                display: table-header-group;
+            }
+
+            tfoot {
+                display: table-footer-group;
+            }
+        }
+    </style>
+
+    {{-- Script Cetak --}}
+    <script>
+        document.addEventListener('livewire:initialized', () => {
+            Livewire.on('printPage', () => {
+                window.print();
+            });
+        });
+    </script>
+
 </x-filament-panels::page>

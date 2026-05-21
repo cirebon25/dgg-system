@@ -1,57 +1,32 @@
 <?php
 
-namespace App\Filament\Pages;
+namespace App\Exports;
 
-use App\Exports\RekapUsageExport;
 use App\Models\Deployment;
 use App\Models\ServiceLog;
-use Filament\Actions\Action;
-use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
-use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class RekapUsage extends Page
+class RekapUsageExport implements FromCollection, WithHeadings, WithMapping, WithStyles
 {
-    protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
-    protected static ?string $navigationLabel = 'Ranking Pemakaian';
-    protected static ?string $title = 'Ranking Pemakaian Mesin';
-    protected static ?string $navigationGroup = 'Laporan';
-    protected static string $view = 'filament.pages.rekap-usage';
+    protected $month;
+    protected $year;
 
-    public $month;
-    public $year;
-
-    public function mount(): void
+    // Menangkap parameter bulan dan tahun yang dikirim dari halaman Filament
+    public function __construct($month, $year)
     {
-        $this->month = date('m');
-        $this->year  = date('Y');
+        $this->month = $month;
+        $this->year  = $year;
     }
 
-    // Tombol Export di header halaman
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('exportExcel')
-                ->label('Export Excel')
-                ->icon('heroicon-o-arrow-down-tray')
-                ->color('success')
-                ->action(function () {
-                    $filename = 'Rekap_Pemakaian_' . $this->getNamaBulan($this->month) . '_' . $this->year . '.xlsx';
-                    return Excel::download(
-                        new RekapUsageExport($this->month, $this->year),
-                        $filename
-                    );
-                }),
-
-            Action::make('print')
-                ->label('Cetak')
-                ->icon('heroicon-o-printer')
-                ->color('gray')
-                ->action(fn() => $this->dispatch('printPage')),
-        ];
-    }
-
-    public function getUsageData()
+    /**
+     * 🌟 KUNCI QUERY UTUH: Mengambil data ranking pemakaian persis seperti di aplikasi
+     */
+    public function collection()
     {
         $monthlyUsage = ServiceLog::query()
             ->select(
@@ -100,19 +75,63 @@ class RekapUsage extends Page
             ->orderBy(DB::raw('total_bw + total_color'), 'desc')
             ->get()
             ->map(function ($item) {
+                // Menghitung nilai rata-rata pemakaian bulanan secara realtime
                 $item->rata_rata = round($item->total_hidup / ($item->lama_pasang ?: 1));
                 return $item;
             });
     }
 
-    public function getNamaBulan($month): string
+    /**
+     * 🌟 STRUKTUR KOLOM EXCEL: Menentukan judul baris teratas file Excel
+     */
+    public function headings(): array
     {
-        $bulan = [
-            '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
-            '04' => 'April',   '05' => 'Mei',       '06' => 'Juni',
-            '07' => 'Juli',    '08' => 'Agustus',   '09' => 'September',
-            '10' => 'Oktober', '11' => 'November',  '12' => 'Desember',
+        return [
+            'Nama Pelanggan',
+            'Rayon',
+            'Teknisi Utama',
+            'Serial Number',
+            'Tipe Model',
+            'Tanggal Instal',
+            'Usage BW (Bulan Ini)',
+            'Usage Color (Bulan Ini)',
+            'Total (Bulan Ini)',
+            'Total Lifetime',
+            'Total Kunjungan',
+            'Lama Pasang (Bulan)',
+            'Rata-rata / Bulan',
         ];
-        return $bulan[$month] ?? $month;
+    }
+
+    /**
+     * 🌟 DATA MAPPING: Memetakan setiap baris data database ke kolom Excel
+     */
+    public function map($item): array
+    {
+        return [
+            $item->nama_customer,
+            $item->nama_rayon,
+            $item->nama_technician ?? 'Belum Diset',
+            $item->serial_number,
+            $item->tipe_model,
+            $item->tanggal_instal,
+            $item->total_bw,
+            $item->total_color,
+            $item->total_bulan,
+            $item->total_hidup,
+            $item->total_kunjungan,
+            $item->lama_pasang . ' Bulan',
+            $item->rata_rata,
+        ];
+    }
+
+    /**
+     * 🌟 DESAIN BADGE & HEADER: Bikin baris judul otomatis tebal biar kelihatan rapi
+     */
+    public function styles(Worksheet $sheet)
+    {
+        return [
+            1 => ['font' => ['bold' => true]],
+        ];
     }
 }
