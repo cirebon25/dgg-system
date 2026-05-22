@@ -44,6 +44,7 @@
 
         .rayon-title .ket-singkatan {
             margin: 0;
+             color: #131111;
             font-size: 7px;
             /* Ukuran font disesuaikan agar pas dalam satu baris kertas landscape */
             font-weight: normal;
@@ -167,7 +168,7 @@
         /* Header Utama FULL Hijau */
         .main-table th {
             background: #09bd15;
-            color: white;
+            color: rgb(44, 42, 42);
             border: 1px solid #000;
             padding: 4px 1px;
             font-size: 7px;
@@ -224,7 +225,7 @@
 
         .bg-rn {
             background-color: #09f043 !important;
-            color: #edf3eb !important;
+            color: #0f0f0f !important;
             font-weight: bold;
         }
 
@@ -247,8 +248,8 @@
         }
 
         .bg-tn {
-            background-color: #f5f5f5 !important;
-            color: #595959 !important;
+            background-color: #c46060 !important;
+            color: #faf3f3 !important;
             font-weight: bold;
         }
 
@@ -427,7 +428,7 @@
         {{-- Setiap rayon selalu page-break --}}
         <div class="page-break">
             <div class="rayon-title">
-                <span class="nama-rayon-kiri">📍 RAYON: {{ $rayon->nama_rayon }}</span>
+                <span class="nama-rayon-kiri"> RAYON: {{ $rayon->nama_rayon }}</span>
 
                 <p class="ket-singkatan">
                     KETERANGAN : RM = REGULER MAINTENANCE | CM = CALL MAINTENANCE | TN = CALL TONER | RN = INSTALL
@@ -439,8 +440,8 @@
                 <thead>
                     <tr>
                         <th rowspan="2" width="18">NO</th>
-                        <th rowspan="2" width="100">NAMA CUSTOMER</th>
-                        <th rowspan="2" width="70">TIPE MESIN</th>
+                        <th rowspan="2" width="150">NAMA CUSTOMER</th>
+                        <th rowspan="2" width="50">TIPE MESIN</th>
                         <th rowspan="2" width="65">NO SERI</th>
                         <th rowspan="2" width="45">TGL PASANG</th>
                         <th colspan="31">TANGGAL KUNJUNGAN (1 SD 31)</th>
@@ -448,7 +449,7 @@
                         <th rowspan="2" width="85">PERBAIKAN</th>
                         <th colspan="2" width="120">TEKNISI</th>
                         <th rowspan="2" width="60">NO KONTRAK</th>
-                        <th rowspan="2" width="65">KETERANGAN</th>
+                        <th rowspan="2" width="50">KETERANGAN</th>
                     </tr>
                     <tr>
                         @for ($i = 1; $i <= 31; $i++)
@@ -465,7 +466,7 @@
                     @foreach ($deploymentsByKota as $kota => $itemsInKota)
                         <tr>
                             <td colspan="42" class="row-kota">
-                                🏙️ KOTA / KABUPATEN: {{ $kota }}
+                                 KOTA / KABUPATEN: {{ $kota }}
                             </td>
                         </tr>
 

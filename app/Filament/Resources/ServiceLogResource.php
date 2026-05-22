@@ -4,7 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ServiceLogResource\Pages;
 use App\Models\ServiceLog;
-use App\Models\Machine; // Tambahkan ini untuk deteksi otomatis
+use App\Models\Machine; 
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -43,7 +43,7 @@ class ServiceLogResource extends Resource
                                     $set('color_lalu', 0);
                                 }
 
-                                // 🌟 2. OTOMATIS SET CUSTOMER & TEKNISI SESUAI MESIN YANG DIPILIH
+                                // 2. OTOMATIS SET CUSTOMER & TEKNISI SESUAI MESIN YANG DIPILIH
                                 $machine = Machine::find($state);
                                 if ($machine) {
                                     $set('customer_id', $machine->customer_id);
@@ -55,7 +55,6 @@ class ServiceLogResource extends Resource
                                 }
                             }),
 
-                        // 🌟 INPUT CUSTOMER BARU (Bisa otomatis dari SN Mesin atau dipilih manual)
                         Forms\Components\Select::make('customer_id')
                             ->relationship('customer', 'nama_customer')
                             ->label('Nama Customer / Instansi')
@@ -85,18 +84,41 @@ class ServiceLogResource extends Resource
                         ]),
                     ])->columns(2),
 
-                // --- SECTION 2: COUNTER ---
+                // --- SECTION 2: PENCATATAN COUNTER (KUNCI PERBAIKAN ANTI-DELAY) ---
                 Forms\Components\Section::make('Pencatatan Counter')
                     ->schema([
-                        Forms\Components\TextInput::make('bw_lalu')->label('BW Lalu')->numeric()->readOnly(),
-                        Forms\Components\TextInput::make('counter_bw')->label('BW Sekarang')->numeric()->required()->reactive()
+                        Forms\Components\TextInput::make('bw_lalu')
+                            ->label('BW Lalu')
+                            ->numeric()
+                            ->readOnly(),
+                            
+                        Forms\Components\TextInput::make('counter_bw')
+                            ->label('BW Sekarang')
+                            ->numeric()
+                            ->required()
+                            ->live(onBlur: true) // ✅ FIX MASTER: Anti delay, ketikan dilepas dulu baru hitung otomatis
                             ->afterStateUpdated(fn ($state, $get, $set) => $set('usage_bw', (int) $state - (int) $get('bw_lalu'))),
-                        Forms\Components\TextInput::make('usage_bw')->label('Usage BW')->numeric()->readOnly(),
+                            
+                        Forms\Components\TextInput::make('usage_bw')
+                            ->label('Usage BW')
+                            ->numeric()
+                            ->readOnly(),
 
-                        Forms\Components\TextInput::make('color_lalu')->label('Color Lalu')->numeric()->readOnly(),
-                        Forms\Components\TextInput::make('counter_color')->label('Color Sekarang')->numeric()->reactive()
+                        Forms\Components\TextInput::make('color_lalu')
+                            ->label('Color Lalu')
+                            ->numeric()
+                            ->readOnly(),
+                            
+                        Forms\Components\TextInput::make('counter_color')
+                            ->label('Color Sekarang')
+                            ->numeric()
+                            ->live(onBlur: true) // ✅ FIX MASTER: Mengunci input color agar lancar tanpa terhapus otomatis
                             ->afterStateUpdated(fn ($state, $get, $set) => $set('usage_color', (int) $state - (int) $get('color_lalu'))),
-                        Forms\Components\TextInput::make('usage_color')->label('Usage Color')->numeric()->readOnly(),
+                            
+                        Forms\Components\TextInput::make('usage_color')
+                            ->label('Usage Color')
+                            ->numeric()
+                            ->readOnly(),
                     ])->columns(3),
 
                 // --- SECTION 3: SPAREPART (DENGAN GEMBOK STOK) ---
@@ -167,7 +189,6 @@ class ServiceLogResource extends Resource
     {
         return $table
             ->headerActions([
-                // 1. REKAP PER RAYON
                 Tables\Actions\Action::make('cetak_rekap_rayon')
                     ->label('Rekap Rayon')
                     ->icon('heroicon-o-map')
@@ -182,7 +203,6 @@ class ServiceLogResource extends Resource
                     ])
                     ->action(fn (array $data) => redirect()->route('cetak.service-rayon', $data)),
 
-                // 2. REKAP HORIZONTAL
                 Tables\Actions\Action::make('cetakHorizontal')
                     ->label('Rekap Horizontal')
                     ->icon('heroicon-o-table-cells')
@@ -197,7 +217,6 @@ class ServiceLogResource extends Resource
                     ])
                     ->action(fn (array $data) => redirect()->route('rekap.horizontal', $data)),
 
-                // 3. CETAK PER BULAN
                 Tables\Actions\Action::make('printBulanan')
                     ->label('Cetak Per Bulan')
                     ->color('success')
@@ -215,39 +234,29 @@ class ServiceLogResource extends Resource
                 Tables\Actions\CreateAction::make(),
             ])
             ->columns([
-                // 🌟 FIX: JALUR BARU LANGSUNG KE CUSTOMER (TAMPIL GAGAH SEKARANG BOSS)
-                // GANTI KOLOM CUSTOMER DI UTAMA TABLE MENJADI SEPERTI INI BOSS:
-
-Tables\Columns\TextColumn::make('machine_id') // Kita ikat ke machine_id agar pencarian tetap aman
-    ->label('Customer / Model')
-    ->getStateUsing(function ($record) {
-        // Jalur 1: Ambil langsung dari relasi customer (jika data baru & ada kolomnya)
-        if ($record->customer?->nama_customer) {
-            return $record->customer->nama_customer;
-        }
-        
-        // Jalur 2: Ambil lewat Mesin -> langsung ke Customer (Sangat Akurat)
-        if ($record->machine?->customer?->nama_customer) {
-            return $record->machine->customer->nama_customer;
-        }
-
-        // Jalur 3: Ambil lewat Mesin -> Jalur lama (Deployment) -> Customer
-        if ($record->machine?->deployment?->customer?->nama_customer) {
-            return $record->machine->deployment->customer->nama_customer;
-        }
-
-        return 'Gudang DGG / Tanpa Customer';
-    })
-    ->description(fn ($record): string => 'Model: '.($record->machine?->tipe_model ?? '-'))
-    ->sortable()
-    ->searchable(query: function (Builder $query, string $search): Builder {
-        // Supaya kolom pencarian di pojok kanan atas tetap berfungsi mendeteksi teks nama customer
-        return $query->whereHas('customer', function ($q) use ($search) {
-            $q->where('nama_customer', 'like', "%{$search}%");
-        })->orWhereHas('machine.customer', function ($q) use ($search) {
-            $q->where('nama_customer', 'like', "%{$search}%");
-        });
-    }),
+                Tables\Columns\TextColumn::make('machine_id') 
+                    ->label('Customer / Model')
+                    ->getStateUsing(function ($record) {
+                        if ($record->customer?->nama_customer) {
+                            return $record->customer->nama_customer;
+                        }
+                        if ($record->machine?->customer?->nama_customer) {
+                            return $record->machine->customer->nama_customer;
+                        }
+                        if ($record->machine?->deployment?->customer?->nama_customer) {
+                            return $record->machine->deployment->customer->nama_customer;
+                        }
+                        return 'Gudang DGG / Tanpa Customer';
+                    })
+                    ->description(fn ($record): string => 'Model: '.($record->machine?->tipe_model ?? '-'))
+                    ->sortable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHas('customer', function ($q) use ($search) {
+                            $q->where('nama_customer', 'like', "%{$search}%");
+                        })->orWhereHas('machine.customer', function ($q) use ($search) {
+                            $q->where('nama_customer', 'like', "%{$search}%");
+                        });
+                    }),
 
                 Tables\Columns\TextColumn::make('machine.serial_number')
                     ->label('SN Mesin')

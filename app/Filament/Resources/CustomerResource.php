@@ -22,7 +22,7 @@ class CustomerResource extends Resource
     protected static ?string $navigationLabel = 'Customer';
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
     protected static ?string $navigationGroup = 'Master Data';
-    protected static ?int $navigationSort = 1; // Urutan nomor 1
+    protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
     {
@@ -77,18 +77,18 @@ class CustomerResource extends Resource
                     ->color('info'),
             ])
             /* |--------------------------------------------------------------------------
-            | 🌟 PERBAIKAN GRUP WILAYAH KERJA: TEKS BERSIH MODERN & ANTI-BOCOR HTML
+            | 🌟 DESAIN PREMIUM GRUP WILAYAH KERJA (BERSIH & PRESISI)
             |--------------------------------------------------------------------------
             */
             ->defaultGroup(
                 Group::make('nested_group_key')
-                    ->label('')
+                    ->label('Grup Wilayah')
                     ->getTitleFromRecordUsing(function (Customer $record) {
                         $namaTeknisi = strtoupper($record->technician?->nama_technician ?? 'TANPA TEKNISI');
                         $namaKota = strtoupper($record->kota ?? 'WILAYAH UMUM');
                         
-                        // ✅ Menggunakan teks murni dikombinasikan dengan pembatas visual yang elegan dan bersih
-                        return "TEKNISI: {$namaTeknisi}  |  KOTA: {$namaKota}";
+                        // Hasil Tampilan di Layar:  👤 TEKNISI: IDRUS   •   📍 KOTA: CIREBON
+                        return "👤 TEKNISI: {$namaTeknisi}   •   📍 KOTA: {$namaKota}";
                     })
                     ->collapsible()
             )
@@ -112,8 +112,9 @@ class CustomerResource extends Resource
     }
 
     /* |--------------------------------------------------------------------------
-    | 🌟 MANIPULASI QUERY JALUR BELAKANG (CONCAT DATA TEKNISI & KOTA)
+    | 🌟 REKAYASA SUBQUERY: SOLUSI MUTLAK AMBIGUOUS ID COLUMNS
     |--------------------------------------------------------------------------
+    | Menggunakan Subquery addSelect menggantikan leftJoin agar ID tidak bertabrakan
     */
     public static function getEloquentQuery(): Builder
     {
@@ -121,11 +122,13 @@ class CustomerResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ])
-            ->leftJoin('technicians', 'customers.technician_id', '=', 'technicians.id')
-            ->select(
-                'customers.*',
-                DB::raw("CONCAT(COALESCE(technicians.nama_technician, 'TANPA TEKNISI'), ' - ', COALESCE(customers.kota, '')) as nested_group_key")
-            );
+            ->select('customers.*')
+            ->addSelect([
+                'nested_group_key' => DB::table('technicians')
+                    ->whereColumn('technicians.id', 'customers.technician_id')
+                    ->select(DB::raw("CONCAT(COALESCE(technicians.nama_technician, 'TANPA TEKNISI'), ' - ', COALESCE(customers.kota, ''))"))
+                    ->limit(1)
+            ]);
     }
 
     public static function getPages(): array
