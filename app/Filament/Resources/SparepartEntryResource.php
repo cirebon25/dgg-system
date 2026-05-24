@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SparepartEntryResource\Pages;
+use App\Models\Sparepart;
 use App\Models\SparepartEntry;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -22,7 +23,6 @@ class SparepartEntryResource extends Resource
     {
         return $form
             ->schema([
-                // 📑 BAGIAN 1: INFO NOTA & SUPPLIER (Cukup Isi Sekali di Atas)
                 Forms\Components\Section::make('Informasi Pengiriman / Supplier')
                     ->description('Detail nota utama dari pihak supplier.')
                     ->schema([
@@ -35,7 +35,6 @@ class SparepartEntryResource extends Resource
                             ->rows(2),
                     ])->columns(2),
 
-                // 📦 BAGIAN 2: DAFTAR BARANG MASSAL (Bisa Tambah Sampai Berapa pun Jenisnya)
                 Forms\Components\Section::make('Daftar Suku Cadang Masuk')
                     ->description('Masukkan semua jenis sparepart yang datang di nota ini sekaligus.')
                     ->schema([
@@ -44,7 +43,14 @@ class SparepartEntryResource extends Resource
                             ->schema([
                                 Forms\Components\Select::make('sparepart_id')
                                     ->label('Pilih Sparepart')
-                                    ->options(\App\Models\Sparepart::pluck('nama_sparepart', 'id'))
+                                    ->options(
+                                        Sparepart::orderBy('nama_sparepart')
+                                            ->get()
+                                            ->mapWithKeys(fn($s) => [
+                                                $s->id => $s->nama_sparepart . ($s->nama_alias ? " — {$s->nama_alias}" : '')
+                                            ])
+                                            ->toArray()
+                                    )
                                     ->searchable()
                                     ->preload()
                                     ->required(),
@@ -87,7 +93,7 @@ class SparepartEntryResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListSparepartEntries::route('/'),
+            'index'  => Pages\ListSparepartEntries::route('/'),
             'create' => Pages\CreateSparepartEntry::route('/create'),
         ];
     }

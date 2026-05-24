@@ -1,6 +1,5 @@
 <?php
 
-namespace App\Playground; // Sesuaikan namespace aplikasi Akang jika bukan Playground (biasanya App\Filament\Resources)
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SparepartResource\Pages;
@@ -19,7 +18,7 @@ class SparepartResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
     protected static ?string $navigationGroup = 'Master Data';
-    protected static ?int $navigationSort = 3; // Urutan nomor 3
+    protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
     {
@@ -29,16 +28,31 @@ class SparepartResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('nama_sparepart')
                             ->label('Nama Sparepart')
-                            ->required(),
+                            ->placeholder('Contoh: Toner Super Silver Yellow Polos 500gr')
+                            ->required()
+                            ->columnSpan(2),
+
+                        Forms\Components\TextInput::make('nama_alias')
+                            ->label('Nama Alias / Nama Teknisi')
+                            ->placeholder('Contoh: toner blue, toner kuning')
+                            ->helperText('Nama yang dikenal teknisi. Pisahkan koma jika lebih dari satu.')
+                            ->nullable()
+                            ->columnSpan(2),
+
                         Forms\Components\TextInput::make('code_part')
-                            ->label('Code Part'),
+                            ->label('Code Part')
+                            ->nullable()
+                            ->required(false),
+
                         Forms\Components\TextInput::make('no_part')
                             ->label('No Part')
                             ->required(),
-                    ])->columns(3),
 
-                // Bagian Manajemen Stok manual kita buang dari form Create/Edit 
-                // Karena sekarang input barang masuk sudah pakai menu "Input Stok Masuk" tersendiri!
+                        Forms\Components\Textarea::make('keterangan')
+                            ->label('Keterangan')
+                            ->nullable()
+                            ->columnSpanFull(),
+                    ])->columns(4),
             ]);
     }
 
@@ -49,42 +63,41 @@ class SparepartResource extends Resource
                 TextColumn::make('nama_sparepart')
                     ->label('Nama Sparepart')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->description(
+                        fn(Sparepart $record): string => $record->nama_alias
+                            ? '📌 Alias: ' . $record->nama_alias
+                            : ''
+                    ),
 
                 TextColumn::make('code_part')
                     ->label('Kode Part')
-                    ->searchable(),
+                    ->searchable()
+                    ->placeholder('-'),
 
                 TextColumn::make('no_part')
                     ->label('No Part')
-                    ->searchable(),
+                    ->searchable()
+                    ->placeholder('-'),
 
-                // 🌟 TAMPILKAN TOTAL MASUK REAL-TIME DARI SUPPLIER
-                TextColumn::make('calculated_saldo_masuk')
-                    ->label('Total Masuk')
-                    ->badge()
-                    ->color('info'),
+                TextColumn::make('harga_beli')
+                    ->label('Harga Beli')
+                    ->money('IDR')
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
-                // 🌟 TAMPILKAN TOTAL KELUAR REAL-TIME (DIPINJAM TEKNISI)
-                TextColumn::make('calculated_saldo_keluar')
-                    ->label('Total Keluar')
-                    ->badge()
-                    ->color('warning'),
-
-                // 🌟 TAMPILKAN SISA STOK FISIK DI GUDANG PUSAT (REAL-TIME)
-                TextColumn::make('calculated_stok')
+                TextColumn::make('stok')
                     ->label('Stok Gudang')
                     ->badge()
                     ->color(fn(int $state): string => match (true) {
-                        $state <= 2 => 'danger',   // Merah kalau kritis
-                        $state <= 5 => 'warning',  // Kuning kalau menipis
-                        default => 'success',      // Hijau kalau aman
+                        $state <= 2 => 'danger',
+                        $state <= 5 => 'warning',
+                        default     => 'success',
                     })
                     ->weight('bold')
                     ->sortable(),
             ])
             ->headerActions([
-                // 🟢 1. TOMBOL IMPORT CSV
                 Tables\Actions\Action::make('import_sparepart')
                     ->label('Import CSV')
                     ->icon('heroicon-m-arrow-up-tray')
@@ -99,34 +112,31 @@ class SparepartResource extends Resource
                     ->action(function (array $data) {
                         $filePath = storage_path('app/public/' . $data['file_csv']);
                         $rows = Excel::toArray([], $filePath)[0];
-                        array_shift($rows); // Buang header
+                        array_shift($rows);
 
                         foreach ($rows as $row) {
-                            Sparepart::updateOrCreate(
-                                ['no_part' => $row[1]], // Kunci: No Part
+                            $sp = Sparepart::updateOrCreate(
+                                ['no_part' => $row[1]],
                                 [
                                     'nama_sparepart' => $row[0],
-                                    'code_part' => $row[3] ?? null,
+                                    'code_part'      => $row[3] ?? null,
+                                    'nama_alias'     => $row[4] ?? null,
                                 ]
                             );
 
-                            // Agar stok masuk dari hasil import CSV juga tercatat resmi di riwayat, 
-                            // Kita buatkan langsung record transaksinya di tabel Entries jika jumlahnya > 0
-                            if ((int)$row[2] > 0) {
-                                $sp = Sparepart::where('no_part', $row[1])->first();
-                                if ($sp) {
-                                    \App\Models\SparepartEntry::create([
-                                        'sparepart_id' => $sp->id,
-                                        'jumlah' => (int)$row[2],
-                                        'supplier' => 'Import Awal CSV',
-                                        'keterangan' => 'Inisialisasi stok awal via file CSV',
-                                    ]);
-                                }
+                            $jumlahMasuk = (int) ($row[2] ?? 0);
+                            if ($jumlahMasuk > 0) {
+                                \App\Models\SparepartEntry::create([
+                                    'sparepart_id' => $sp->id,
+                                    'jumlah'       => $jumlahMasuk,
+                                    'supplier'     => 'Import Awal CSV',
+                                    'keterangan'   => 'Inisialisasi stok awal via file CSV',
+                                ]);
+                                $sp->increment('stok', $jumlahMasuk);
                             }
                         }
-                        if (file_exists($filePath)) {
-                            unlink($filePath);
-                        }
+
+                        if (file_exists($filePath)) unlink($filePath);
 
                         \Filament\Notifications\Notification::make()
                             ->title('Import Berhasil!')
@@ -134,7 +144,6 @@ class SparepartResource extends Resource
                             ->send();
                     }),
 
-                // 🔵 2. TOMBOL REKAP KELUAR BULANAN
                 Tables\Actions\Action::make('rekapKeluar')
                     ->label('Cetak Rekap Keluar')
                     ->color('danger')
@@ -155,23 +164,23 @@ class SparepartResource extends Resource
                                 '10' => 'Oktober',
                                 '11' => 'November',
                                 '12' => 'Desember',
-                            ])->required()->default(date('m')),
+                            ])
+                            ->required()
+                            ->default(date('m')),
                         Forms\Components\Select::make('year')
                             ->label('Pilih Tahun')
                             ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
-                            ->required()->default(date('Y')),
+                            ->required()
+                            ->default(date('Y')),
                     ])
-                    ->action(function (array $data) {
-                        return redirect()->route('sparepart.report.outflow', $data);
-                    }),
+                    ->action(fn(array $data) => redirect()->route('sparepart.report.outflow', $data)),
 
                 Tables\Actions\Action::make('cetakRealtime')
                     ->label('Cetak Rekap Realtime')
-                    ->color('warning') // Warna kuning oranye biar mencolok dan beda sendiri
+                    ->color('warning')
                     ->icon('heroicon-o-printer')
                     ->url(fn() => route('saldo-sparepart'))
-                    ->openUrlInNewTab(), // Buka di tab baru biar halaman inputan gak hilang
-
+                    ->openUrlInNewTab(),
 
                 Tables\Actions\CreateAction::make(),
             ])
@@ -189,9 +198,20 @@ class SparepartResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListSpareparts::route('/'),
+            'index'  => Pages\ListSpareparts::route('/'),
             'create' => Pages\CreateSparepart::route('/create'),
-            'edit' => Pages\EditSparepart::route('/{record}/edit'),
+            'edit'   => Pages\EditSparepart::route('/{record}/edit'),
         ];
+    }
+
+    // Helper static untuk dipakai di semua resource lain
+    // Contoh penggunaan: Sparepart::getOptionsWithAlias()
+    public static function getOptionsWithAlias(): array
+    {
+        return Sparepart::all()
+            ->mapWithKeys(fn($s) => [
+                $s->id => $s->nama_sparepart . ($s->nama_alias ? " — {$s->nama_alias}" : '')
+            ])
+            ->toArray();
     }
 }

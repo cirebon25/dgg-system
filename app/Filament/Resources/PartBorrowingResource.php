@@ -4,7 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PartBorrowingResource\Pages;
 use App\Models\PartBorrowing;
-use App\Models\Sparepart; // Pastikan model Sparepart di-import di sini
+use App\Models\Sparepart;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -21,7 +21,6 @@ class PartBorrowingResource extends Resource
     protected static ?string $navigationGroup = 'Gudang & Stok';
 
     protected static bool $shouldRegisterNavigation = false;
-
 
     public static function form(Form $form): Form
     {
@@ -40,13 +39,12 @@ class PartBorrowingResource extends Resource
                             ->relationship(
                                 name: 'sparepart',
                                 titleAttribute: 'nama_sparepart',
-                                // Menyaring agar sparepart yang stoknya 0 tidak muncul di pilihan dropdown
                                 modifyQueryUsing: fn($query) => $query->where('stok', '>', 0)
                             )
                             ->label('Pilih Sparepart')
                             ->required()
                             ->searchable()
-                            ->live(), // Membuat form responsif terhadap perubahan pilihan sparepart
+                            ->live(),
 
                         Forms\Components\TextInput::make('jumlah')
                             ->label('Jumlah Pinjam')
@@ -55,26 +53,19 @@ class PartBorrowingResource extends Resource
                             ->minValue(1)
                             ->default(1)
                             ->rules([
-                                // Validasi kustom untuk mencocokkan jumlah input dengan stok di database
                                 fn(Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
                                     $sparepartId = $get('sparepart_id');
-                                    if (! $sparepartId) {
-                                        return;
-                                    }
+                                    if (!$sparepartId) return;
 
                                     $sparepart = Sparepart::find($sparepartId);
+                                    if (!$sparepart) return;
 
-                                    if (! $sparepart) {
-                                        return;
-                                    }
-
-                                    // CATATAN: Jika nama kolom stok di database kamu bukan 'stok', silakan ubah properti ->stok di bawah ini
                                     if ($sparepart->stok <= 0) {
                                         $fail("Saldo gudang untuk sparepart ini sudah habis (0).");
                                     }
 
                                     if ($value > $sparepart->stok) {
-                                        $fail("Jumlah pinjam ({$value}) melebihi saldo gudang yang tersedia (Sisa: {$sparepart->stok}).");
+                                        $fail("Jumlah pinjam ({$value}) melebihi saldo gudang (Sisa: {$sparepart->stok}).");
                                     }
                                 },
                             ]),
@@ -88,13 +79,26 @@ class PartBorrowingResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Tanggal')
-                    ->dateTime('d M Y H:i')->sortable(),
+                    ->dateTime('d M Y H:i')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('technician.nama_technician')
-                    ->label('Teknisi')->searchable(),
+                    ->label('Teknisi')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('sparepart.nama_sparepart')
-                    ->label('Sparepart')->searchable(),
+                    ->label('Sparepart')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('jumlah')
-                    ->label('Jumlah')->badge()->color('success'),
+                    ->label('Jumlah')
+                    ->badge()
+                    ->color('success'),
+            ])
+            ->actions([
+                Tables\Actions\Action::make('cetak')
+                    ->label('Cetak')
+                    ->icon('heroicon-o-printer')
+                    ->color('gray')
+                    ->url(fn(PartBorrowing $record) => route('cetak.bukti-pinjam', $record->id))
+                    ->openUrlInNewTab(),
             ])
             ->defaultSort('created_at', 'desc');
     }

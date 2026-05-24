@@ -23,17 +23,16 @@ class CustomerResource extends Resource
     protected static ?string $navigationGroup = 'Master Data';
     protected static ?int $navigationSort = 1;
 
-    // Mapping warna per teknisi — tambah/ubah di sini saja
     protected static function technicianColor(?string $nama): string
     {
         return match (true) {
-            str_contains(strtoupper($nama ?? ''), 'RUDI')   => 'danger',   // Merah
-            str_contains(strtoupper($nama ?? ''), 'IDRUS')  => 'warning',  // Kuning
-            str_contains(strtoupper($nama ?? ''), 'SUKANA') => 'success',  // Hijau
-            str_contains(strtoupper($nama ?? ''), 'GETAR')  => 'info',     // Biru
-            str_contains(strtoupper($nama ?? ''), 'AKHSAN') => 'primary',  // Ungu
-            str_contains(strtoupper($nama ?? ''), 'ISMET')  => 'gray',     // Abu
-            str_contains(strtoupper($nama ?? ''), 'YUDI')   => 'warning',  // Kuning
+            str_contains(strtoupper($nama ?? ''), 'RUDI')   => 'danger',
+            str_contains(strtoupper($nama ?? ''), 'IDRUS')  => 'warning',
+            str_contains(strtoupper($nama ?? ''), 'SUKANA') => 'success',
+            str_contains(strtoupper($nama ?? ''), 'GETAR')  => 'info',
+            str_contains(strtoupper($nama ?? ''), 'AKHSAN') => 'primary',
+            str_contains(strtoupper($nama ?? ''), 'ISMET')  => 'gray',
+            str_contains(strtoupper($nama ?? ''), 'YUDI')   => 'warning',
             default                                          => 'gray',
         };
     }
@@ -57,7 +56,8 @@ class CustomerResource extends Resource
                 ->label('Teknisi Penanggung Jawab')
                 ->relationship('technician', 'nama_technician')
                 ->searchable()
-                ->preload(),
+                ->preload()
+                ->required(),
         ]);
     }
 
@@ -73,10 +73,11 @@ class CustomerResource extends Resource
                     ->sortable()
                     ->searchable()
                     ->color(fn(?string $state): string => match (true) {
-                        str_contains(strtoupper($state ?? ''), 'BARAT DAYA') => 'warning',
+                        str_contains(strtoupper($state ?? ''), 'BARAT DAYA') => 'success',
                         str_contains(strtoupper($state ?? ''), 'BARAT')      => 'info',
-                        str_contains(strtoupper($state ?? ''), 'UTARA')      => 'success',
+                        str_contains(strtoupper($state ?? ''), 'UTARA')      => 'warning',
                         str_contains(strtoupper($state ?? ''), 'SELATAN')    => 'danger',
+                        str_contains(strtoupper($state ?? ''), 'TIMUR')      => 'danger',
                         default                                               => 'gray',
                     }),
 
@@ -88,7 +89,7 @@ class CustomerResource extends Resource
                     ->weight(\Filament\Support\Enums\FontWeight::SemiBold)
                     ->description(fn(Customer $record): string => $record->alamat ?? '-')
                     ->wrap()
-                    ->summarize(Count::make()->label('Total Pelanggan')),
+                    ->summarize(Count::make()->label('Total')),
 
                 // KOLOM 3: KOTA
                 TextColumn::make('kota')
@@ -98,12 +99,11 @@ class CustomerResource extends Resource
                     ->icon('heroicon-o-map-pin')
                     ->iconColor('gray'),
 
-                // KOLOM 4: TEKNISI — warna sesuai nama
+                // KOLOM 4: TEKNISI
                 Tables\Columns\TextColumn::make('technician.nama_technician')
                     ->label('Teknisi')
                     ->placeholder('— Belum Diset —')
                     ->badge()
-                    // ->icon('heroicon-o-wrench-screwdriver')
                     ->searchable()
                     ->color(fn(?string $state): string => static::technicianColor($state)),
 
@@ -129,14 +129,13 @@ class CustomerResource extends Resource
 
             ])
 
-            // GROUPING: Teknisi + Kota dengan warna header
+            // GROUPING: pakai tech_kota_key agar summary terhitung per grup
             ->defaultGroup(
-                Group::make('technician_id')
+                Group::make('tech_kota_key')  // ✅ key gabungan technician+kota
                     ->getTitleFromRecordUsing(function ($record) {
                         $namaTek = $record->technician?->nama_technician ?? 'Tanpa Teknisi';
                         $kota    = $record->kota ?? 'Tanpa Kota';
 
-                        // Emoji per teknisi untuk pembeda visual di header grup
                         $emoji = match (true) {
                             str_contains(strtoupper($namaTek), 'RUDI')   => '🔴',
                             str_contains(strtoupper($namaTek), 'IDRUS')  => '🟡',
@@ -150,7 +149,7 @@ class CustomerResource extends Resource
 
                         return "{$emoji} {$namaTek}   - {$kota}";
                     })
-                    ->label('Teknisi & Kota')
+                    ->label('')
                     ->collapsible()
                     ->orderQueryUsing(
                         fn(Builder $query, string $direction) => $query
@@ -190,7 +189,9 @@ class CustomerResource extends Resource
         return parent::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
-            ]);
+            ])
+            // ✅ Buat computed column gabungan technician_id + kota sebagai group key
+            ->selectRaw("*, CONCAT(COALESCE(technician_id, 0), '-', COALESCE(kota, '')) as tech_kota_key");
     }
 
     public static function getPages(): array
