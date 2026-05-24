@@ -21,7 +21,7 @@ class RayonSheet implements FromQuery, WithHeadings, WithMapping, WithTitle, Sho
 
     public function query()
     {
-        return Rayon::with('technician');
+        return Rayon::with('technicians'); // plural, many-to-many
     }
 
     public function headings(): array
@@ -34,7 +34,8 @@ class RayonSheet implements FromQuery, WithHeadings, WithMapping, WithTitle, Sho
         return [
             $row->id,
             $row->nama_rayon,
-            $row->technician?->nama_technician ?? '-',
+            // Gabungkan semua nama teknisi jika lebih dari satu
+            $row->technicians->pluck('nama_technician')->join(', ') ?: '-',
             $row->created_at?->format('d/m/Y H:i'),
             $row->updated_at?->format('d/m/Y H:i'),
         ];

@@ -9,26 +9,25 @@ use Filament\Widgets\TableWidget as BaseWidget;
 
 class LatestDeployments extends BaseWidget
 {
-    protected static ?int $sort = 3;
-
+    protected static ?string $heading = '📦 10 Penempatan Mesin Terakhir';
+    protected static ?int $sort = 7;
     protected int|string|array $columnSpan = 'full';
-
-    protected static ?string $heading = '10 Penempatan Mesin Terakhir'; // Judulnya juga kita ganti
 
     public function table(Table $table): Table
     {
         return $table
-            // Angka 5 diganti jadi 10 di sini
-            ->query(Deployment::query()->latest()->limit(10))
+            ->query(Deployment::query()->latest()->with(['customer', 'machine', 'technician'])->limit(10))
             ->columns([
                 Tables\Columns\TextColumn::make('customer.nama_customer')
                     ->label('Nama Customer')
-                    ->icon('heroicon-m-user'),
+                    ->icon('heroicon-m-user')
+                    ->weight('semibold'),
 
                 Tables\Columns\TextColumn::make('machine.serial_number')
                     ->label('Serial Number')
                     ->icon('heroicon-m-cpu-chip')
-                    ->copyable(),
+                    ->copyable()
+                    ->color('primary'),
 
                 Tables\Columns\TextColumn::make('tanggal_instal')
                     ->label('Tanggal Pasang')
@@ -38,6 +37,7 @@ class LatestDeployments extends BaseWidget
                     ->label('Teknisi')
                     ->badge()
                     ->color('gray'),
-            ]);
+            ])
+            ->paginated(false);
     }
 }

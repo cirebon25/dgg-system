@@ -11,15 +11,14 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class DeploymentResource extends Resource
 {
     protected static ?string $model = Deployment::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-truck';
-
     protected static ?string $navigationGroup = 'Transaksi';
-
     protected static ?string $pluralLabel = 'Pemasangan Mesin';
 
     public static function form(Form $form): Form
@@ -29,7 +28,6 @@ class DeploymentResource extends Resource
                 Forms\Components\Section::make('Informasi Pemasangan')
                     ->description('Detail customer dan mesin yang akan dipasang.')
                     ->schema([
-
                         Forms\Components\TextInput::make('no_kontrak')
                             ->label('No. Kontrak')
                             ->placeholder('Contoh: KTR-2026-001')
@@ -93,7 +91,7 @@ class DeploymentResource extends Resource
                             ->schema([
                                 Forms\Components\Select::make('sparepart_id')
                                     ->label('Nama Barang')
-                                    ->options(\App\Models\Sparepart::pluck('nama_sparepart', 'id'))
+                                    ->options(Sparepart::pluck('nama_sparepart', 'id'))
                                     ->searchable()
                                     ->preload()
                                     ->required()
@@ -105,27 +103,25 @@ class DeploymentResource extends Resource
                                     ->numeric()
                                     ->default(1)
                                     ->required()
-
-                                    // 🌟 GERBANG VALIDASI GUDANG (Blokir Otomatis Jika Stok Tidak Cukup)
                                     ->rules([
                                         fn(Forms\Get $get, $record): \Closure => function (string $attribute, $value, \Closure $fail) use ($get, $record) {
                                             $sparepartId = $get('sparepart_id');
-                                            if (! $sparepartId) return;
+                                            if (!$sparepartId) return;
 
-                                            $sp = \App\Models\Sparepart::find($sparepartId);
-                                            if (! $sp) return;
+                                            $sp = Sparepart::find($sparepartId);
+                                            if (!$sp) return;
 
-                                            // Jika mode Edit, ambil jumlah kuota lama barang ini agar tidak memblokir diri sendiri
+                                            // Saat edit, tambahkan kuota lama agar tidak blokir diri sendiri
                                             $kuotaLama = 0;
                                             if ($record) {
-                                                $kuotaLama = (int) \Illuminate\Support\Facades\DB::table('deployment_sparepart')
+                                                $kuotaLama = (int) DB::table('deployment_sparepart')
                                                     ->where('deployment_id', $record->id)
                                                     ->where('sparepart_id', $sparepartId)
                                                     ->value('jumlah');
                                             }
 
-                                            // Batas maksimal yang boleh diinput saat ini
-                                            $maksimalTersedia = $sp->calculated_stok + $kuotaLama;
+                                            // Pakai stok fisik bukan accessor virtual
+                                            $maksimalTersedia = $sp->stok + $kuotaLama;
 
                                             if ($maksimalTersedia <= 0) {
                                                 $fail("Gagal Simpan! Saldo Gudang untuk item ini sudah HABIS (0).");
@@ -139,8 +135,8 @@ class DeploymentResource extends Resource
                             ->createItemButtonLabel('Tambah Sparepart')
 
                             ->formatStateUsing(function ($record) {
-                                if (! $record) return [];
-                                return \Illuminate\Support\Facades\DB::table('deployment_sparepart')
+                                if (!$record) return [];
+                                return DB::table('deployment_sparepart')
                                     ->where('deployment_id', $record->id)
                                     ->get(['sparepart_id', 'jumlah'])
                                     ->map(fn($item) => (array) $item)
@@ -148,39 +144,36 @@ class DeploymentResource extends Resource
                             })
 
                             ->saveRelationshipsUsing(function ($record, $state) {
-                                // Catat daftar ID lama sebelum dibersihkan demi sinkronisasi fisik
-                                $oldPartIds = \Illuminate\Support\Facades\DB::table('deployment_sparepart')
+                                // Ambil data lama sebelum dihapus
+                                $oldItems = DB::table('deployment_sparepart')
                                     ->where('deployment_id', $record->id)
-                                    ->pluck('sparepart_id')
-                                    ->toArray();
+                                    ->get(['sparepart_id', 'jumlah']);
 
-                                // Bersihkan data lama di tabel penghubung
-                                \Illuminate\Support\Facades\DB::table('deployment_sparepart')
+                                // Kembalikan stok fisik dari data lama
+                                foreach ($oldItems as $old) {
+                                    Sparepart::where('id', $old->sparepart_id)
+                                        ->increment('stok', $old->jumlah);
+                                }
+
+                                // Hapus data lama
+                                DB::table('deployment_sparepart')
                                     ->where('deployment_id', $record->id)
                                     ->delete();
 
-                                $newPartIds = [];
+                                // Simpan data baru dan potong stok fisik
                                 if (is_array($state)) {
                                     foreach ($state as $item) {
-                                        \Illuminate\Support\Facades\DB::table('deployment_sparepart')->insert([
+                                        DB::table('deployment_sparepart')->insert([
                                             'deployment_id' => $record->id,
-                                            'sparepart_id' => $item['sparepart_id'],
-                                            'jumlah' => $item['jumlah'],
-                                            'created_at' => now(),
-                                            'updated_at' => now(),
+                                            'sparepart_id'  => $item['sparepart_id'],
+                                            'jumlah'        => $item['jumlah'],
+                                            'created_at'    => now(),
+                                            'updated_at'    => now(),
                                         ]);
-                                        $newPartIds[] = $item['sparepart_id'];
-                                    }
-                                }
 
-                                // 🌟 UPDATE OTOMATIS: Tembak perubahan langsung ke kolom fisik 'stok' di DB biar sinkron total!
-                                $allAffectedIds = array_unique(array_merge($oldPartIds, $newPartIds));
-                                foreach ($allAffectedIds as $spId) {
-                                    $itemSparepart = \App\Models\Sparepart::find($spId);
-                                    if ($itemSparepart) {
-                                        \Illuminate\Support\Facades\DB::table('spareparts')
-                                            ->where('id', $spId)
-                                            ->update(['stok' => $itemSparepart->calculated_stok]);
+                                        // Potong stok fisik gudang
+                                        Sparepart::where('id', $item['sparepart_id'])
+                                            ->decrement('stok', $item['jumlah']);
                                     }
                                 }
                             }),
@@ -226,10 +219,10 @@ class DeploymentResource extends Resource
                     ->label('Status Unit')
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
-                        'Ready' => 'success',
-                        'Rented' => 'warning',
+                        'Ready'     => 'success',
+                        'Rented'    => 'warning',
                         'Refurbish' => 'danger',
-                        default => 'gray',
+                        default     => 'gray',
                     }),
             ])
             ->filters([
@@ -256,9 +249,9 @@ class DeploymentResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListDeployments::route('/'),
+            'index'  => Pages\ListDeployments::route('/'),
             'create' => Pages\CreateDeployment::route('/create'),
-            'edit' => Pages\EditDeployment::route('/{record}/edit'),
+            'edit'   => Pages\EditDeployment::route('/{record}/edit'),
         ];
     }
 }

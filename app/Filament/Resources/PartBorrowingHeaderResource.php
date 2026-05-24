@@ -45,7 +45,11 @@ class PartBorrowingHeaderResource extends Resource
                                     ->options(
                                         Sparepart::where('stok', '>', 0)
                                             ->orderBy('nama_sparepart')
-                                            ->pluck('nama_sparepart', 'id')
+                                            ->get()
+                                            ->mapWithKeys(fn($s) => [
+                                                $s->id => $s->nama_sparepart . ($s->nama_alias ? " — {$s->nama_alias}" : '')
+                                            ])
+                                            ->toArray()
                                     )
                                     ->required()
                                     ->searchable()
@@ -136,7 +140,7 @@ class PartBorrowingHeaderResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListPartBorrowingHeaders::route('/'),
+            'index'  => Pages\ListPartBorrowingHeaders::route('/'),
             'create' => Pages\CreatePartBorrowingHeader::route('/create'),
         ];
     }

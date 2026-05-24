@@ -9,16 +9,15 @@ use App\Models\TechnicianStockHistory;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class CreatePartBorrowing extends CreateRecord
 {
     protected static string $resource = PartBorrowingResource::class;
 
-    private bool $sudahDiproses = false;
-
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        dd($data); // SEMENTARA UNTUK DEBUG
+
         $jumlah = (int) ($data['jumlah'] ?? 0);
         $partId = $data['sparepart_id'] ?? null;
 
@@ -43,9 +42,6 @@ class CreatePartBorrowing extends CreateRecord
 
     protected function afterCreate(): void
     {
-        if ($this->sudahDiproses) return;
-        $this->sudahDiproses = true;
-
         $record = $this->getRecord();
 
         DB::transaction(function () use ($record) {
@@ -73,28 +69,18 @@ class CreatePartBorrowing extends CreateRecord
                 'technician_id' => $record->technician_id,
                 'sparepart_id'  => $record->sparepart_id,
                 'masuk'         => $jumlah,
+                'keluar'        => 0,
                 'saldo_akhir'   => (int) $techStock->jumlah,
                 'keterangan'    => 'Pinjam Part dari Gudang Utama',
             ]);
         });
 
-        // 4. Cetak: simpan ID ke session lalu redirect ke halaman cetak
-        // Cara ini 100% lolos blokir popup browser
-        try {
-            $printUrl = route('cetak.bukti-pinjam', $record->id);
-            // Inject JS: buka cetak di tab yang sama lalu kembali ke list
-            $this->js("
-                const printUrl = '{$printUrl}';
-                const listUrl  = window.location.origin + '/admin/part-borrowings';
-                const win = window.open(printUrl, '_blank');
-                if (!win || win.closed || typeof win.closed == 'undefined') {
-                    // Popup diblokir browser — redirect langsung
-                    window.location.href = printUrl;
-                }
-            ");
-        } catch (\Exception $e) {
-            Log::error('Gagal cetak otomatis: ' . $e->getMessage());
-        }
+        Notification::make()
+            ->title('Pinjam Berhasil! ✅')
+            ->body("Stok teknisi bertambah. Klik tombol Cetak di tabel untuk cetak bukti.")
+            ->success()
+            ->seconds(6)
+            ->send();
     }
 
     protected function getRedirectUrl(): string
