@@ -1,17 +1,14 @@
 {
+    "outputDirectory": "public",
     "functions": {
-      "api/index.php": {
-        "runtime": "vercel-php@0.6.0"
-      }
+        "api/index.php": {
+            "runtime": "vercel-php@0.6.0"
+        }
     },
     "routes": [
-      {
-        "src": "/assets/(.*)",
-        "dest": "/public/assets/$1"
-      },
-      {
-        "src": "/(.*)",
-        "dest": "/api/index.php"
-      }
+        {
+            "src": "/(.*)",
+            "dest": "/api/index.php"
+        }
     ]
-  }
+}
