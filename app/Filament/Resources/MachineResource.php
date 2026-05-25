@@ -43,7 +43,7 @@ class MachineResource extends Resource
                             ->label('Serial Number (SN)')
                             ->required()
                             ->unique(ignoreRecord: true)
-                            ->placeholder('Contoh: WEP12345'),
+                            ->placeholder('Contoh: XVR005848'),
 
                         Forms\Components\Select::make('tipe_model')
                             ->label('Tipe / Model Mesin')

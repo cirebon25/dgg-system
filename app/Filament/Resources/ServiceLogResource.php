@@ -206,11 +206,11 @@ class ServiceLogResource extends Resource
                 Tables\Actions\Action::make('cetak_kinerja_rayon')
                     ->label('Cetak Kinerja Rayon')
                     ->icon('heroicon-o-building-office')
-                    ->color('info')
+                    ->color('violet')
                     ->action(fn(array $data) => redirect()->route('print.performance-rayon', $data)),
 
                 Tables\Actions\Action::make('cetakHorizontal')
-                    ->label('Laporan Tekni')
+                    ->label('Laporan Teknisi')
                     ->icon('heroicon-o-table-cells')
                     ->color('success')
                     ->form([

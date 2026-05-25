@@ -27,7 +27,7 @@ class ListMachines extends ListRecords
             Action::make('import_csv')
                 ->label('Import CSV')
                 ->icon('heroicon-o-arrow-up-tray')
-                ->color('success')
+                ->color('danger')
                 ->form([
                     FileUpload::make('file')
                         ->label('Pilih File CSV')
@@ -127,7 +127,7 @@ class ListMachines extends ListRecords
                                 $successCount++;
                             } catch (\Exception $e) {
                                 if (count($errorDetails) < 3) {
-                                    $errorDetails[] = "Baris $rowCount: ".$e->getMessage();
+                                    $errorDetails[] = "Baris $rowCount: " . $e->getMessage();
                                 }
                             }
                         }
@@ -145,7 +145,7 @@ class ListMachines extends ListRecords
                             $errBody = implode("\n", $errorDetails);
                             Notification::make()
                                 ->title('Impor Gagal (0 Data)')
-                                ->body($msg."\nDetail Error:\n".$errBody)
+                                ->body($msg . "\nDetail Error:\n" . $errBody)
                                 ->danger()
                                 ->persistent()
                                 ->send();
@@ -162,7 +162,7 @@ class ListMachines extends ListRecords
             // 3. TOMBOL CETAK STOK GUDANG
             Action::make('cetak_stok_gudang')
                 ->label('Cetak Stok Gudang')
-                ->color('info')
+                ->color('violet')
                 ->icon('heroicon-o-printer')
                 ->url(route('cetak.stok-gudang'))
                 ->openUrlInNewTab(),
@@ -171,13 +171,22 @@ class ListMachines extends ListRecords
             Actions\Action::make('cetakPemasangan')
                 ->label('Cetak Pemasangan Baru')
                 ->icon('heroicon-m-sparkles')
-                ->color('success')
+                ->color('lime')
                 ->form([
                     \Filament\Forms\Components\Select::make('bulan')
                         ->options([
-                            '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
-                            '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
-                            '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+                            '01' => 'Januari',
+                            '02' => 'Februari',
+                            '03' => 'Maret',
+                            '04' => 'April',
+                            '05' => 'Mei',
+                            '06' => 'Juni',
+                            '07' => 'Juli',
+                            '08' => 'Agustus',
+                            '09' => 'September',
+                            '10' => 'Oktober',
+                            '11' => 'November',
+                            '12' => 'Desember',
                         ])
                         ->default(date('m'))
                         ->required(),

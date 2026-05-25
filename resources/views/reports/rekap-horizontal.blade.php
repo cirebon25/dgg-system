@@ -44,7 +44,7 @@
 
         .rayon-title .ket-singkatan {
             margin: 0;
-             color: #131111;
+            color: #131111;
             font-size: 7px;
             /* Ukuran font disesuaikan agar pas dalam satu baris kertas landscape */
             font-weight: normal;
@@ -466,7 +466,7 @@
                     @foreach ($deploymentsByKota as $kota => $itemsInKota)
                         <tr>
                             <td colspan="42" class="row-kota">
-                                 KOTA / KABUPATEN: {{ $kota }}
+                                KOTA / KABUPATEN: {{ $kota }}
                             </td>
                         </tr>
 
@@ -641,7 +641,7 @@
     {{-- =============================================
          BAGIAN 2: HALAMAN PRESTASI (LEMBAR TERPISAH PALING BAWAH)
     ============================================= --}}
-    <div class="prestasi-page">
+    {{-- <div class="prestasi-page">
         <div class="prestasi-page-title">📊 REKAP PRESTASI SEMUA RAYON — PERIODE:
             {{ Carbon\Carbon::create()->year($year)->month($month)->translatedFormat('F') }} {{ $year }}
         </div>
@@ -780,4 +780,4 @@
     </div>
 </body>
 
-</html>
+</html> --}}

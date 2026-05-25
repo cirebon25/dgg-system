@@ -35,6 +35,20 @@ class AdminPanelProvider extends PanelProvider
             ->globalSearch(true)
             ->colors([
                 'primary' => Color::Amber,
+                'secondary' => Color::Gray,
+                'success' => Color::Emerald,
+                'danger' => Color::Rose,
+                'warning' => Color::Orange,
+                'info' => Color::Cyan,
+                'blue' => Color::Blue,
+                'indigo' => Color::Indigo,
+                'violet' => Color::Violet,
+                'purple' => Color::Purple,
+                'fuchsia' => Color::Fuchsia,
+                'pink' => Color::Pink,
+                'teal' => Color::Teal,
+                'lime' => Color::Lime,
+                'yellow' => Color::Yellow,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
