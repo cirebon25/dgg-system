@@ -2,53 +2,50 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\ServiceLogSparepart;
+use App\Models\Sparepart;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Illuminate\Support\Facades\DB;
 
 class TopSpareparts extends BaseWidget
 {
-    protected static ?string $heading = '📊 Sparepart Terlaris (Keluar Terbanyak)';
-
+    protected static ?string $heading = '📊 Top 5 Sparepart Terlaris (Keluar Terbanyak)';
     protected static bool $isLazy = true;
-
-    protected static ?int $sort = 4;
-
-    protected int|string|array $columnSpan = 1;
+    protected static ?int $sort = 3;
+    protected int|string|array $columnSpan = 'full';
 
     public function table(Table $table): Table
     {
         return $table
             ->query(
-                ServiceLogSparepart::query()
-                    ->select('sparepart_id', DB::raw('SUM(jumlah) as total_out'))
-                    ->groupBy('sparepart_id')
-                    ->orderBy('total_out', 'desc')
+                // Menggunakan 'saldo_keluar' sesuai hasil cek skema database Anda
+                Sparepart::query()
+                    ->orderBy('saldo_keluar', 'desc')
                     ->limit(5)
             )
-            // ->recordKey(fn ($record) => $record->sparepart_id)
             ->columns([
-                Tables\Columns\TextColumn::make('sparepart.nama_sparepart')
-                    ->label('Nama Barang')
-                    ->weight('bold'),
+                Tables\Columns\TextColumn::make('nama_sparepart')
+                    ->label('Nama Sparepart')
+                    ->weight('semibold')
+                    ->searchable(),
 
-                Tables\Columns\TextColumn::make('total_out')
+                Tables\Columns\TextColumn::make('saldo_keluar')
                     ->label('Total Keluar')
                     ->badge()
-                    ->color('info')
-                    ->suffix(' Unit'),
-
-                Tables\Columns\TextColumn::make('sparepart.stok')
-                    ->label('Sisa Gudang')
-                    ->numeric()
+                    ->color('warning')
+                    ->suffix(' Pcs')
                     ->alignCenter(),
-            ]);
-    }
 
-    public function getTableRecordKey($record): string
-    {
-        return (string) $record->sparepart_id;
+                Tables\Columns\TextColumn::make('stok')
+                    ->label('Sisa Stok Gudang')
+                    ->color('gray'),
+            ])
+            // Menghilangkan opsi "5, 10, 25, All" agar layout tidak rusak
+            ->paginated(false)
+
+            // Pengaman Anti-Glitch: Menjaga tinggi kotak tetap stabil & estetik saat data masih kosong (null)
+            ->emptyStateHeading('Belum Ada Data Suku Cadang')
+            ->emptyStateDescription('Data sparepart terlaris akan muncul otomatis setelah saldo keluar terisi.')
+            ->emptyStateIcon('heroicon-o-wrench-screwdriver');
     }
 }

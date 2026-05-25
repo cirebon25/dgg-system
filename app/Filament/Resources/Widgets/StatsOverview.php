@@ -2,9 +2,8 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\Customer;
 use App\Models\Machine;
-use App\Models\ServiceLog; // WAJIB ADA INI
+use App\Models\ServiceLog;
 use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -12,39 +11,39 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 class StatsOverview extends BaseWidget
 {
     protected static ?int $sort = 1;
-
     protected int|string|array $columnSpan = 'full';
 
     protected function getStats(): array
     {
-        return [
-            Stat::make('Total Mesin', Machine::count())
-                ->description('Semua unit DGG')
-                ->descriptionIcon('heroicon-m-cpu-chip')
-                ->color('primary'),
+        $now = Carbon::now();
+        $currentMonthName = $now->translatedFormat('F');
 
-            Stat::make('Mesin Tersewa', Machine::where('status', 'Rented')->count())
-                ->description('Unit di lokasi customer')
-                ->descriptionIcon('heroicon-m-check-circle')
+        // Mengambil total penggunaan dari ServiceLog bulan ini
+        // Kita tidak memfilter sparepart_id agar usage tetap terhitung
+        $usageBW = ServiceLog::whereYear('tanggal', $now->year)
+                             ->whereMonth('tanggal', $now->month)
+                             ->sum('usage_bw');
+
+        $usageColor = ServiceLog::whereYear('tanggal', $now->year)
+                                ->whereMonth('tanggal', $now->month)
+                                ->sum('usage_color');
+
+        return [
+            Stat::make('Total Mesin Ready ( Gudang )', number_format(Machine::where('status', 'Ready')->count(), 0, ',', '.'))
+                ->description('Unit mesin yang siap digunakan')
+                ->descriptionIcon('heroicon-m-cpu-chip')
                 ->color('success'),
 
-            Stat::make('Total Customer', Customer::count())
-                ->description('Pelanggan terdaftar')
-                ->descriptionIcon('heroicon-m-user-group')
-                ->color('info'),
+            Stat::make('Mesin Tersewa', number_format(Machine::where('status', 'Rented')->count(), 0, ',', '.'))
+                ->description('Unit aktif di lokasi customer')
+                ->color('success'),
 
-            // Statistik Pemakaian Color
-            Stat::make('Usage Color ('.Carbon::now()->format('M').')',
-                number_format(ServiceLog::whereMonth('tanggal', now()->month)->sum('usage_color')).' Lbr')
+            Stat::make("Usage Color ($currentMonthName)", number_format($usageColor, 0, ',', '.') . ' Lbr')
                 ->description('Total cetak warna bulan ini')
-                ->descriptionIcon('heroicon-m-presentation-chart-line')
                 ->color('warning'),
 
-            // Statistik Pemakaian BW
-            Stat::make('Usage BW ('.Carbon::now()->format('M').')',
-                number_format(ServiceLog::whereMonth('tanggal', now()->month)->sum('usage_bw')).' Lbr')
-                ->description('Total cetak hitam-putih')
-                ->descriptionIcon('heroicon-m-document-text')
+            Stat::make("Usage BW ($currentMonthName)", number_format($usageBW, 0, ',', '.') . ' Lbr')
+                ->description('Total cetak hitam-putih bulan ini')
                 ->color('gray'),
         ];
     }

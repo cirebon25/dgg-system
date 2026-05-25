@@ -2,13 +2,13 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Pages\Page;
-use App\Models\ServiceLog;
+use App\Exports\FullDatabaseExport;
+use App\Models\Customer;
 use App\Models\Deployment;
 use App\Models\Machine;
-use App\Models\Customer;
-use App\Exports\ArchivedCustomerExport;
-use App\Exports\ActiveCustomerExport; // <--- PASTIKAN INI DIPANGGIL
+use App\Models\ServiceLog;
+use Filament\Actions\Action;
+use Filament\Pages\Page;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ArchiveAllData extends Page
@@ -17,54 +17,49 @@ class ArchiveAllData extends Page
     protected static ?string $navigationLabel = 'Arsip All Data';
     protected static ?string $title = 'Pusat Monitoring & Arsip';
     protected static ?string $navigationGroup = 'Sistem Arsip';
-
+    protected static ?int $navigationSort = 15;
     protected static string $view = 'filament.pages.archive-all-data';
 
-    /**
-     * Ambil data Aktif & Arsip
-     */
     public function getViewData(): array
     {
         return [
-            // DATA ARSIP
-            'countServiceLog' => ServiceLog::onlyTrashed()->count(),
-            'countMachine'    => Machine::onlyTrashed()->count(),
-            'countDeployment' => Deployment::onlyTrashed()->count(),
+            'countServiceLog'   => ServiceLog::onlyTrashed()->count(),
+            'countMachine'      => Machine::onlyTrashed()->count(),
+            'countDeployment'   => Deployment::onlyTrashed()->count(),
+            'activeServiceLog'  => ServiceLog::count(),
+            'activeMachine'     => Machine::count(),
+            'activeDeployment'  => Deployment::count(),
+            'activeCustomer'    => Customer::count(),
 
-            // DATA AKTIF
-            'activeServiceLog' => ServiceLog::count(),
-            'activeMachine'    => Machine::count(),
-            'activeDeployment' => Deployment::count(),
-            'activeCustomer'   => Customer::count(),
-
+            /* |--------------------------------------------------------------------------
+               | 🌟 FIX: Eager loading dialihkan ke relasi customer yang valid (technician & rayon)
+               |--------------------------------------------------------------------------
+            */
             'archivedCustomers' => Customer::onlyTrashed()
-                ->with(['machines' => function($q) {
-                    $q->withTrashed();
-                }])
+                ->with([
+                    'technician', // Panggil teknisi lewat customer (Aman Jaya)
+                    'rayon',      // Panggil rayon lewat customer
+                    'machines' => fn($q) => $q->withTrashed() // Panggil mesin milik customer
+                ])
                 ->get(),
         ];
     }
 
-    /**
-     * 1. DOWNLOAD EXCEL ARSIP (Tombol Hijau)
-     */
-    public function downloadExcel()
+    protected function getHeaderActions(): array
     {
-        return Excel::download(
-            new ArchivedCustomerExport, 
-            'Arsip_Customer_DGG_' . now()->format('d-m-Y') . '.xlsx'
-        );
-    }
-
-    /**
-     * 2. DOWNLOAD EXCEL AKTIF (Tombol Biru)
-     * FUNGSI YANG TADI HILANG ADA DI SINI BOSS!
-     */
-    public function downloadActiveExcel()
-    {
-        return Excel::download(
-            new ActiveCustomerExport, 
-            'Data_Customer_Aktif_DGG_' . now()->format('d-m-Y') . '.xlsx'
-        );
+        return [
+            Action::make('downloadFullDB')
+                ->label('Download Semua Data (Excel)')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('success')
+                ->requiresConfirmation()
+                ->modalHeading('Download Seluruh Database')
+                ->modalDescription('File Excel akan berisi semua tabel dalam sheet terpisah. Proses ini mungkin memakan waktu beberapa detik.')
+                ->modalSubmitActionLabel('Ya, Download Sekarang')
+                ->action(function () {
+                    $filename = 'DGG_FullBackup_' . now()->format('d-m-Y_His') . '.xlsx';
+                    return Excel::download(new FullDatabaseExport, $filename);
+                }),
+        ];
     }
 }

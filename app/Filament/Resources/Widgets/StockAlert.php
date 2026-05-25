@@ -31,7 +31,7 @@ class StockAlert extends BaseWidget
         return [
             // Stat 1: Total Mesin
             Stat::make('Total Unit Mesin', $totalMesin.' Unit')
-                ->description('Total inventaris DGG')
+                ->description('Total Mesin Gudang dan  Customer DGG')
                 ->descriptionIcon('heroicon-m-cpu-chip')
                 ->color('info'),
 

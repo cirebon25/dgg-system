@@ -9,23 +9,19 @@ use Filament\Widgets\TableWidget as BaseWidget;
 
 class LatestCustomers extends BaseWidget
 {
-    protected static ?string $heading = '🤝 10 Customer Baru';
-
+    protected static ?string $heading = '🤝 5 Customer Baru Terdaftar';
     protected static bool $isLazy = true;
-
-    protected static ?int $sort = 5;
-
-    protected int|string|array $columnSpan = 1;
+    protected static ?int $sort = 6;
+      protected int|string|array $columnSpan = 'full';
 
     public function table(Table $table): Table
     {
         return $table
-            ->query(
-                Customer::query()->latest()->limit(10)
-            )
+            ->query(Customer::query()->latest()->limit(5))
             ->columns([
                 Tables\Columns\TextColumn::make('nama_customer')
                     ->label('Nama Customer')
+                    ->weight('semibold')
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('kota')
@@ -34,9 +30,10 @@ class LatestCustomers extends BaseWidget
                     ->color('gray'),
 
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Tgl Install')
-                    ->dateTime('d M Y')
+                    ->label('Tgl Gabung')
+                    ->date('d M Y')
                     ->color('primary'),
-            ]);
+            ])
+            ->paginated(false);
     }
 }

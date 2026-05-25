@@ -4,17 +4,17 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\TechnicianStockResource\Pages;
 use App\Models\TechnicianStock;
+use App\Models\Technician;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Tables\Grouping\Group; // MANTRA GROUPING PENTING
+use Filament\Tables\Grouping\Group;
+use Illuminate\Database\Eloquent\Builder;
 
 class TechnicianStockResource extends Resource
 {
     protected static ?string $model = TechnicianStock::class;
-
     protected static ?string $navigationLabel = 'Kartu Stok Teknisi';
     protected static ?string $pluralModelLabel = 'Kartu Stok Teknisi';
     protected static ?string $navigationIcon = 'heroicon-o-briefcase';
@@ -24,27 +24,37 @@ class TechnicianStockResource extends Resource
     {
         return $table
             ->columns([
-                // Kolom Nama Teknisi kita sembunyikan dari baris, karena sudah ada di Judul Grup
+                Tables\Columns\TextColumn::make('technician.nama_technician')
+                    ->label('Teknisi')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('sparepart.nama_sparepart')
                     ->label('Nama Sparepart')
                     ->iconColor('primary')
                     ->weight('bold')
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('jumlah')
                     ->label('Sisa Saldo (Di Tas)')
                     ->badge()
-                    ->color(fn (int $state): string => match (true) {
-                        $state > 5 => 'success',
-                        $state > 0 => 'warning',
-                        $state <= 0 => 'danger',
+                    ->color(fn(int $state): string => match (true) {
+                        $state > 5  => 'success',
+                        $state > 0  => 'warning',
+                        default     => 'danger',
                     })
-                    ->sortable(),
-                    
+                    ->sortable()
+                    // Tampilkan total jumlah per group teknisi
+                    ->summarize([
+                        Tables\Columns\Summarizers\Sum::make()
+                            ->label('Total Item di Tas'),
+                    ]),
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label('Terakhir Update')
-                    ->since() // Mengubah tanggal jadi "2 jam yang lalu", "5 menit yang lalu"
+                    ->since()
                     ->color('gray'),
             ])
             ->filters([
@@ -52,15 +62,30 @@ class TechnicianStockResource extends Resource
                     ->relationship('technician', 'nama_technician')
                     ->label('Filter Teknisi'),
             ])
-            ->actions([])
+            ->headerActions([
+                // Tombol cetak semua teknisi
+                Tables\Actions\Action::make('cetak_semua')
+                    ->label('Cetak Semua Kartu Stok')
+                    ->icon('heroicon-o-printer')
+                    ->color('warning')
+                    ->url(fn() => route('cetak.kartu-stok-semua'))
+                    ->openUrlInNewTab(),
+            ])
+            ->actions([
+                // Tombol cetak per baris/teknisi
+                Tables\Actions\Action::make('cetak')
+                    ->label('Cetak')
+                    ->icon('heroicon-o-printer')
+                    ->color('gray')
+                    ->url(fn(TechnicianStock $record) => route('cetak.kartu-stok', $record->technician_id))
+                    ->openUrlInNewTab(),
+            ])
             ->bulkActions([])
-            
-            // INI DIA JURUS PAMUNGKASNYA (GROUP PER TEKNISI)
             ->defaultGroup(
                 Group::make('technician.nama_technician')
                     ->label('Tas Milik Teknisi')
-                    ->collapsible() // Biar bisa dibuka-tutup (keren!)
-                    ->titlePrefixedWithLabel(false) // Biar tulisannya bersih, cuma nama teknisinya aja
+                    ->collapsible()
+                    ->titlePrefixedWithLabel(false)
             );
     }
 

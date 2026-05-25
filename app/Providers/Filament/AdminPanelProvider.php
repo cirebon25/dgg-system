@@ -10,12 +10,14 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -27,11 +29,10 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->brandName('PT DINAMIKA GLOBAL GEMILANG')
-            ->globalSearchKeyBindings(['command+k', 'ctrl+k']) // Fitur pencarian cepat
+            ->globalSearchKeyBindings(['command+k', 'ctrl+1'])
             ->sidebarCollapsibleOnDesktop()
-            ->login() // Memastikan halaman login aktif
+            ->login()
             ->globalSearch(true)
-            // ->globalSearchKeyCooldown(300
             ->colors([
                 'primary' => Color::Amber,
             ])
@@ -52,7 +53,7 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Widgets\LatestCustomers::class,
                 \App\Filament\Widgets\MachineLocationStats::class,
                 \App\Filament\Widgets\MachineRayonStats::class,
-                \App\Filament\Widgets\PartLifespanAlert::class,
+                // \App\Filament\Widgets\PartLifespanAlert::class,
             ])
             ->databaseNotifications()
             ->middleware([
@@ -67,18 +68,29 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->authMiddleware([
-                Authenticate::class, // Menggunakan middleware milik Filament
+                Authenticate::class,
             ])
             ->authGuard('web')
-            // 🌟 TAROH DI SINI: MANATRA PENGUNCI URUTAN GRUP SIDEBAR KIRI DGG 🌟
             ->navigationGroups([
+                'Pusat Cetak',
                 'Transaksi',
                 'Master Data',
                 'Gudang & Stok',
                 'Sistem Arsip',
-                'Pusat Cetak',
                 'Laporan',
                 'Bantuan',
-            ]);
+            ])
+
+            // ===== WATERMARK SIDEBAR =====
+            ->renderHook(
+                PanelsRenderHook::SIDEBAR_FOOTER,
+                fn(): HtmlString => new HtmlString('
+                    <div class="px-3 py-2 border-t border-gray-200 dark:border-gray-700 mt-2">
+                        <p class="text-[10px] text-center text-gray-400 dark:text-gray-500 leading-relaxed font-medium">
+                            © ' . date('Y') . ' Developer RUDIANTO 
+                        </p>
+                    </div>
+                ')
+            );
     }
 }

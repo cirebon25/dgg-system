@@ -9,13 +9,10 @@ use App\Models\TechnicianStockHistory;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class CreatePartBorrowingHeader extends CreateRecord
 {
     protected static string $resource = PartBorrowingHeaderResource::class;
-
-    private bool $sudahDiproses = false;
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
@@ -47,9 +44,6 @@ class CreatePartBorrowingHeader extends CreateRecord
 
     protected function afterCreate(): void
     {
-        if ($this->sudahDiproses) return;
-        $this->sudahDiproses = true;
-
         $header = $this->getRecord();
         $header->load('items');
 
@@ -81,28 +75,23 @@ class CreatePartBorrowingHeader extends CreateRecord
                     'technician_id' => $technicianId,
                     'sparepart_id'  => $sparepartId,
                     'masuk'         => $jumlah,
+                    'keluar'        => 0,
                     'saldo_akhir'   => (int) $techStock->jumlah,
                     'keterangan'    => 'Pinjam Part dari Gudang Utama',
                 ]);
             }
         });
 
-        // 4. Cetak nota otomatis
-        try {
-            $printUrl = route('cetak.bukti-pinjam-multi', $header->id);
-            $this->js("
-                const win = window.open('{$printUrl}', '_blank');
-                if (!win || win.closed || typeof win.closed == 'undefined') {
-                    window.location.href = '{$printUrl}';
-                }
-            ");
-        } catch (\Exception $e) {
-            Log::error('Gagal cetak otomatis: ' . $e->getMessage());
-        }
+        Notification::make()
+            ->title('Pinjam Berhasil! ✅')
+            ->body("Stok gudang terpotong. Klik tombol Cetak di tabel untuk cetak bukti.")
+            ->success()
+            ->seconds(6)
+            ->send();
     }
 
     protected function getRedirectUrl(): string
     {
-        return $this->getResource()::getUrl('index');
+        return route('cetak.bukti-pinjam-multi', $this->getRecord()->id);
     }
 }

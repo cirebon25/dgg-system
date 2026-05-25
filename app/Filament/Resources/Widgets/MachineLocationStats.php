@@ -11,12 +11,14 @@ use Illuminate\Support\Facades\DB;
 class MachineLocationStats extends BaseWidget
 {
     protected static ?string $heading = '📍 Sebaran Unit Per Wilayah';
-
     protected static bool $isLazy = true;
+    protected static ?int $sort = 5;
+      protected int|string|array $columnSpan = 'full';
 
-    protected static ?int $sort = 3;
-
-    protected int|string|array $columnSpan = 1;
+    public function getTableRecordKey($record): string
+    {
+        return (string) $record->kota;
+    }
 
     public function table(Table $table): Table
     {
@@ -27,8 +29,8 @@ class MachineLocationStats extends BaseWidget
                     ->whereNotNull('kota')
                     ->groupBy('kota')
                     ->orderBy('total_unit', 'desc')
+                    ->limit(5) // Mengunci tinggi kotak maksimal 5 baris data
             )
-            // ->recordKey(fn ($record) => $record->kota)
             ->columns([
                 Tables\Columns\TextColumn::make('kota')
                     ->label('Kota / Kabupaten')
@@ -40,11 +42,7 @@ class MachineLocationStats extends BaseWidget
                     ->badge()
                     ->color('success')
                     ->suffix(' Mesin'),
-            ]);
-    }
-
-    public function getTableRecordKey($record): string
-    {
-        return (string) $record->kota;
+            ])
+            ->paginated(false); // Menghilangkan tulisan "5, 10, 25, All" yang merusak tampilan
     }
 }
