@@ -4,7 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ServiceLogResource\Pages;
 use App\Models\ServiceLog;
-use App\Models\Machine; 
+use App\Models\Machine;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -47,7 +47,7 @@ class ServiceLogResource extends Resource
                                 $machine = Machine::find($state);
                                 if ($machine) {
                                     $set('customer_id', $machine->customer_id);
-                                    
+
                                     // Jika mesin itu ada customer dan customernya punya teknisi utama, set otomatis
                                     if ($machine->customer?->technician_id) {
                                         $set('technician_id', $machine->customer->technician_id);
@@ -64,11 +64,11 @@ class ServiceLogResource extends Resource
 
                         Forms\Components\Select::make('tipe_kunjungan')
                             ->options([
-                                'RN' => 'RN (Instal Baru)', 
+                                'RN' => 'RN (Instal Baru)',
                                 'CM' => 'CM (Call Maintenance)',
-                                'RM' => 'RM (Kunjungan Rutin)', 
+                                'RM' => 'RM (Kunjungan Rutin)',
                                 'RR' => 'RR (Ganti Mesin)',
-                                'JK' => 'JK (Jaringan komputer)', 
+                                'JK' => 'JK (Jaringan komputer)',
                                 'L' => 'L (Lanjut)',
                                 'TN' => 'TN (Call Toner)',
                             ])->required(),
@@ -91,14 +91,14 @@ class ServiceLogResource extends Resource
                             ->label('BW Lalu')
                             ->numeric()
                             ->readOnly(),
-                            
+
                         Forms\Components\TextInput::make('counter_bw')
                             ->label('BW Sekarang')
                             ->numeric()
                             ->required()
                             ->live(onBlur: true) // ✅ FIX MASTER: Anti delay, ketikan dilepas dulu baru hitung otomatis
-                            ->afterStateUpdated(fn ($state, $get, $set) => $set('usage_bw', (int) $state - (int) $get('bw_lalu'))),
-                            
+                            ->afterStateUpdated(fn($state, $get, $set) => $set('usage_bw', (int) $state - (int) $get('bw_lalu'))),
+
                         Forms\Components\TextInput::make('usage_bw')
                             ->label('Usage BW')
                             ->numeric()
@@ -108,13 +108,13 @@ class ServiceLogResource extends Resource
                             ->label('Color Lalu')
                             ->numeric()
                             ->readOnly(),
-                            
+
                         Forms\Components\TextInput::make('counter_color')
                             ->label('Color Sekarang')
                             ->numeric()
                             ->live(onBlur: true) // ✅ FIX MASTER: Mengunci input color agar lancar tanpa terhapus otomatis
-                            ->afterStateUpdated(fn ($state, $get, $set) => $set('usage_color', (int) $state - (int) $get('color_lalu'))),
-                            
+                            ->afterStateUpdated(fn($state, $get, $set) => $set('usage_color', (int) $state - (int) $get('color_lalu'))),
+
                         Forms\Components\TextInput::make('usage_color')
                             ->label('Usage Color')
                             ->numeric()
@@ -133,15 +133,15 @@ class ServiceLogResource extends Resource
                                     ->searchable()
                                     ->preload()
                                     ->required(),
-                                
+
                                 Forms\Components\TextInput::make('jumlah')
                                     ->label('Jumlah Pakai')
                                     ->numeric()
                                     ->required()
                                     ->reactive()
                                     ->rules([
-                                        fn (Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
-                                            $technicianId = $get('../../technician_id'); 
+                                        fn(Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
+                                            $technicianId = $get('../../technician_id');
                                             $sparepartId = $get('sparepart_id');
 
                                             if (!$technicianId || !$sparepartId) return;
@@ -195,46 +195,78 @@ class ServiceLogResource extends Resource
                     ->color('info')
                     ->form([
                         Forms\Components\Select::make('month')
-                            ->options(['01'=>'Januari','02'=>'Februari','03'=>'Maret','04'=>'April','05'=>'Mei','06'=>'Juni','07'=>'Juli','08'=>'Agustus','09'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'])
+                            ->options(['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'])
                             ->required()->default(date('m')),
                         Forms\Components\Select::make('year')
                             ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
                             ->required()->default(date('Y')),
                     ])
-                    ->action(fn (array $data) => redirect()->route('cetak.service-rayon', $data)),
+                    ->action(fn(array $data) => redirect()->route('cetak.service-rayon', $data)),
+
+                Tables\Actions\Action::make('cetak_kinerja_rayon')
+                    ->label('Cetak Kinerja Rayon')
+                    ->icon('heroicon-o-building-office')
+                    ->color('info')
+                    ->action(fn(array $data) => redirect()->route('print.performance-rayon', $data)),
 
                 Tables\Actions\Action::make('cetakHorizontal')
-                    ->label('Rekap Horizontal')
+                    ->label('Laporan Tekni')
                     ->icon('heroicon-o-table-cells')
                     ->color('success')
                     ->form([
                         Forms\Components\Select::make('month')
-                            ->options(['01'=>'Jan','02'=>'Feb','03'=>'Mar','04'=>'Apr','05'=>'Mei','06'=>'Jun','07'=>'Jul','08'=>'Agu','09'=>'Sep','10'=>'Okt','11'=>'Nov','12'=>'Des'])
+                            ->options(['01' => 'Jan', '02' => 'Feb', '03' => 'Mar', '04' => 'Apr', '05' => 'Mei', '06' => 'Jun', '07' => 'Jul', '08' => 'Agu', '09' => 'Sep', '10' => 'Okt', '11' => 'Nov', '12' => 'Des'])
                             ->required()->default(date('m')),
                         Forms\Components\Select::make('year')
                             ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
                             ->required()->default(date('Y')),
                     ])
-                    ->action(fn (array $data) => redirect()->route('rekap.horizontal', $data)),
+                    ->action(fn(array $data) => redirect()->route('rekap.horizontal', $data)),
 
-                Tables\Actions\Action::make('printBulanan')
-                    ->label('Cetak Per Bulan')
-                    ->color('success')
-                    ->icon('heroicon-o-calendar')
+                Tables\Actions\Action::make('cetak_kinerja')
+                    ->label('Cetak Kinerja Teknisi')
+                    ->icon('heroicon-o-chart-pie')
+                    ->color('danger')
                     ->form([
                         Forms\Components\Select::make('month')
-                            ->options(['01'=>'Januari','02'=>'Februari','03'=>'Maret','04'=>'April','05'=>'Mei','06'=>'Juni','07'=>'Juli','08'=>'Agustus','09'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'])
-                            ->required()->default(date('m')),
+                            ->options([
+                                '01' => 'Januari',
+                                '02' => 'Februari',
+                                '03' => 'Maret',
+                                '04' => 'April',
+                                '05' => 'Mei',
+                                '06' => 'Juni',
+                                '07' => 'Juli',
+                                '08' => 'Agustus',
+                                '09' => 'September',
+                                '10' => 'Oktober',
+                                '11' => 'November',
+                                '12' => 'Desember'
+                            ])->default(date('m'))->required(),
                         Forms\Components\Select::make('year')
-                            ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
-                            ->required()->default(date('Y')),
+                            ->options(array_combine(range(2024, 2030), range(2024, 2030)))
+                            ->default(date('Y'))->required(),
                     ])
-                    ->action(fn (array $data) => redirect()->route('service-log.monthly', $data)),
+                    ->action(fn(array $data) => redirect()->route('print.tech-performance', $data)),
+
+                // Tables\Actions\Action::make('printBulanan')
+                //     ->label('Cetak Per Bulan')
+                //     ->color('success')
+                //     ->icon('heroicon-o-calendar')
+                //     ->form([
+                //         Forms\Components\Select::make('month')
+                //             ->options(['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'])
+                //             ->required()->default(date('m')),
+                //         Forms\Components\Select::make('year')
+                //             ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
+                //             ->required()->default(date('Y')),
+                //     ])
+                //     ->action(fn(array $data) => redirect()->route('service-log.monthly', $data)),
 
                 Tables\Actions\CreateAction::make(),
             ])
             ->columns([
-                Tables\Columns\TextColumn::make('machine_id') 
+                Tables\Columns\TextColumn::make('machine_id')
                     ->label('Customer / Model')
                     ->getStateUsing(function ($record) {
                         if ($record->customer?->nama_customer) {
@@ -248,7 +280,7 @@ class ServiceLogResource extends Resource
                         }
                         return 'Gudang DGG / Tanpa Customer';
                     })
-                    ->description(fn ($record): string => 'Model: '.($record->machine?->tipe_model ?? '-'))
+                    ->description(fn($record): string => 'Model: ' . ($record->machine?->tipe_model ?? '-'))
                     ->sortable()
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         return $query->whereHas('customer', function ($q) use ($search) {
@@ -270,11 +302,11 @@ class ServiceLogResource extends Resource
                 Tables\Columns\TextColumn::make('counter_bw')
                     ->label('Counter (BW/CL)')
                     ->html()
-                    ->formatStateUsing(fn ($record) => 'BW: '.number_format($record->counter_bw).'<br>CL: '.number_format($record->counter_color)),
+                    ->formatStateUsing(fn($record) => 'BW: ' . number_format($record->counter_bw) . '<br>CL: ' . number_format($record->counter_color)),
 
                 Tables\Columns\TextColumn::make('tipe_kunjungan')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'CM' => 'danger',
                         'RN' => 'success',
                         'RM' => 'info',
@@ -292,15 +324,15 @@ class ServiceLogResource extends Resource
                     ->label('SJ')
                     ->icon('heroicon-o-document-text')
                     ->color('info')
-                    ->url(fn ($record) => route('service-log.surat-jalan', $record))
+                    ->url(fn($record) => route('service-log.surat-jalan', $record))
                     ->openUrlInNewTab()
-                    ->visible(fn ($record) => $record->tipe_kunjungan === 'RR'),
+                    ->visible(fn($record) => $record->tipe_kunjungan === 'RR'),
 
                 Tables\Actions\Action::make('print')
                     ->label('Nota')
                     ->icon('heroicon-o-printer')
                     ->color('success')
-                    ->url(fn ($record) => route('service-log.print', $record))
+                    ->url(fn($record) => route('service-log.print', $record))
                     ->openUrlInNewTab(),
 
                 Tables\Actions\DeleteAction::make(),

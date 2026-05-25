@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Collection;
+use App\Models\Technician;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,23 +52,23 @@ Route::get('/service-log/{record}/print', function (ServiceLog $record) {
 })->name('service-log.print');
 
 // ROUTE CETAK BULANAN
-Route::get('/service-log/report/monthly', function (Request $request) {
-    $month = $request->query('month');
-    $year = $request->query('year');
+// Route::get('/service-log/report/monthly', function (Request $request) {
+//     $month = $request->query('month');
+//     $year = $request->query('year');
 
-    // TARIK DATA LENGKAP TERMASUK DEPLOYMENT DAN SPAREPART
-    $logs = ServiceLog::whereYear('tanggal', $year)
-        ->whereMonth('tanggal', $month)
-        ->with(['machine.deployment.customer', 'technician', 'serviceLogSpareparts.sparepart'])
-        ->orderBy('tanggal', 'asc') // Urutkan dari tanggal terawal
-        ->get();
+//     // TARIK DATA LENGKAP TERMASUK DEPLOYMENT DAN SPAREPART
+//     $logs = ServiceLog::whereYear('tanggal', $year)
+//         ->whereMonth('tanggal', $month)
+//         ->with(['machine.deployment.customer', 'technician', 'serviceLogSpareparts.sparepart'])
+//         ->orderBy('tanggal', 'asc') // Urutkan dari tanggal terawal
+//         ->get();
 
-    return view('print.monthly-report', [
-        'logs' => $logs,
-        'month' => $month,
-        'year' => $year,
-    ]);
-})->name('service-log.monthly');
+//     return view('print.monthly-report', [
+//         'logs' => $logs,
+//         'month' => $month,
+//         'year' => $year,
+//     ]);
+// })->name('service-log.monthly');
 
 
 Route::get('/sparepart/monitor-umur/{machine_id}', function ($machine_id) {
@@ -1811,3 +1812,69 @@ Route::get('/cetak-rekap-sparepart', function (Request $request) {
         ->with('month', $month)
         ->with('year', $year);
 })->name('cetak.rekap-sparepart');
+
+
+
+// kinerja teknisi per bulan: total kunjungan + breakdown tipe kunjungan (service, instalasi, penarikan, dll)
+Route::get('/print/technician-performance', function (Illuminate\Http\Request $request) {
+    $month = $request->month ?? date('m');
+    $year = $request->year ?? date('Y');
+
+    // Ambil semua teknisi
+    $technicians = Technician::all();
+    $reportData = [];
+
+    foreach ($technicians as $tech) {
+        $logs = ServiceLog::where('technician_id', $tech->id)
+            ->whereMonth('tanggal', $month)
+            ->whereYear('tanggal', $year)
+            ->get();
+
+        $totalVisits = $logs->count();
+
+        // Hitung per tipe kunjungan
+        $breakdown = $logs->groupBy('tipe_kunjungan')->map(function ($items) use ($totalVisits) {
+            $count = $items->count();
+            return [
+                'count' => $count,
+                'percentage' => $totalVisits > 0 ? round(($count / $totalVisits) * 100, 1) : 0
+            ];
+        });
+
+        if ($totalVisits > 0) {
+            $reportData[] = (object)[
+                'nama' => $tech->nama_technician,
+                'total' => $totalVisits,
+                'details' => $breakdown
+            ];
+        }
+    }
+
+    return view('print.technician-performance', compact('reportData', 'month', 'year'));
+})->name('print.tech-performance');
+
+
+// kinerja rayon per bulan: total kunjungan + breakdown tipe kunjungan (service, instalasi, penarikan, dll)
+Route::get('/print/performance-rayon', function (Illuminate\Http\Request $request) {
+    $month = $request->month ?? date('m');
+    $year  = $request->year  ?? date('Y');
+
+    $technicians = \App\Models\Technician::with(['rayon', 'serviceLogs' => function ($query) use ($month, $year) {
+        $query->whereMonth('tanggal', $month)
+            ->whereYear('tanggal', $year)
+            ->with('customer'); // <-- tambah ini
+    }])->get();
+
+    $tipeKolom = ['CM', 'RM', 'RN', 'RR', 'Mesin', 'RM Tertunda'];
+
+    $hariKerja = 0;
+    $daysInMonth = \Carbon\Carbon::create($year, $month)->daysInMonth;
+    for ($d = 1; $d <= $daysInMonth; $d++) {
+        $day = \Carbon\Carbon::create($year, $month, $d)->dayOfWeek;
+        if ($day !== \Carbon\Carbon::SUNDAY) $hariKerja++;
+    }
+
+    $reportData = $technicians->groupBy(fn($t) => $t->rayon->nama_rayon ?? 'Tanpa Rayon');
+
+    return view('print.performance-rayon', compact('reportData', 'month', 'year', 'tipeKolom', 'hariKerja'));
+})->name('print.performance-rayon');

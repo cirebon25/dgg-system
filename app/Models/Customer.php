@@ -46,10 +46,17 @@ class Customer extends Model
      * RELASI KE UNIT TERPASANG (Machine)
      * Sesuaikan nama 'deployments' jika di tabel/resource Akang menggunakan nama itu
      */
-    public function deployments(): HasMany
+    // public function deployments(): HasMany
+    // {
+    //     // Jika di database nama tabelnya 'machines', pastikan modelnya Machine
+    //     return $this->hasMany(Machine::class, 'customer_id');
+    // }
+
+
+    public function deployments()
     {
-        // Jika di database nama tabelnya 'machines', pastikan modelnya Machine
-        return $this->hasMany(Machine::class, 'customer_id');
+        // Arahkan ke model Deployment yang benar
+        return $this->hasMany(Deployment::class);
     }
 
     // Jika Akang menggunakan nama 'machines' di tempat lain, buatkan cadangannya:

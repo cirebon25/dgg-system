@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Technician extends Model
 {
@@ -18,7 +19,7 @@ class Technician extends Model
 
     public function rayons()
     {
-    return $this->belongsToMany(Rayon::class, 'rayon_technician');
+        return $this->belongsToMany(Rayon::class, 'rayon_technician');
     }
 
     // Jembatan ke Kartu Stok
@@ -33,4 +34,8 @@ class Technician extends Model
         return $this->hasMany(TechnicianStockHistory::class);
     }
 
+    public function serviceLogs(): HasMany
+    {
+        return $this->hasMany(ServiceLog::class, 'technician_id');
+    }
 }

@@ -66,7 +66,7 @@ class SparepartResource extends Resource
                     ->sortable()
                     ->description(
                         fn(Sparepart $record): string => $record->nama_alias
-                            ? '📌 Alias: ' . $record->nama_alias
+                            ? ' Alias: ' . $record->nama_alias
                             : ''
                     ),
 
