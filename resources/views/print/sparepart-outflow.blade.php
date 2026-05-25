@@ -185,9 +185,9 @@
     <div class="signature-area">
         <div class="signature-box">
             <div class="lbl">CIREBON,
-                {{ strtoupper(\Carbon\Carbon::now()->locale('id')->isoFormat('D MMMM Y')) }}<br>KEPALA LOGISTIK GUDANG
+                {{ strtoupper(\Carbon\Carbon::now()->locale('id')->isoFormat('D MMMM Y')) }}<br>
             </div>
-            <div class="line">( STAF ADMINISTRASI )</div>
+            <div class="line">( ADMIN GUDANG )</div>
         </div>
     </div>
 

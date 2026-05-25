@@ -1477,7 +1477,8 @@ Route::get('/saldo-sparepart', function () {
 
     // Tarik data realtime dari tabel spareparts
     $spareparts = DB::table('spareparts')
-        ->orderBy('nama_sparepart', 'asc')
+        ->orderByRaw("CASE WHEN no_part LIKE 'S%' THEN 0 ELSE 1 END")
+        ->orderBy('no_part', 'asc')
         ->get();
 
     $tanggalCetak = date('d/m/Y H:i');

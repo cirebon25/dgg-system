@@ -145,7 +145,7 @@ class SparepartResource extends Resource
                     }),
 
                 Tables\Actions\Action::make('rekapKeluar')
-                    ->label('Cetak Rekap Keluar')
+                    ->label('Cetak Rekap Part Terpakai   Keluar')
                     ->color('danger')
                     ->icon('heroicon-o-printer')
                     ->form([
@@ -176,7 +176,7 @@ class SparepartResource extends Resource
                     ->action(fn(array $data) => redirect()->route('sparepart.report.outflow', $data)),
 
                 Tables\Actions\Action::make('cetakRealtime')
-                    ->label('Cetak Rekap Realtime')
+                    ->label('Cetak Rekap Saldo Realtime')
                     ->color('warning')
                     ->icon('heroicon-o-printer')
                     ->url(fn() => route('saldo-sparepart'))

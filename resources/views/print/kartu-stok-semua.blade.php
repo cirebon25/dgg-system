@@ -24,7 +24,7 @@
 
         p.sub {
             text-align: center;
-            color: #555;
+            color: #1d1919;
             margin-bottom: 20px;
         }
 
@@ -34,8 +34,8 @@
         }
 
         .teknisi-name {
-            background: #1e3a5f;
-            color: white;
+            background: #3f3e3d;
+            color: rgb(228, 18, 18);
             padding: 6px 10px;
             font-weight: bold;
             border-radius: 4px 4px 0 0;
