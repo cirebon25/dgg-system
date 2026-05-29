@@ -20,29 +20,44 @@ class ArchiveAllData extends Page
     protected static ?int $navigationSort = 15;
     protected static string $view = 'filament.pages.archive-all-data';
 
-    public function getViewData(): array
-    {
-        return [
-            'countServiceLog'   => ServiceLog::onlyTrashed()->count(),
-            'countMachine'      => Machine::onlyTrashed()->count(),
-            'countDeployment'   => Deployment::onlyTrashed()->count(),
-            'activeServiceLog'  => ServiceLog::count(),
-            'activeMachine'     => Machine::count(),
-            'activeDeployment'  => Deployment::count(),
-            'activeCustomer'    => Customer::count(),
+    public int $countServiceLog  = 0;
+    public int $countMachine     = 0;
+    public int $countDeployment  = 0;
+    public int $activeServiceLog = 0;
+    public int $activeMachine    = 0;
+    public int $activeDeployment = 0;
+    public int $activeCustomer   = 0;
+    public $archivedCustomers;
 
-            /* |--------------------------------------------------------------------------
-               | 🌟 FIX: Eager loading dialihkan ke relasi customer yang valid (technician & rayon)
-               |--------------------------------------------------------------------------
-            */
-            'archivedCustomers' => Customer::onlyTrashed()
-                ->with([
-                    'technician', // Panggil teknisi lewat customer (Aman Jaya)
-                    'rayon',      // Panggil rayon lewat customer
-                    'machines' => fn($q) => $q->withTrashed() // Panggil mesin milik customer
-                ])
-                ->get(),
-        ];
+    public function mount(): void
+    {
+        $this->countServiceLog  = ServiceLog::onlyTrashed()->count();
+        $this->countMachine     = Machine::onlyTrashed()->count();
+        $this->countDeployment  = Deployment::onlyTrashed()->count();
+        $this->activeServiceLog = ServiceLog::count();
+        $this->activeMachine    = Machine::count();
+        $this->activeDeployment = Deployment::count();
+        $this->activeCustomer   = Customer::count();
+
+        $this->archivedCustomers = Customer::onlyTrashed()
+            ->with([
+                'technician',
+                'rayon',
+                'machines' => fn($q) => $q->withTrashed()
+            ])
+            ->get();
+    }
+
+    public function downloadActiveExcel()
+    {
+        $filename = 'DGG_DataAktif_' . now()->format('d-m-Y_His') . '.xlsx';
+        return Excel::download(new FullDatabaseExport, $filename);
+    }
+
+    public function downloadExcel()
+    {
+        $filename = 'DGG_DataArsip_' . now()->format('d-m-Y_His') . '.xlsx';
+        return Excel::download(new FullDatabaseExport, $filename);
     }
 
     protected function getHeaderActions(): array
