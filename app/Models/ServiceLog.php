@@ -21,6 +21,8 @@ class ServiceLog extends Model
         'tipe_kunjungan',
         'counter_bw',
         'counter_color',
+        'usage_bw',
+        'usage_color',
         'kerusakan',
         'perbaikan',
         'nama_teknisi_2',

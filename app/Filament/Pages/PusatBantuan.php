@@ -11,4 +11,5 @@ class PusatBantuan extends Page
     protected static ?string $title = 'Pusat Bantuan & Panduan Sistem DGG';
     protected static ?string $navigationGroup = 'Bantuan';
     protected static string $view = 'filament.pages.pusat-bantuan';
+    protected static ?int $navigationSort = 100;
 }

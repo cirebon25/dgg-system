@@ -23,6 +23,27 @@ class MachineResource extends Resource
 
     protected static ?int $navigationSort = 2; // Urutan nomor 2
 
+    protected static bool $globallySearchable = true;
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['serial_number', 'tipe_model', 'status'];
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return $record->serial_number;
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Tipe'   => $record->tipe_model,
+            'Status' => $record->status,
+            'Lokasi' => $record->customer?->nama_customer ?? 'Gudang DGG',
+        ];
+    }
+
     public static function form(Form $form): Form
     {
         return $form

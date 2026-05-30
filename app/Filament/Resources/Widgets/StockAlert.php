@@ -30,19 +30,18 @@ class StockAlert extends BaseWidget
 
         return [
             // Stat 1: Total Mesin
-            Stat::make('Total Unit Mesin', $totalMesin.' Unit')
+            Stat::make('Total Unit Mesin', $totalMesin . ' Unit')
                 ->description('Total Mesin Gudang dan  Customer DGG')
-                ->descriptionIcon('heroicon-m-cpu-chip')
                 ->color('info'),
 
             // Stat 2: Customer
-            Stat::make('Total Customer', $totalCustomer.' Lokasi')
+            Stat::make('Total Customer', $totalCustomer . ' Lokasi')
                 ->description('Unit yang tersebar')
                 ->descriptionIcon('heroicon-m-user-group')
                 ->color('success'),
 
             // Stat 3: Sparepart Kritis (Perbaikan kode Boss)
-            Stat::make('Sparepart Kritis', $lowStockCount.' Item')
+            Stat::make('Sparepart Kritis', $lowStockCount . ' Item')
                 ->description($lowStockCount > 0 ? 'Segera belanja stok!' : 'Stok gudang aman')
                 ->descriptionIcon($lowStockCount > 0 ? 'heroicon-m-exclamation-triangle' : 'heroicon-m-check-circle')
                 ->color($lowStockCount > 0 ? 'danger' : 'success')

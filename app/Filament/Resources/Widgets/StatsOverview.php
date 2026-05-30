@@ -21,17 +21,16 @@ class StatsOverview extends BaseWidget
         // Mengambil total penggunaan dari ServiceLog bulan ini
         // Kita tidak memfilter sparepart_id agar usage tetap terhitung
         $usageBW = ServiceLog::whereYear('tanggal', $now->year)
-                             ->whereMonth('tanggal', $now->month)
-                             ->sum('usage_bw');
+            ->whereMonth('tanggal', $now->month)
+            ->sum('usage_bw');
 
         $usageColor = ServiceLog::whereYear('tanggal', $now->year)
-                                ->whereMonth('tanggal', $now->month)
-                                ->sum('usage_color');
+            ->whereMonth('tanggal', $now->month)
+            ->sum('usage_color');
 
         return [
-            Stat::make('Total Mesin Ready ( Gudang )', number_format(Machine::where('status', 'Ready')->count(), 0, ',', '.'))
-                ->description('Unit mesin yang siap digunakan')
-                ->descriptionIcon('heroicon-m-cpu-chip')
+            Stat::make('Total Mesin ( Gudang )', number_format(Machine::where('status', 'Ready')->count(), 0, ',', '.'))
+                ->description('Unit mesin siap digunakan')
                 ->color('success'),
 
             Stat::make('Mesin Tersewa', number_format(Machine::where('status', 'Rented')->count(), 0, ',', '.'))
@@ -43,7 +42,7 @@ class StatsOverview extends BaseWidget
                 ->color('warning'),
 
             Stat::make("Usage BW ($currentMonthName)", number_format($usageBW, 0, ',', '.') . ' Lbr')
-                ->description('Total cetak hitam-putih bulan ini')
+                ->description('Total cetak BW bulan ini')
                 ->color('gray'),
         ];
     }

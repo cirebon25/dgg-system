@@ -1893,3 +1893,9 @@ Route::get('/withdrawal/rekap', function (Request $request) {
 
     return view('print.withdrawal-rekap', compact('records', 'namaBulan', 'month', 'year'));
 })->name('withdrawal.rekap')->middleware('auth');
+
+
+// tracking sparepart
+// Riwayat Ganti Part - Cetak PDF
+Route::get('/cetak/part-per-mesin', [\App\Http\Controllers\PartReplacementController::class, 'cetakPerMesin'])->name('cetak.part.mesin');
+Route::get('/cetak/part-per-bulan', [\App\Http\Controllers\PartReplacementController::class, 'cetakPerBulan'])->name('cetak.part.bulan');

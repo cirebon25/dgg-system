@@ -33,8 +33,11 @@ class ServiceLogResource extends Resource
                             ->searchable()
                             ->reactive()
                             ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                // 1. Ambil counter terakhir otomatis
-                                $lastLog = ServiceLog::where('machine_id', $state)->latest('tanggal')->first();
+                                // GANTI: latest('tanggal') → latest('id') agar selalu ambil yang paling baru
+                                $lastLog = ServiceLog::where('machine_id', $state)
+                                    ->latest('id')  // ← ubah dari latest('tanggal') ke latest('id')
+                                    ->first();
+
                                 if ($lastLog) {
                                     $set('bw_lalu', $lastLog->counter_bw);
                                     $set('color_lalu', $lastLog->counter_color);
@@ -98,7 +101,7 @@ class ServiceLogResource extends Resource
                             ->label('BW Sekarang')
                             ->numeric()
                             ->required()
-                            ->live(onBlur: true) // ✅ FIX MASTER: Anti delay, ketikan dilepas dulu baru hitung otomatis
+                            // ->live(onBlur: true) // ✅ FIX MASTER: Anti delay, ketikan dilepas dulu baru hitung otomatis
                             ->afterStateUpdated(fn($state, $get, $set) => $set('usage_bw', (int) $state - (int) $get('bw_lalu'))),
 
                         Forms\Components\TextInput::make('usage_bw')

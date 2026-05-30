@@ -19,6 +19,27 @@ class SparepartResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
     protected static ?string $navigationGroup = 'Master Data';
     protected static ?int $navigationSort = 3;
+    // ===== GLOBAL SEARCH =====
+    protected static bool $globallySearchable = true;
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['nama_sparepart', 'nama_alias', 'no_part', 'code_part'];
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return $record->nama_sparepart;
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'No Part' => $record->no_part ?? '-',
+            'Alias'   => $record->nama_alias ?? '-',
+            'Stok'    => $record->stok . ' pcs',
+        ];
+    }
 
     public static function form(Form $form): Form
     {

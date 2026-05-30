@@ -4,8 +4,6 @@ namespace App\Filament\Pages;
 
 use App\Models\Deployment;
 use App\Models\Machine;
-use App\Models\ServiceLog;
-use App\Models\ServiceLogSparepart;
 use App\Models\Sparepart;
 use App\Models\Technician;
 use App\Models\TechnicianStock;
@@ -19,42 +17,72 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
-use Filament\Notifications\Actions\Action;
+use Filament\Notifications\Actions\Action as NotifAction;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class GantiMesin extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-arrow-path';
+    protected static ?string $navigationIcon  = 'heroicon-o-arrow-path';
     protected static ?string $navigationLabel = 'Ganti Mesin (Rolling)';
-    protected static ?string $title = 'Proses Rolling Unit DGG';
+    protected static ?string $title           = 'Proses Rolling Unit DGG';
     protected static ?string $navigationGroup = 'Transaksi';
-    protected static string $view = 'filament.pages.ganti-mesin';
+    protected static string  $view            = 'filament.pages.ganti-mesin';
 
     public ?array $data = [];
+    public array $riwayat = [];
 
     public function mount(): void
     {
         $this->form->fill();
+        $this->loadRiwayat();
+    }
+
+    public function loadRiwayat(): void
+    {
+        $this->riwayat = DB::table('machine_replacements')
+            ->leftJoin('customers', 'machine_replacements.customer_id', '=', 'customers.id')
+            ->leftJoin('machines as m_old', 'machine_replacements.old_machine_id', '=', 'm_old.id')
+            ->leftJoin('machines as m_new', 'machine_replacements.new_machine_id', '=', 'm_new.id')
+            ->leftJoin('technicians', 'machine_replacements.technician_id', '=', 'technicians.id')
+            ->select([
+                'machine_replacements.id',
+                'machine_replacements.tanggal',
+                'machine_replacements.keterangan',
+                'machine_replacements.counter_bw_final',
+                'machine_replacements.counter_color_final',
+                'customers.nama_customer',
+                'm_old.serial_number as sn_lama',
+                'm_new.serial_number as sn_baru',
+                'technicians.nama_technician',
+            ])
+            ->orderBy('machine_replacements.created_at', 'desc')
+            ->limit(20)
+            ->get()
+            ->toArray();
     }
 
     public function form(Form $form): Form
     {
         return $form->schema([
+
             Section::make('1. Data Penarikan & Customer')
                 ->schema([
                     Select::make('deployment_id')
                         ->label('Pilih Pemasangan Aktif')
-                        ->options(
-                            Deployment::with(['customer', 'machine'])
-                                ->get()
-                                ->mapWithKeys(fn($dep) => [
-                                    $dep->id => "{$dep->customer?->nama_customer} (SN: {$dep->machine?->serial_number})",
-                                ])
-                        )
+                        ->options(function () {
+                            return Cache::remember('deployment_options', 60, function () {
+                                return Deployment::with(['customer', 'machine'])
+                                    ->get()
+                                    ->mapWithKeys(fn($dep) => [
+                                        $dep->id => "{$dep->customer?->nama_customer} (SN: {$dep->machine?->serial_number})",
+                                    ]);
+                            });
+                        })
                         ->searchable()
                         ->required()
                         ->reactive()
@@ -66,22 +94,27 @@ class GantiMesin extends Page implements HasForms
                                 $set('old_machine_sn', $dep->machine?->serial_number);
                             }
                         }),
+
                     TextInput::make('customer_name')
                         ->label('Nama Customer')
                         ->readOnly()
                         ->extraAttributes(['class' => 'bg-gray-100']),
+
                     TextInput::make('old_machine_sn')
                         ->label('SN Mesin LAMA')
                         ->readOnly()
                         ->extraAttributes(['class' => 'bg-gray-100']),
+
                     TextInput::make('counter_bw_final')
                         ->label('Counter BW Akhir')
                         ->numeric()
                         ->required(),
+
                     TextInput::make('counter_color_final')
                         ->label('Counter Color Akhir')
                         ->numeric()
                         ->required(),
+
                     Hidden::make('old_machine_id'),
                 ])->columns(3),
 
@@ -89,41 +122,51 @@ class GantiMesin extends Page implements HasForms
                 ->schema([
                     Select::make('new_machine_id')
                         ->label('Pilih SN Mesin BARU')
-                        ->options(Machine::where('status', 'Ready')->pluck('serial_number', 'id'))
+                        ->options(function () {
+                            return Cache::remember('ready_machine_options', 60, function () {
+                                return Machine::where('status', 'Ready')->pluck('serial_number', 'id');
+                            });
+                        })
                         ->searchable()
                         ->required(),
+
                     Select::make('technician_id')
                         ->label('Teknisi Pelaksana')
-                        ->options(Technician::pluck('nama_technician', 'id'))
+                        ->options(
+                            Cache::remember('technician_options', 300, function () {
+                                return Technician::pluck('nama_technician', 'id');
+                            })
+                        )
                         ->searchable()
-                        ->required()
-                        ->live(),
+                        ->required(),
+
                     DatePicker::make('tanggal')
                         ->label('Tanggal Rolling')
                         ->default(now())
                         ->required(),
+
                     TextInput::make('keterangan')
                         ->label('Alasan Rolling')
                         ->required(),
                 ])->columns(4),
 
-            Section::make('3. Sparepart / Kelengkapan Unit Baru')
+            Section::make('3. Sparepart / Kelengkapan (Potong Stok Gudang)')
                 ->schema([
                     Repeater::make('spareparts')
                         ->label('Daftar Sparepart')
                         ->schema([
                             Select::make('sparepart_id')
                                 ->label('Item/Part')
-                                ->options(
-                                    Sparepart::all()
-                                        ->mapWithKeys(fn($s) => [
-                                            $s->id => $s->nama_sparepart . ($s->nama_alias ? " — {$s->nama_alias}" : '')
-                                        ])
-                                        ->toArray()
-                                )
+                                ->options(function () {
+                                    return Cache::remember('sparepart_options', 120, function () {
+                                        return Sparepart::all()->mapWithKeys(fn($s) => [
+                                            $s->id => $s->nama_sparepart . ($s->nama_alias ? " — {$s->nama_alias}" : '') . " [Stok: {$s->stok}]",
+                                        ])->toArray();
+                                    });
+                                })
                                 ->searchable()
-                                ->required()
-                                ->live(),
+                                ->required(),
+
                             TextInput::make('jumlah')
                                 ->label('Qty')
                                 ->numeric()
@@ -132,22 +175,143 @@ class GantiMesin extends Page implements HasForms
                                 ->live(onBlur: true)
                                 ->rules([
                                     fn(Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
-                                        $techId = $get('../../technician_id');
                                         $partId = $get('sparepart_id');
-                                        if (!$techId || !$partId) return;
+                                        if (! $partId) return;
 
-                                        $stock = TechnicianStock::where('technician_id', $techId)
-                                            ->where('sparepart_id', $partId)->first();
-                                        $sisa = $stock ? $stock->jumlah : 0;
+                                        $sparepart = Sparepart::find($partId);
+                                        $stok = $sparepart?->stok ?? 0;
 
-                                        if ((int)$value > (int)$sisa) {
-                                            $fail("❌ STOK TAS TIDAK CUKUP! Sisa: {$sisa}");
+                                        if ((int) $value > (int) $stok) {
+                                            $fail("❌ STOK GUDANG TIDAK CUKUP! Sisa: {$stok}");
                                         }
                                     },
                                 ]),
+
                             TextInput::make('ket_part')->label('Keterangan'),
-                        ])->columns(3)->createItemButtonLabel('Tambah Sparepart +'),
+                        ])
+                        ->columns(3)
+                        ->createItemButtonLabel('+ Tambah Sparepart'),
                 ]),
+
         ])->statePath('data');
+    }
+
+    public function submit(): void
+    {
+        $data = $this->form->getState();
+
+        DB::transaction(function () use ($data) {
+            $dep        = Deployment::with(['customer', 'machine'])->findOrFail($data['deployment_id']);
+            $oldMachine = Machine::findOrFail($data['old_machine_id']);
+            $newMachine = Machine::findOrFail($data['new_machine_id']);
+            $customer   = $dep->customer;
+
+            // 1. Catat ke tabel machine_replacements
+            DB::table('machine_replacements')->insert([
+                'customer_id'         => $customer->id,
+                'old_machine_id'      => $oldMachine->id,
+                'new_machine_id'      => $newMachine->id,
+                'technician_id'       => $data['technician_id'],
+                'tanggal'             => $data['tanggal'],
+                'keterangan'          => $data['keterangan'],
+                'counter_bw_final'    => $data['counter_bw_final'],
+                'counter_color_final' => $data['counter_color_final'],
+                'created_at'          => now(),
+                'updated_at'          => now(),
+            ]);
+
+            // 2. Mesin LAMA → Ready, lepas customer
+            $oldMachine->update([
+                'status'      => 'Ready',
+                'customer_id' => null,
+            ]);
+
+            // 3. Mesin BARU → Rented, pasang customer
+            $newMachine->update([
+                'status'      => 'Rented',
+                'customer_id' => $customer->id,
+            ]);
+
+            // 4. Soft-delete deployment lama, buat deployment baru
+            $dep->delete();
+
+            $newDeploymentId = DB::table('deployments')->insertGetId([
+                'machine_id'    => $newMachine->id,
+                'customer_id'   => $customer->id,
+                'technician_id' => $data['technician_id'],
+                'tanggal_instal' => $data['tanggal'],
+                'counter_bw'    => 0,
+                'counter_color' => 0,
+                'created_at'    => now(),
+                'updated_at'    => now(),
+            ]);
+
+            // 5. Potong stok GUDANG & catat ke deployment_sparepart
+            foreach (($data['spareparts'] ?? []) as $part) {
+                if (empty($part['sparepart_id'])) continue;
+
+                // Potong stok gudang
+                Sparepart::where('id', $part['sparepart_id'])
+                    ->decrement('stok', (int) $part['jumlah']);
+
+                // Catat ke deployment_sparepart
+                DB::table('deployment_sparepart')->insert([
+                    'deployment_id' => $newDeploymentId,
+                    'sparepart_id'  => $part['sparepart_id'],
+                    'jumlah'        => $part['jumlah'],
+                    'created_at'    => now(),
+                    'updated_at'    => now(),
+                ]);
+            }
+        });
+
+        // 6. Ambil data untuk SJ (fresh dari DB setelah transaksi)
+        $dep        = Deployment::with(['customer', 'machine'])->find($data['deployment_id']);
+        $oldMachine = Machine::find($data['old_machine_id']);
+        $newMachine = Machine::find($data['new_machine_id']);
+        $customer   = $dep?->customer;
+
+        $partsForSj = collect($data['spareparts'] ?? [])->map(function ($p) {
+            $sparepart = Sparepart::find($p['sparepart_id']);
+            return [
+                'nama_part' => $sparepart?->nama_alias ?: $sparepart?->nama_sparepart ?? '-',
+                'jumlah'    => $p['jumlah'],
+                'ket_part'  => $p['ket_part'] ?? '',
+            ];
+        })->toArray();
+
+        $payload = base64_encode(json_encode([
+            'cust'   => $customer?->nama_customer ?? '-',
+            'alamat' => $customer?->alamat ?? '-',
+            'old_sn' => $oldMachine?->serial_number ?? '-',
+            'new_sn' => $newMachine?->serial_number ?? '-',
+            'bw'     => $data['counter_bw_final'],
+            'cl'     => $data['counter_color_final'],
+            'parts'  => $partsForSj,
+        ]));
+
+        $urlSj = route('cetak.sj-rolling', ['payload' => $payload]);
+
+        // 7. Notifikasi sukses + tombol cetak SJ
+        Notification::make()
+            ->title('✅ Rolling Berhasil!')
+            ->body("Mesin {$oldMachine?->serial_number} → {$newMachine?->serial_number} untuk {$customer?->nama_customer}")
+            ->success()
+            ->duration(10000)
+            ->actions([
+                NotifAction::make('cetak_sj')
+                    ->label('🖨️ Cetak Surat Jalan')
+                    ->url($urlSj, shouldOpenInNewTab: true)
+                    ->button(),
+            ])
+            ->send();
+
+        // 8. Clear cache & reset form
+        Cache::forget('deployment_options');
+        Cache::forget('ready_machine_options');
+        Cache::forget('sparepart_options');
+
+        $this->form->fill();
+        $this->loadRiwayat();
     }
 }

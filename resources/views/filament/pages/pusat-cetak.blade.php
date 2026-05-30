@@ -48,6 +48,16 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
+        <div class="p-6 bg-white border rounded-xl shadow-sm dark:bg-gray-800">
+            <h5 class="text-lg font-bold mb-2">🔄 Laporan Performance Rayon</h5>
+            <p class="text-sm text-gray-500 mb-4">Presentase performance rayon.</p>
+            <x-filament::button tag="a" href="{{ route('print.performance-rayon') }}" target="_blank"
+                icon="heroicon-m-arrows-right-left" color="fuchsia">
+                Cetak Performance Rayon
+            </x-filament::button>
+        </div>
+
+
         {{-- 1. Laporan Type Mesin (tidak perlu bulan) --}}
         <div class="p-6 bg-white border rounded-xl shadow-sm dark:bg-gray-800">
             <h3 class="text-lg font-bold mb-2">📦 Laporan Type Mesin</h3>
@@ -91,7 +101,7 @@
 
         {{-- 5. Laporan Service Log --}}
         <div class="p-6 bg-white border rounded-xl shadow-sm dark:bg-gray-800">
-            <h3 class="text-lg font-bold mb-2">📋 Laporan Service Log Perbulan</h3>
+            <h3 class="text-lg font-bold mb-2">📋 Laporan Service Log Teknisi Perbulan</h3>
             <p class="text-sm text-gray-500 mb-4">Laporan rekapitulasi riwayat aktivitas kunjungan servis teknisi
                 harian.</p>
             <x-filament::button onclick="bukaModal('rekap.horizontal', 'Laporan Service Log', 'bulan', 'tahun')"

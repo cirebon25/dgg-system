@@ -28,11 +28,15 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->brandName('PT DINAMIKA GLOBAL GEMILANG')
+            ->brandName('DGG System')
+
             ->globalSearchKeyBindings(['command+k', 'ctrl+1'])
             ->sidebarCollapsibleOnDesktop()
             ->login()
+
+            // ===== GLOBAL SEARCH (tetap aktif, shortcut dipertahankan) =====
             ->globalSearch(true)
+
             ->colors([
                 'primary' => Color::Amber,
                 'secondary' => Color::Gray,
@@ -67,7 +71,6 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Widgets\LatestCustomers::class,
                 \App\Filament\Widgets\MachineLocationStats::class,
                 \App\Filament\Widgets\MachineRayonStats::class,
-                // \App\Filament\Widgets\PartLifespanAlert::class,
             ])
             ->databaseNotifications()
             ->middleware([
@@ -92,6 +95,7 @@ class AdminPanelProvider extends PanelProvider
                 'Gudang & Stok',
                 'Sistem Arsip',
                 'Laporan',
+                'Pemakaian sparepart',
                 'Bantuan',
             ])
 
@@ -101,10 +105,26 @@ class AdminPanelProvider extends PanelProvider
                 fn(): HtmlString => new HtmlString('
                     <div class="px-3 py-2 border-t border-gray-200 dark:border-gray-700 mt-2">
                         <p class="text-[10px] text-center text-gray-400 dark:text-gray-500 leading-relaxed font-medium">
-                            © ' . date('Y') . ' Developer RUDIANTO 
+                            © ' . date('Y') . ' Developer RUDIANTO
                         </p>
                     </div>
                 ')
-            );
+            )
+
+            // // ===== KUSTOMISASI TAMPILAN GLOBAL SEARCH DI TOPBAR =====
+            // ->renderHook(
+            //     PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
+            //     fn(): HtmlString => new HtmlString('
+            //         <div class="flex items-center gap-2 text-gray-400 dark:text-gray-500 text-xs pr-1">
+            //             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
+            //                 viewBox="0 0 24 24" stroke="currentColor">
+            //                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            //                     d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+            //             </svg>
+            //             <span class="hidden md:inline">Cari menu, data...</span>
+            //         </div>
+            //     ')
+            // )
+        ;
     }
 }

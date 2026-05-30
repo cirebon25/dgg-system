@@ -22,7 +22,7 @@ class CustomerResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
     protected static ?string $navigationGroup = 'Master Data';
     protected static ?int $navigationSort = 1;
-
+    protected static bool $globallySearchable = true;
     protected static function technicianColor(?string $nama): string
     {
         return match (true) {
@@ -35,6 +35,24 @@ class CustomerResource extends Resource
             str_contains(strtoupper($nama ?? ''), 'YUDI')   => 'warning',
             default                                          => 'gray',
         };
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['nama_customer', 'kota', 'alamat'];
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return $record->nama_customer;
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Kota'   => $record->kota,
+            'Alamat' => $record->alamat ?? '-',
+        ];
     }
 
     public static function form(Form $form): Form
