@@ -35,31 +35,123 @@ class SparepartHistory extends Page
 
     public function fetchData()
     {
-        // 1. MASUK (Dari Supplier/Import)
-        $masuk = SparepartEntry::whereMonth('created_at', $this->month)
-            ->whereYear('created_at', $this->year)
-            ->get()->map(fn($item) => (object)[
-                'tipe' => 'MASUK', 'tanggal' => $item->created_at, 'jumlah' => $item->jumlah,
-                'detail' => 'DARI: ' . ($item->supplier ?? 'Gudang'), 'part' => $item->sparepart->nama_sparepart ?? '-'
+        $m = $this->month;
+        $y = $this->year;
+
+        // =============================================
+        // 1. MASUK — Stok masuk dari supplier
+        // =============================================
+        $masuk = \App\Models\SparepartEntry::with('sparepart')
+            ->whereMonth('created_at', $m)
+            ->whereYear('created_at', $y)
+            ->get()
+            ->map(fn($item) => (object)[
+                'tipe'    => 'MASUK',
+                'tanggal' => $item->created_at,
+                'jumlah'  => $item->jumlah,
+                'detail'  => 'DARI: ' . ($item->supplier ?? 'Gudang'),
+                'part'    => $item->sparepart->nama_sparepart ?? '-',
             ]);
 
-        // 2. PINJAM (Ke Teknisi)
-        $pinjam = TechnicianStock::whereMonth('created_at', $this->month)
-            ->whereYear('created_at', $this->year)
-            ->get()->map(fn($item) => (object)[
-                'tipe' => 'PINJAM', 'tanggal' => $item->created_at, 'jumlah' => $item->jumlah,
-                'detail' => 'KE TEKNISI: ' . ($item->technician->nama_technician ?? 'Tdk Diketahui'), 'part' => $item->sparepart->nama_sparepart ?? '-'
+        // =============================================
+        // 2. PINJAM — Gudang → Teknisi (masuk > 0)
+        // =============================================
+        $pinjam = \App\Models\TechnicianStockHistory::with(['sparepart', 'technician'])
+            ->whereMonth('created_at', $m)
+            ->whereYear('created_at', $y)
+            ->where('masuk', '>', 0)
+            ->get()
+            ->map(fn($item) => (object)[
+                'tipe'    => 'PINJAM',
+                'tanggal' => $item->created_at,
+                'jumlah'  => $item->masuk,
+                'detail'  => 'KE TEKNISI: ' . ($item->technician->nama_technician ?? '-'),
+                'part'    => $item->sparepart->nama_sparepart ?? '-',
             ]);
 
-        // 3. PAKAI (Ke Customer)
-        $pakai = ServiceLog::whereMonth('tanggal', $this->month)
-            ->whereYear('tanggal', $this->year)
-            ->whereNotNull('sparepart_id')
-            ->get()->map(fn($item) => (object)[
-                'tipe' => 'PAKAI', 'tanggal' => $item->tanggal, 'jumlah' => $item->jumlah_sparepart,
-                'detail' => 'CUSTOMER: ' . ($item->customer->nama_customer ?? 'Mesin Internal'), 'part' => $item->sparepart->nama_sparepart ?? '-'
+        // =============================================
+        // 3. PAKAI SERVIS — Teknisi → Customer (keluar > 0)
+        // =============================================
+        $pakai = \App\Models\TechnicianStockHistory::with(['sparepart', 'technician'])
+            ->whereMonth('created_at', $m)
+            ->whereYear('created_at', $y)
+            ->where('keluar', '>', 0)
+            ->get()
+            ->map(fn($item) => (object)[
+                'tipe'    => 'PAKAI',
+                'tanggal' => $item->created_at,
+                'jumlah'  => $item->keluar,
+                'detail'  => $item->keterangan ?? 'SERVIS',
+                'part'    => $item->sparepart->nama_sparepart ?? '-',
             ]);
 
-        $this->historyData = $masuk->concat($pinjam)->concat($pakai)->sortByDesc('tanggal');
+        // =============================================
+        // 4. DEPLOY — Keluar via pemasangan mesin
+        // =============================================
+        $deploy = \Illuminate\Support\Facades\DB::table('deployment_sparepart as ds')
+            ->join('deployments as d', 'd.id', '=', 'ds.deployment_id')
+            ->join('spareparts as sp', 'sp.id', '=', 'ds.sparepart_id')
+            ->join('customers as c', 'c.id', '=', 'd.customer_id')
+            ->whereMonth('ds.created_at', $m)
+            ->whereYear('ds.created_at', $y)
+            ->whereNull('d.deleted_at')
+            ->select('ds.jumlah', 'ds.created_at', 'sp.nama_sparepart', 'c.nama_customer', 'd.tanggal_instal')
+            ->get()
+            ->map(fn($item) => (object)[
+                'tipe'    => 'DEPLOY',
+                'tanggal' => $item->tanggal_instal ?? $item->created_at,
+                'jumlah'  => $item->jumlah,
+                'detail'  => 'INSTAL KE: ' . $item->nama_customer,
+                'part'    => $item->nama_sparepart,
+            ]);
+
+        // =============================================
+        // 5. ROLLING — Event ganti mesin (info saja)
+        // =============================================
+        $rolling = \Illuminate\Support\Facades\DB::table('machine_replacements as mr')
+            ->join('customers as c', 'c.id', '=', 'mr.customer_id')
+            ->join('machines as m_old', 'm_old.id', '=', 'mr.old_machine_id')
+            ->join('machines as m_new', 'm_new.id', '=', 'mr.new_machine_id')
+            ->whereMonth('mr.tanggal', $m)
+            ->whereYear('mr.tanggal', $y)
+            ->select('mr.tanggal', 'mr.keterangan', 'c.nama_customer', 'm_old.serial_number as sn_lama', 'm_new.serial_number as sn_baru')
+            ->get()
+            ->map(fn($item) => (object)[
+                'tipe'    => 'ROLLING',
+                'tanggal' => $item->tanggal,
+                'jumlah'  => 0,
+                'detail'  => $item->sn_lama . ' → ' . $item->sn_baru . ' | ' . $item->nama_customer,
+                'part'    => '-',
+            ]);
+
+        // =============================================
+        // 6. RETUR PART — Teknisi kembalikan part ke gudang
+        // =============================================
+        $returPart = \Illuminate\Support\Facades\DB::table('part_returns as pr')
+            ->join('spareparts as sp', 'sp.id', '=', 'pr.sparepart_id')
+            ->join('technicians as t', 't.id', '=', 'pr.technician_id')
+            ->whereMonth('pr.created_at', $m)
+            ->whereYear('pr.created_at', $y)
+            ->select('pr.jumlah', 'pr.created_at', 'sp.nama_sparepart', 't.nama_technician')
+            ->get()
+            ->map(fn($item) => (object)[
+                'tipe'    => 'RETUR',
+                'tanggal' => $item->created_at,
+                'jumlah'  => $item->jumlah,
+                'detail'  => 'RETUR DARI: ' . $item->nama_technician,
+                'part'    => $item->nama_sparepart,
+            ]);
+
+        // =============================================
+        // GABUNG & URUTKAN
+        // =============================================
+        $this->historyData = $masuk
+            ->concat($pinjam)
+            ->concat($pakai)
+            ->concat($deploy)
+            ->concat($rolling)
+            ->concat($returPart)
+            ->sortByDesc('tanggal')
+            ->values();
     }
 }

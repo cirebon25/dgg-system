@@ -24,140 +24,140 @@ class ListMachines extends ListRecords
             //     ->label('New Machine'),
 
             // 2. TOMBOL IMPORT CSV ANTI-GAGAL UNTUK DATA MESIN
-            Action::make('import_csv')
-                ->label('Import CSV')
-                ->icon('heroicon-o-arrow-up-tray')
-                ->color('danger')
-                ->form([
-                    FileUpload::make('file')
-                        ->label('Pilih File CSV')
-                        ->acceptedFileTypes(['text/csv', 'text/plain', 'application/csv'])
-                        ->disk('local')
-                        ->directory('imports')
-                        ->visibility('private')
-                        ->required(),
-                ])
-                ->action(function (array $data) {
-                    $filePath = Storage::disk('local')->path($data['file']);
+            // Action::make('import_csv')
+            //     ->label('Import CSV')
+            //     ->icon('heroicon-o-arrow-up-tray')
+            //     ->color('danger')
+            //     ->form([
+            //         FileUpload::make('file')
+            //             ->label('Pilih File CSV')
+            //             ->acceptedFileTypes(['text/csv', 'text/plain', 'application/csv'])
+            //             ->disk('local')
+            //             ->directory('imports')
+            //             ->visibility('private')
+            //             ->required(),
+            //     ])
+            //     ->action(function (array $data) {
+            //         $filePath = Storage::disk('local')->path($data['file']);
 
-                    // 1. Baca Konten File & Bersihkan BOM UTF-8
-                    $fileContent = file_get_contents($filePath);
-                    $fileContent = preg_replace('/^\xEF\xBB\xBF/', '', $fileContent);
+            //         // 1. Baca Konten File & Bersihkan BOM UTF-8
+            //         $fileContent = file_get_contents($filePath);
+            //         $fileContent = preg_replace('/^\xEF\xBB\xBF/', '', $fileContent);
 
-                    // 2. Deteksi Pemisah (Delimiter) Otomatis
-                    $lines = explode("\n", $fileContent);
-                    $firstLine = trim($lines[0]);
-                    $delimiter = ',';
-                    if (strpos($firstLine, ';') !== false && strpos($firstLine, ',') === false) {
-                        $delimiter = ';';
-                    } elseif (strpos($firstLine, ';') !== false && strpos($firstLine, ',') !== false) {
-                        $delimiter = substr_count($firstLine, ';') > substr_count($firstLine, ',') ? ';' : ',';
-                    }
+            //         // 2. Deteksi Pemisah (Delimiter) Otomatis
+            //         $lines = explode("\n", $fileContent);
+            //         $firstLine = trim($lines[0]);
+            //         $delimiter = ',';
+            //         if (strpos($firstLine, ';') !== false && strpos($firstLine, ',') === false) {
+            //             $delimiter = ';';
+            //         } elseif (strpos($firstLine, ';') !== false && strpos($firstLine, ',') !== false) {
+            //             $delimiter = substr_count($firstLine, ';') > substr_count($firstLine, ',') ? ';' : ',';
+            //         }
 
-                    // Buat file temporary baru yang sudah bersih
-                    $tempFile = tempnam(sys_get_temp_dir(), 'csv_clean_m');
-                    file_put_contents($tempFile, $fileContent);
+            //         // Buat file temporary baru yang sudah bersih
+            //         $tempFile = tempnam(sys_get_temp_dir(), 'csv_clean_m');
+            //         file_put_contents($tempFile, $fileContent);
 
-                    if (($handle = fopen($tempFile, 'r')) !== false) {
-                        $header = fgetcsv($handle, 1000, $delimiter);
+            //         if (($handle = fopen($tempFile, 'r')) !== false) {
+            //             $header = fgetcsv($handle, 1000, $delimiter);
 
-                        if (! $header) {
-                            Notification::make()
-                                ->title('Gagal Impor')
-                                ->body('File CSV kosong.')
-                                ->danger()
-                                ->send();
-                            fclose($handle);
-                            unlink($tempFile);
+            //             if (! $header) {
+            //                 Notification::make()
+            //                     ->title('Gagal Impor')
+            //                     ->body('File CSV kosong.')
+            //                     ->danger()
+            //                     ->send();
+            //                 fclose($handle);
+            //                 unlink($tempFile);
 
-                            return;
-                        }
+            //                 return;
+            //             }
 
-                        // Normalisasi teks header (huruf kecil & hanya ambil karakter a-z, 0-9, underscore)
-                        $header = array_map(function ($h) {
-                            $h = preg_replace('/[^a-zA-Z0-9_]/', '', $h);
+            //             // Normalisasi teks header (huruf kecil & hanya ambil karakter a-z, 0-9, underscore)
+            //             $header = array_map(function ($h) {
+            //                 $h = preg_replace('/[^a-zA-Z0-9_]/', '', $h);
 
-                            return strtolower(trim($h));
-                        }, $header);
+            //                 return strtolower(trim($h));
+            //             }, $header);
 
-                        $snIdx = array_search('serial_number', $header);
-                        $tipeIdx = array_search('tipe_model', $header);
-                        $statusIdx = array_search('status', $header);
+            //             $snIdx = array_search('serial_number', $header);
+            //             $tipeIdx = array_search('tipe_model', $header);
+            //             $statusIdx = array_search('status', $header);
 
-                        if ($snIdx === false || $tipeIdx === false) {
-                            $detectedHeaders = implode(', ', $header);
-                            Notification::make()
-                                ->title('Gagal Impor')
-                                ->body("Kolom 'serial_number' atau 'tipe_model' tidak ditemukan. Kolom yang terdeteksi: [$detectedHeaders]")
-                                ->danger()
-                                ->persistent()
-                                ->send();
-                            fclose($handle);
-                            unlink($tempFile);
+            //             if ($snIdx === false || $tipeIdx === false) {
+            //                 $detectedHeaders = implode(', ', $header);
+            //                 Notification::make()
+            //                     ->title('Gagal Impor')
+            //                     ->body("Kolom 'serial_number' atau 'tipe_model' tidak ditemukan. Kolom yang terdeteksi: [$detectedHeaders]")
+            //                     ->danger()
+            //                     ->persistent()
+            //                     ->send();
+            //                 fclose($handle);
+            //                 unlink($tempFile);
 
-                            return;
-                        }
+            //                 return;
+            //             }
 
-                        $successCount = 0;
-                        $skippedCount = 0;
-                        $errorDetails = [];
-                        $rowCount = 1;
+            //             $successCount = 0;
+            //             $skippedCount = 0;
+            //             $errorDetails = [];
+            //             $rowCount = 1;
 
-                        while (($row = fgetcsv($handle, 1000, $delimiter)) !== false) {
-                            $rowCount++;
-                            if (empty($row) || ! isset($row[$snIdx]) || trim($row[$snIdx]) === '') {
-                                $skippedCount++;
+            //             while (($row = fgetcsv($handle, 1000, $delimiter)) !== false) {
+            //                 $rowCount++;
+            //                 if (empty($row) || ! isset($row[$snIdx]) || trim($row[$snIdx]) === '') {
+            //                     $skippedCount++;
 
-                                continue;
-                            }
+            //                     continue;
+            //                 }
 
-                            try {
-                                $snVal = trim($row[$snIdx]);
+            //                 try {
+            //                     $snVal = trim($row[$snIdx]);
 
-                                $machine = Machine::where('serial_number', $snVal)->first();
-                                if (! $machine) {
-                                    $machine = new Machine;
-                                    $machine->serial_number = $snVal;
-                                }
+            //                     $machine = Machine::where('serial_number', $snVal)->first();
+            //                     if (! $machine) {
+            //                         $machine = new Machine;
+            //                         $machine->serial_number = $snVal;
+            //                     }
 
-                                $machine->tipe_model = ! empty($row[$tipeIdx]) ? trim($row[$tipeIdx]) : '-';
-                                $machine->status = ! empty($row[$statusIdx]) ? trim($row[$statusIdx]) : 'Ready';
-                                $machine->save();
+            //                     $machine->tipe_model = ! empty($row[$tipeIdx]) ? trim($row[$tipeIdx]) : '-';
+            //                     $machine->status = ! empty($row[$statusIdx]) ? trim($row[$statusIdx]) : 'Ready';
+            //                     $machine->save();
 
-                                $successCount++;
-                            } catch (\Exception $e) {
-                                if (count($errorDetails) < 3) {
-                                    $errorDetails[] = "Baris $rowCount: " . $e->getMessage();
-                                }
-                            }
-                        }
+            //                     $successCount++;
+            //                 } catch (\Exception $e) {
+            //                     if (count($errorDetails) < 3) {
+            //                         $errorDetails[] = "Baris $rowCount: " . $e->getMessage();
+            //                     }
+            //                 }
+            //             }
 
-                        fclose($handle);
-                        unlink($tempFile);
-                        Storage::disk('local')->delete($data['file']);
+            //             fclose($handle);
+            //             unlink($tempFile);
+            //             Storage::disk('local')->delete($data['file']);
 
-                        $msg = "$successCount data mesin berhasil diimpor.";
-                        if ($skippedCount > 0) {
-                            $msg .= " ($skippedCount baris dilewati).";
-                        }
+            //             $msg = "$successCount data mesin berhasil diimpor.";
+            //             if ($skippedCount > 0) {
+            //                 $msg .= " ($skippedCount baris dilewati).";
+            //             }
 
-                        if ($successCount === 0 && ! empty($errorDetails)) {
-                            $errBody = implode("\n", $errorDetails);
-                            Notification::make()
-                                ->title('Impor Gagal (0 Data)')
-                                ->body($msg . "\nDetail Error:\n" . $errBody)
-                                ->danger()
-                                ->persistent()
-                                ->send();
-                        } else {
-                            Notification::make()
-                                ->title('Impor Selesai')
-                                ->body($msg)
-                                ->success()
-                                ->send();
-                        }
-                    }
-                }),
+            //             if ($successCount === 0 && ! empty($errorDetails)) {
+            //                 $errBody = implode("\n", $errorDetails);
+            //                 Notification::make()
+            //                     ->title('Impor Gagal (0 Data)')
+            //                     ->body($msg . "\nDetail Error:\n" . $errBody)
+            //                     ->danger()
+            //                     ->persistent()
+            //                     ->send();
+            //             } else {
+            //                 Notification::make()
+            //                     ->title('Impor Selesai')
+            //                     ->body($msg)
+            //                     ->success()
+            //                     ->send();
+            //             }
+            //         }
+            //     }),
 
             // 3. TOMBOL CETAK STOK GUDANG
             Action::make('cetak_stok_gudang')

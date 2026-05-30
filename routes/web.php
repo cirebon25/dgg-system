@@ -87,162 +87,6 @@ Route::get('/sparepart/monitor-umur/{machine_id}', function ($machine_id) {
 })->name('sparepart.monitor');
 
 
-
-Route::get('/cetak-tukar-guling', function () {
-    $data = DB::table('machine_replacements')
-        ->leftJoin('customers', 'machine_replacements.customer_id', '=', 'customers.id')
-        ->leftJoin('machines as m_old', 'machine_replacements.old_machine_id', '=', 'm_old.id')
-        ->leftJoin('machines as m_new', 'machine_replacements.new_machine_id', '=', 'm_new.id')
-        ->leftJoin('technicians', 'machine_replacements.technician_id', '=', 'technicians.id')
-        ->leftJoin('service_logs as log_old', function ($join) {
-            $join->on('machine_replacements.old_machine_id', '=', 'log_old.machine_id')
-                ->on('machine_replacements.customer_id', '=', 'log_old.customer_id')
-                ->on('machine_replacements.tanggal', '=', 'log_old.tanggal')
-                ->where('log_old.kerusakan', '=', 'ROLLING OUT');
-        })
-        ->leftJoin('service_logs as log_new', function ($join) {
-            $join->on('machine_replacements.new_machine_id', '=', 'log_new.machine_id')
-                ->on('machine_replacements.customer_id', '=', 'log_new.customer_id')
-                ->on('machine_replacements.tanggal', '=', 'log_new.tanggal')
-                ->where('log_new.kerusakan', '=', 'ROLLING IN');
-        })
-        ->leftJoin('deployments', 'machine_replacements.customer_id', '=', 'deployments.customer_id')
-        ->select(
-            'machine_replacements.tanggal',
-            'customers.nama_customer',
-            'customers.kota',
-            'm_old.serial_number as sn_lama',
-            'm_old.tipe_model as tipe_lama',
-            'm_new.serial_number as sn_baru',
-            'm_new.tipe_model as tipe_baru',
-            'technicians.nama_technician',
-            'log_old.counter_bw as counter_bw_old',
-            'log_old.counter_color as counter_color_old',
-            'log_old.perbaikan as alasan_ganti',
-            'log_new.counter_bw as counter_bw_new',
-            'log_new.counter_color as counter_color_new',
-            'deployments.volt as volt_mesin'
-        )
-        ->orderBy('machine_replacements.tanggal', 'desc')
-        ->get();
-
-    $html = "
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Laporan Tukar Guling DGG</title>
-        <style>
- @page{ size: landscape; margin: 8mm; }
-            body { font-family: sans-serif; font-size: 10px; padding: 10px; color: #333; }
-            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-            th, td { border: 1px solid #000; padding: 6px 4px; vertical-align: middle; }
-            
-            /* TH UTAMA */
-            th { 
-                text-align: center; 
-                color: #000000 !important; 
-                font-weight: bold; 
-                text-transform: uppercase;
-                font-size: 9px;
-            }
-            
-            /* 🌟 STYLING WARNA HEADER REQUEST USER */
-            .th-normal { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .th-awal { background-color: #2563eb !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .th-awal-sub { background-color: #93c5fd !important; color: #000000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .th-new { background-color: #16a34a !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .th-new-sub { background-color: #86efac !important; color: #000000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            
-            /* 🌟 STYLING BG KOLOM REQUEST USER */
-            .td-awal { background-color: #eff6ff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .td-new { background-color: #f0fdf4 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            
-            .header-box { text-align: center; border-bottom: 3px double #000; padding-bottom: 8px; margin-bottom: 15px; }
-            .text-center { text-align: center; }
-            .font-bold { font-weight: bold; }
-        </style>
-    </head>
-    <body onload='window.print()'>
-        <div class='header-box'>
-            <h1 style='margin:0; color:#000; font-size: 18px;'>DGG SYSTEM - OPERATIONAL HUB</h1>
-            <h2 style='margin:4px 0; color:#000; font-size: 13px;'>BERITA ACARA & REKAP LAPORAN TUKAR GULING MESIN (SWAP)</h2>
-            <p style='font-weight:bold; margin:0;'>Periode: " . date('F Y') . "</p>
-        </div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th rowspan='2' width='3%' class='th-normal'>No</th>
-                    <th rowspan='2' width='7%' class='th-normal'>Tgl</th>
-                    <th rowspan='2' width='14%' class='th-normal'>Nama Customer</th>
-                    <th colspan='4' class='th-awal'>UNIT AWAL (DITARIK)</th>
-                    <th colspan='4' class='th-new'>UNIT BARU (TERPASANG)</th>
-                    <th rowspan='2' width='12%' class='th-normal'>Keterangan Ganti</th>
-                </tr>
-                <tr>
-                    <th width='9%' class='th-awal-sub'>Tipe Awal</th>
-                    <th width='9%' class='th-awal-sub'>NS</th>
-                    <th width='10%' class='th-awal-sub'>Conter Mesin Awal</th>
-                    <th width='6%' class='th-awal-sub'>Volt Mesin Awal</th>
-                    <th width='9%' class='th-new-sub'>Tipe Mesin New</th>
-                    <th width='9%' class='th-new-sub'>NS</th>
-                    <th width='10%' class='th-new-sub'>Conter</th>
-                    <th width='6%' class='th-new-sub'>Volt</th>
-                </tr>
-            </thead>
-            <tbody>";
-
-    if ($data->isEmpty()) {
-        $html .= "<tr><td colspan='12' class='text-center' style='padding:20px; font-weight:bold; color:#666;'>Belum ada riwayat transaksi tukar guling (swap) mesin.</td></tr>";
-    } else {
-        foreach ($data as $index => $row) {
-            $no = $index + 1;
-            $tgl = $row->tanggal ? date('d/m/Y', strtotime($row->tanggal)) : date('d/m/Y');
-            $customer = "<strong>" . strtoupper($row->nama_customer ?? 'Umum') . "</strong><br><small style='color:#555;'>$row->kota</small>";
-            $voltase = !empty($row->volt_mesin) ? trim($row->volt_mesin) . ' V' : '220 V';
-
-            $html .= "
-            <tr>
-                <td class='text-center'>$no</td>
-                <td class='text-center'>$tgl</td>
-                <td>$customer</td>
-                
-                <td class='td-awal'> " . ($row->tipe_lama ?? '-') . " </td>
-                <td class='td-awal font-bold'> " . ($row->sn_lama ?? '-') . " </td>
-                <td class='td-awal'>
-                    BW: " . number_format($row->counter_bw_old ?? 0) . "<br>
-                    CL: " . number_format($row->counter_color_old ?? 0) . "
-                </td>
-                <td class='td-awal text-center font-bold' style='color:#1e40af;'> $voltase </td>
-                
-                <td class='td-new'> " . ($row->tipe_baru ?? '-') . " </td>
-                <td class='td-new font-bold'> " . ($row->sn_baru ?? '-') . " </td>
-                <td class='td-new'>
-                    BW: " . number_format($row->counter_bw_new ?? 0) . "<br>
-                    CL: " . number_format($row->counter_color_new ?? 0) . "
-                </td>
-                <td class='td-new text-center font-bold' style='color:#16a34a;'> $voltase </td>
-                
-                <td> " . ($row->alasan_ganti ?? 'Rolling Unit') . " </td>
-            </tr>";
-        }
-    }
-
-    $html .= "
-            </tbody>
-        </table>
-        <div style='margin-top: 35px; float: right; width: 220px; text-align: center;'>
-            <p>Indramayu, " . date('d M Y') . "</p>
-            <br><br><br>
-            <strong>( ________________ )</strong><br>
-            <p style='margin:5px 0; font-weight:bold;'>Admin Operasional</p>
-        </div>
-    </body>
-    </html>";
-
-    return response($html);
-})->name('cetak.swap');
-
 // FITUR 2: LAPORAN ALOKASI CUSTOMER (Mesin yang sedang terpasang)
 Route::get('/cetak-alokasi-customer', function () {
     $data = Deployment::with(['customer', 'machine'])->get();
@@ -1899,3 +1743,161 @@ Route::get('/withdrawal/rekap', function (Request $request) {
 // Riwayat Ganti Part - Cetak PDF
 Route::get('/cetak/part-per-mesin', [\App\Http\Controllers\PartReplacementController::class, 'cetakPerMesin'])->name('cetak.part.mesin');
 Route::get('/cetak/part-per-bulan', [\App\Http\Controllers\PartReplacementController::class, 'cetakPerBulan'])->name('cetak.part.bulan');
+
+Route::get('/cetak-tukar-guling', function (Request $request) {
+
+    $bulan = $request->query('bulan', date('m'));
+    $tahun = $request->query('tahun', date('Y'));
+
+    $data = DB::table('machine_replacements')
+        ->leftJoin('customers', 'machine_replacements.customer_id', '=', 'customers.id')
+        ->leftJoin('machines as m_old', 'machine_replacements.old_machine_id', '=', 'm_old.id')
+        ->leftJoin('machines as m_new', 'machine_replacements.new_machine_id', '=', 'm_new.id')
+        ->leftJoin('technicians', 'machine_replacements.technician_id', '=', 'technicians.id')
+        ->leftJoin('service_logs as log_old', function ($join) {
+            $join->on('machine_replacements.old_machine_id', '=', 'log_old.machine_id')
+                ->on('machine_replacements.customer_id', '=', 'log_old.customer_id')
+                ->on('machine_replacements.tanggal', '=', 'log_old.tanggal')
+                ->where('log_old.kerusakan', '=', 'ROLLING OUT');
+        })
+        ->leftJoin('service_logs as log_new', function ($join) {
+            $join->on('machine_replacements.new_machine_id', '=', 'log_new.machine_id')
+                ->on('machine_replacements.customer_id', '=', 'log_new.customer_id')
+                ->on('machine_replacements.tanggal', '=', 'log_new.tanggal')
+                ->where('log_new.kerusakan', '=', 'ROLLING IN');
+        })
+        ->leftJoin('deployments', 'machine_replacements.customer_id', '=', 'deployments.customer_id')
+        ->whereMonth('machine_replacements.tanggal', (int) $bulan)
+        ->whereYear('machine_replacements.tanggal', (int) $tahun)
+        ->select(
+            'machine_replacements.tanggal',
+            'customers.nama_customer',
+            'customers.kota',
+            'm_old.serial_number as sn_lama',
+            'm_old.tipe_model as tipe_lama',
+            'm_new.serial_number as sn_baru',
+            'm_new.tipe_model as tipe_baru',
+            'technicians.nama_technician',
+            'log_old.counter_bw as counter_bw_old',
+            'log_old.counter_color as counter_color_old',
+            'log_old.perbaikan as alasan_ganti',
+            'log_new.counter_bw as counter_bw_new',
+            'log_new.counter_color as counter_color_new',
+            'deployments.volt as volt_mesin'
+        )
+        ->orderBy('machine_replacements.tanggal', 'desc')
+        ->get();
+
+    $namaBulan = \Carbon\Carbon::createFromFormat('m', $bulan)->translatedFormat('F');
+
+    $html = "
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Laporan Tukar Guling DGG</title>
+        <style>
+            @page { size: landscape; margin: 8mm; }
+            body { font-family: sans-serif; font-size: 10px; padding: 10px; color: #333; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+            th, td { border: 1px solid #000; padding: 6px 4px; vertical-align: middle; }
+            th {
+                text-align: center;
+                color: #000000 !important;
+                font-weight: bold;
+                text-transform: uppercase;
+                font-size: 9px;
+            }
+            .th-normal { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .th-awal { background-color: #2563eb !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .th-awal-sub { background-color: #93c5fd !important; color: #000000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .th-new { background-color: #16a34a !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .th-new-sub { background-color: #86efac !important; color: #000000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .td-awal { background-color: #eff6ff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .td-new { background-color: #f0fdf4 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .header-box { text-align: center; border-bottom: 3px double #000; padding-bottom: 8px; margin-bottom: 15px; }
+            .text-center { text-align: center; }
+            .font-bold { font-weight: bold; }
+        </style>
+    </head>
+    <body onload='window.print()'>
+        <div class='header-box'>
+            <h1 style='margin:0; color:#000; font-size: 18px;'>DGG SYSTEM - OPERATIONAL HUB</h1>
+            <h2 style='margin:4px 0; color:#000; font-size: 13px;'>BERITA ACARA & REKAP LAPORAN TUKAR GULING MESIN (SWAP)</h2>
+            <p style='font-weight:bold; margin:0;'>Periode: {$namaBulan} {$tahun}</p>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan='2' width='3%' class='th-normal'>No</th>
+                    <th rowspan='2' width='7%' class='th-normal'>Tgl</th>
+                    <th rowspan='2' width='14%' class='th-normal'>Nama Customer</th>
+                    <th colspan='4' class='th-awal'>UNIT AWAL (DITARIK)</th>
+                    <th colspan='4' class='th-new'>UNIT BARU (TERPASANG)</th>
+                    <th rowspan='2' width='12%' class='th-normal'>Keterangan Ganti</th>
+                </tr>
+                <tr>
+                    <th width='9%' class='th-awal-sub'>Tipe Awal</th>
+                    <th width='9%' class='th-awal-sub'>NS</th>
+                    <th width='10%' class='th-awal-sub'>Counter Mesin Awal</th>
+                    <th width='6%' class='th-awal-sub'>Volt</th>
+                    <th width='9%' class='th-new-sub'>Tipe Mesin Baru</th>
+                    <th width='9%' class='th-new-sub'>NS</th>
+                    <th width='10%' class='th-new-sub'>Counter</th>
+                    <th width='6%' class='th-new-sub'>Volt</th>
+                </tr>
+            </thead>
+            <tbody>";
+
+    if ($data->isEmpty()) {
+        $html .= "<tr><td colspan='12' class='text-center' style='padding:20px; font-weight:bold; color:#666;'>
+            Belum ada riwayat tukar guling pada periode {$namaBulan} {$tahun}.
+        </td></tr>";
+    } else {
+        foreach ($data as $index => $row) {
+            $no       = $index + 1;
+            $tgl      = $row->tanggal ? date('d/m/Y', strtotime($row->tanggal)) : date('d/m/Y');
+            $customer = "<strong>" . strtoupper($row->nama_customer ?? 'Umum') . "</strong><br><small style='color:#555;'>{$row->kota}</small>";
+            $voltase  = !empty($row->volt_mesin) ? trim($row->volt_mesin) . ' V' : '220 V';
+
+            $html .= "
+            <tr>
+                <td class='text-center'>{$no}</td>
+                <td class='text-center'>{$tgl}</td>
+                <td>{$customer}</td>
+
+                <td class='td-awal'>" . ($row->tipe_lama ?? '-') . "</td>
+                <td class='td-awal font-bold'>" . ($row->sn_lama ?? '-') . "</td>
+                <td class='td-awal'>
+                    BW: " . number_format($row->counter_bw_old ?? 0) . "<br>
+                    CL: " . number_format($row->counter_color_old ?? 0) . "
+                </td>
+                <td class='td-awal text-center font-bold' style='color:#1e40af;'>{$voltase}</td>
+
+                <td class='td-new'>" . ($row->tipe_baru ?? '-') . "</td>
+                <td class='td-new font-bold'>" . ($row->sn_baru ?? '-') . "</td>
+                <td class='td-new'>
+                    BW: " . number_format($row->counter_bw_new ?? 0) . "<br>
+                    CL: " . number_format($row->counter_color_new ?? 0) . "
+                </td>
+                <td class='td-new text-center font-bold' style='color:#16a34a;'>{$voltase}</td>
+
+                <td>" . ($row->alasan_ganti ?? 'Rolling Unit') . "</td>
+            </tr>";
+        }
+    }
+
+    $html .= "
+            </tbody>
+        </table>
+        <div style='margin-top: 35px; float: right; width: 220px; text-align: center;'>
+            <p>Indramayu, " . date('d M Y') . "</p>
+            <br><br><br>
+            <strong>( ________________ )</strong><br>
+            <p style='margin:5px 0; font-weight:bold;'>Admin Operasional</p>
+        </div>
+    </body>
+    </html>";
+
+    return response($html);
+})->name('cetak.swap');

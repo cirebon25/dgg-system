@@ -78,11 +78,11 @@
             </x-filament::button>
         </div>
 
-        {{-- 3. Laporan Tukar Mesin (tidak perlu bulan) --}}
+        {{-- 3. Laporan Tukar Mesin --}}
         <div class="p-6 bg-white border rounded-xl shadow-sm dark:bg-gray-800">
             <h5 class="text-lg font-bold mb-2">🔄 Rekap Laporan Penukaran Unit Mesin</h5>
             <p class="text-sm text-gray-500 mb-4">Riwayat pergantian unit mesin di lokasi customer.</p>
-            <x-filament::button tag="a" href="{{ route('cetak.swap') }}" target="_blank"
+            <x-filament::button onclick="bukaModal('cetak.swap', 'Rekap Swap Mesin', 'bulan', 'tahun')"
                 icon="heroicon-m-arrows-right-left" color="success">
                 Cetak Swap
             </x-filament::button>
@@ -140,66 +140,98 @@
             </x-filament::button>
         </div>
 
-    </div>
+        {{-- 9. Kinerja Teknisi Per Bulan --}}
+        <div class="p-6 bg-white border rounded-xl shadow-sm dark:bg-gray-800">
+            <h3 class="text-lg font-bold mb-2">👷 Kinerja Teknisi Per Bulan</h3>
+            <p class="text-sm text-gray-500 mb-4">Total kunjungan & breakdown tipe servis per teknisi.</p>
+            <x-filament::button onclick="bukaModal('print.tech-performance', 'Kinerja Teknisi', 'month', 'year')"
+                icon="heroicon-m-printer" color="teal">
+                Cetak Kinerja Teknisi
+            </x-filament::button>
+        </div>
 
-    <script>
-        // Nama parameter query string tiap route berbeda, simpan di sini
-        let modalRoute = '';
-        let modalParamBulan = 'bulan';
-        let modalParamTahun = 'tahun';
+        {{-- 10. Kartu Stok Semua Teknisi --}}
+        <div class="p-6 bg-white border rounded-xl shadow-sm dark:bg-gray-800">
+            <h3 class="text-lg font-bold mb-2">💼 Kartu Stok Semua Teknisi</h3>
+            <p class="text-sm text-gray-500 mb-4">Saldo part yang sedang dibawa oleh seluruh teknisi lapangan.</p>
+            <x-filament::button tag="a" href="{{ route('cetak.kartu-stok-semua') }}" target="_blank"
+                icon="heroicon-m-printer" color="violet">
+                Cetak Kartu Stok Semua
+            </x-filament::button>
+        </div>
 
-        // Set bulan & tahun default ke bulan berjalan
-        const bulanSekarang = String(new Date().getMonth() + 1).padStart(2, '0');
-        const tahunSekarang = String(new Date().getFullYear());
+        {{-- 11. Rekap Part Keluar Per Bulan --}}
+        <div class="p-6 bg-white border rounded-xl shadow-sm dark:bg-gray-800">
+            <h3 class="text-lg font-bold mb-2">📤 Rekap Part Keluar Per Bulan</h3>
+            <p class="text-sm text-gray-500 mb-4">Rincian sparepart yang keluar via servis & pemasangan per bulan.</p>
+            <x-filament::button onclick="bukaModal('sparepart.report.outflow', 'Part Keluar', 'month', 'year')"
+                icon="heroicon-m-printer" color="pink">
+                Cetak Part Keluar
+            </x-filament::button>
+        </div>
 
-        function bukaModal(routeName, judul, paramBulan, paramTahun) {
-            modalRoute = routeName;
-            modalParamBulan = paramBulan;
-            modalParamTahun = paramTahun;
+        <script>
+            // Nama parameter query string tiap route berbeda, simpan di sini
+            let modalRoute = '';
+            let modalParamBulan = 'bulan';
+            let modalParamTahun = 'tahun';
 
-            document.getElementById('modal-title').innerText = '🖨️ Cetak ' + judul;
-            document.getElementById('modal-month').value = bulanSekarang;
-            document.getElementById('modal-year').value = tahunSekarang;
+            // Set bulan & tahun default ke bulan berjalan
+            const bulanSekarang = String(new Date().getMonth() + 1).padStart(2, '0');
+            const tahunSekarang = String(new Date().getFullYear());
 
-            const modal = document.getElementById('modal-bulan');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
+            function bukaModal(routeName, judul, paramBulan, paramTahun) {
+                modalRoute = routeName;
+                modalParamBulan = paramBulan;
+                modalParamTahun = paramTahun;
 
-        function tutupModal() {
-            const modal = document.getElementById('modal-bulan');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
+                document.getElementById('modal-title').innerText = '🖨️ Cetak ' + judul;
+                document.getElementById('modal-month').value = bulanSekarang;
+                document.getElementById('modal-year').value = tahunSekarang;
 
-        // Mapping nama route ke URL Laravel (digenerate server-side)
-        const routeMap = {
-            'cetak.pemasangan': "{{ route('cetak.pemasangan', ['bulan' => '__B__', 'tahun' => '__T__']) }}",
-            'cetak.rekap-sparepart': "{{ route('cetak.rekap-sparepart', ['bulan' => '__B__', 'tahun' => '__T__']) }}",
-            'rekap.horizontal': "{{ route('rekap.horizontal', ['bulan' => '__B__', 'tahun' => '__T__']) }}",
-            'saldo-sparepart': "{{ route('saldo-sparepart', ['bulan' => '__B__', 'tahun' => '__T__']) }}",
-            'withdrawal.rekap': "{{ route('withdrawal.rekap', ['month' => '__B__', 'year' => '__T__']) }}",
-        };
-
-        function cetakDariModal() {
-            const bulan = document.getElementById('modal-month').value;
-            const tahun = document.getElementById('modal-year').value;
-
-            let url = routeMap[modalRoute];
-            if (!url) {
-                alert('Route tidak ditemukan!');
-                return;
+                const modal = document.getElementById('modal-bulan');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
             }
 
-            url = url.replace('__B__', bulan).replace('__T__', tahun);
-            window.open(url, '_blank');
-            tutupModal();
-        }
+            function tutupModal() {
+                const modal = document.getElementById('modal-bulan');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
 
-        // Tutup modal jika klik backdrop
-        document.getElementById('modal-bulan').addEventListener('click', function(e) {
-            if (e.target === this) tutupModal();
-        });
-    </script>
+            // Mapping nama route ke URL Laravel (digenerate server-side)
+            const routeMap = {
+                'cetak.pemasangan': "{{ route('cetak.pemasangan', ['bulan' => '__B__', 'tahun' => '__T__']) }}",
+                'cetak.rekap-sparepart': "{{ route('cetak.rekap-sparepart', ['bulan' => '__B__', 'tahun' => '__T__']) }}",
+                'rekap.horizontal': "{{ route('rekap.horizontal', ['bulan' => '__B__', 'tahun' => '__T__']) }}",
+                'saldo-sparepart': "{{ route('saldo-sparepart', ['bulan' => '__B__', 'tahun' => '__T__']) }}",
+                'withdrawal.rekap': "{{ route('withdrawal.rekap', ['month' => '__B__', 'year' => '__T__']) }}",
+                'print.tech-performance': "{{ route('print.tech-performance', ['month' => '__B__', 'year' => '__T__']) }}",
+                'sparepart.report.outflow': "{{ route('sparepart.report.outflow', ['month' => '__B__', 'year' => '__T__']) }}",
+                'print.performance-rayon': "{{ route('print.performance-rayon', ['month' => '__B__', 'year' => '__T__']) }}",
+                'cetak.swap': "{{ route('cetak.swap', ['bulan' => '__B__', 'tahun' => '__T__']) }}",
+            };
+
+            function cetakDariModal() {
+                const bulan = document.getElementById('modal-month').value;
+                const tahun = document.getElementById('modal-year').value;
+
+                let url = routeMap[modalRoute];
+                if (!url) {
+                    alert('Route tidak ditemukan!');
+                    return;
+                }
+
+                url = url.replace('__B__', bulan).replace('__T__', tahun);
+                window.open(url, '_blank');
+                tutupModal();
+            }
+
+            // Tutup modal jika klik backdrop
+            document.getElementById('modal-bulan').addEventListener('click', function(e) {
+                if (e.target === this) tutupModal();
+            });
+        </script>
 
 </x-filament-panels::page>
