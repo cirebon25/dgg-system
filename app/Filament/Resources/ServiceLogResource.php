@@ -70,8 +70,10 @@ class ServiceLogResource extends Resource
                                 'RR' => 'RR (Ganti Mesin)',
                                 'JK' => 'JK (Jaringan komputer)',
                                 'L' => 'L (Lanjut)',
-                                'TN' => 'TN (Call Toner)',
-                            ])->required(),
+                                'TN' => 'TN (Call Toner)'
+                            ])
+                            ->required()
+                            ->default('RM'),
 
                         Forms\Components\DatePicker::make('tanggal')
                             ->label('Tanggal Kunjungan')

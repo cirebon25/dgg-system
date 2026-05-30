@@ -1,5 +1,7 @@
 <?php
 
+// app/Filament/Resources/MachineWithdrawalResource.php
+
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\MachineWithdrawalResource\Pages;
@@ -9,6 +11,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 
 class MachineWithdrawalResource extends Resource
@@ -34,13 +37,13 @@ class MachineWithdrawalResource extends Resource
                                     ->where('status', 'Rented')
                                     ->with('customer')
                                     ->get()
-                                    ->mapWithKeys(function ($machine) {
+                                    ->mapWithKeys(function (Machine $machine) {
                                         $sn       = $machine->serial_number;
                                         $model    = $machine->tipe_model ?? '-';
                                         $customer = $machine->customer?->nama_customer ?? 'Belum Terikat Customer';
 
                                         return [
-                                            $machine->id => "[{$sn} - {$model}] 👤 {$customer}"
+                                            $machine->id => "[{$sn} - {$model}] 👤 {$customer}",
                                         ];
                                     });
                             })
@@ -48,7 +51,7 @@ class MachineWithdrawalResource extends Resource
                             ->required()
                             ->live()
                             ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                if (!$state) return;
+                                if (! $state) return;
                                 $machine = Machine::find($state);
                                 if ($machine) {
                                     $set('customer_id', $machine->customer_id);
@@ -83,6 +86,7 @@ class MachineWithdrawalResource extends Resource
                             ->placeholder('Contoh: Kontrak sewa di instansi terkait telah habis.')
                             ->required()
                             ->columnSpanFull(),
+
                     ])->columns(2),
             ]);
     }
@@ -95,12 +99,15 @@ class MachineWithdrawalResource extends Resource
                     ->label('Tgl Tarik')
                     ->date('d/m/Y')
                     ->sortable(),
+
                 Tables\Columns\TextColumn::make('machine.serial_number')
                     ->label('SN Mesin')
                     ->searchable(),
+
                 Tables\Columns\TextColumn::make('customer.nama_customer')
                     ->label('Ex-Customer')
                     ->searchable(),
+
                 Tables\Columns\TextColumn::make('kondisi_akhir')
                     ->label('Kondisi')
                     ->badge()
@@ -110,10 +117,12 @@ class MachineWithdrawalResource extends Resource
                         'Rusak Berat'  => 'danger',
                         default        => 'gray',
                     }),
+
                 Tables\Columns\TextColumn::make('alasan_penarikan')
                     ->label('Alasan')
                     ->limit(40)
                     ->tooltip(fn($record) => $record->alasan_penarikan),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat')
                     ->dateTime('d/m/Y H:i')
@@ -123,8 +132,61 @@ class MachineWithdrawalResource extends Resource
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
             ])
+            // ->headerActions([
+            //     Action::make('rekap_bulanan')
+            //         ->label('Rekap Bulanan')
+            //         ->icon('heroicon-o-document-chart-bar')
+            //         ->color('success')
+            //         ->form([
+            //             Forms\Components\Select::make('month')
+            //                 ->label('Bulan')
+            //                 ->options([
+            //                     '01' => 'Januari',
+            //                     '02' => 'Februari',
+            //                     '03' => 'Maret',
+            //                     '04' => 'April',
+            //                     '05' => 'Mei',
+            //                     '06' => 'Juni',
+            //                     '07' => 'Juli',
+            //                     '08' => 'Agustus',
+            //                     '09' => 'September',
+            //                     '10' => 'Oktober',
+            //                     '11' => 'November',
+            //                     '12' => 'Desember',
+            //                 ])
+            //                 ->default(now()->format('m'))
+            //                 ->required(),
+            //             Forms\Components\Select::make('year')
+            //                 ->label('Tahun')
+            //                 ->options(
+            //                     collect(range(now()->year, 2024))
+            //                         ->mapWithKeys(fn($y) => [$y => $y])
+            //                 )
+            //                 ->default((string) now()->year)
+            //                 ->required(),
+            //         ])
+            //         ->action(function (array $data) {
+            //             $url = route('withdrawal.rekap', [
+            //                 'month' => $data['month'],
+            //                 'year'  => $data['year'],
+            //             ]);
+            //             // Buka di tab baru via JS
+            //             $escaped = e($url);
+            //             return response("<script>window.open('{$escaped}','_blank');</script>");
+            //         })
+            //         ->modalSubmitActionLabel('Cetak')
+            //         ->modalHeading('Rekap Bulanan Penarikan'),
+            // ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+
+                Action::make('cetak')
+                    ->label('Cetak PDF')
+                    ->icon('heroicon-o-printer')
+                    ->color('info')
+                    ->url(fn(MachineWithdrawal $record): string => route('withdrawal.rekap', $record->id))
+                    ->openUrlInNewTab(),
+
                 Tables\Actions\DeleteAction::make(),
             ])
             ->defaultSort('created_at', 'desc');

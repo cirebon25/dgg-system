@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Route;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Collection;
 use App\Models\Technician;
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -1878,3 +1877,19 @@ Route::get('/print/performance-rayon', function (Illuminate\Http\Request $reques
 
     return view('print.performance-rayon', compact('reportData', 'month', 'year', 'tipeKolom', 'hariKerja'));
 })->name('print.performance-rayon');
+
+
+Route::get('/withdrawal/rekap', function (Request $request) {
+    $month = $request->query('month', date('m'));
+    $year  = $request->query('year',  date('Y'));
+
+    $records = \App\Models\MachineWithdrawal::with(['machine', 'customer'])
+        ->whereMonth('tanggal_tarik', (int) $month)
+        ->whereYear('tanggal_tarik',  (int) $year)
+        ->orderBy('tanggal_tarik', 'asc')
+        ->get();
+
+    $namaBulan = \Carbon\Carbon::createFromFormat('m', $month)->translatedFormat('F');
+
+    return view('print.withdrawal-rekap', compact('records', 'namaBulan', 'month', 'year'));
+})->name('withdrawal.rekap')->middleware('auth');
