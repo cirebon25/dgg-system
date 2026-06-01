@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\UppercaseAttributes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Rayon extends Model
 {
-    use HasFactory;
+    use HasFactory, UppercaseAttributes;
 
     // Bersihkan technician_id karena sudah pakai tabel pivot
     protected $fillable = ['nama_rayon'];

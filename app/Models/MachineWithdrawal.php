@@ -6,12 +6,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\UppercaseAttributes;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MachineWithdrawal extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, UppercaseAttributes;
 
     protected $fillable = [
         'machine_id',

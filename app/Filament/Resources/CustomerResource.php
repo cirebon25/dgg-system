@@ -23,6 +23,7 @@ class CustomerResource extends Resource
     protected static ?string $navigationGroup = 'Master Data';
     protected static ?int $navigationSort = 1;
     protected static bool $globallySearchable = true;
+
     protected static function technicianColor(?string $nama): string
     {
         return match (true) {
@@ -83,8 +84,6 @@ class CustomerResource extends Resource
     {
         return $table
             ->columns([
-
-                // KOLOM 1: RAYON
                 Tables\Columns\TextColumn::make('rayon.nama_rayon')
                     ->label('Rayon')
                     ->badge()
@@ -99,7 +98,6 @@ class CustomerResource extends Resource
                         default                                               => 'gray',
                     }),
 
-                // KOLOM 2: NAMA PELANGGAN + ALAMAT
                 TextColumn::make('nama_customer')
                     ->label('Pelanggan')
                     ->searchable()
@@ -109,7 +107,6 @@ class CustomerResource extends Resource
                     ->wrap()
                     ->summarize(Count::make()->label('Total')),
 
-                // KOLOM 3: KOTA
                 TextColumn::make('kota')
                     ->label('Kota')
                     ->searchable()
@@ -117,7 +114,6 @@ class CustomerResource extends Resource
                     ->icon('heroicon-o-map-pin')
                     ->iconColor('gray'),
 
-                // KOLOM 4: TEKNISI
                 Tables\Columns\TextColumn::make('technician.nama_technician')
                     ->label('Teknisi')
                     ->placeholder('— Belum Diset —')
@@ -125,7 +121,6 @@ class CustomerResource extends Resource
                     ->searchable()
                     ->color(fn(?string $state): string => static::technicianColor($state)),
 
-                // KOLOM 5: UNIT TERPASANG
                 TextColumn::make('deployments_count')
                     ->label('Unit')
                     ->counts('deployments')
@@ -144,7 +139,6 @@ class CustomerResource extends Resource
                         $state <= 10 => 'Unit normal',
                         default      => 'Unit sangat banyak',
                     }),
-
             ])
 
             ->defaultGroup(
@@ -201,13 +195,16 @@ class CustomerResource extends Resource
             ]);
     }
 
+    // ← OPTIMASI: Tambahkan with() untuk eager load rayon & technician
+    // selectRaw yang sudah ada tetap dipertahankan persis seperti semula
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ])
-            ->selectRaw("*, CONCAT(COALESCE(technician_id, 0), '-', COALESCE(kota, '')) as tech_kota_key");
+            ->selectRaw("*, CONCAT(COALESCE(technician_id, 0), '-', COALESCE(kota, '')) as tech_kota_key")
+            ->with(['rayon', 'technician']); // ← OPTIMASI
     }
 
     public static function getPages(): array

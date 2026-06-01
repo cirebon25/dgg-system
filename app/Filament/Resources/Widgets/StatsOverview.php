@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Widgets;
+namespace App\Filament\Resources\Widgets;
 
 use App\Models\Machine;
 use App\Models\ServiceLog;

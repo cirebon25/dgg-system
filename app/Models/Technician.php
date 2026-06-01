@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\UppercaseAttributes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Technician extends Model
 {
-    use HasFactory;
+    use HasFactory, UppercaseAttributes;
 
     protected $fillable = ['rayon_id', 'nama_technician', 'nomor_hp', 'is_active'];
 

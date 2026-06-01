@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\UppercaseAttributes;
 
 class SparepartEntry extends Model
 {
+    use UppercaseAttributes;
     protected $guarded = [];
 
     protected static function booted()

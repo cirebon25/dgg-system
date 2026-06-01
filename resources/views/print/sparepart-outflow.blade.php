@@ -14,12 +14,11 @@
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 11px;
-            line-height: 1.3;
+            font-size: 10px;
+            line-height: 1.2;
             color: #000;
         }
 
-        /* HEADER JUDUL TENGAH */
         .doc-title {
             text-align: center;
             margin-bottom: 20px;
@@ -48,8 +47,8 @@
         }
 
         .rayon-badge-title {
-            background: #000;
-            color: #fff;
+            background: #6b6a6a;
+            color: #eee4e4;
             display: inline-block;
             padding: 4px 12px;
             font-size: 11px;
@@ -65,24 +64,25 @@
             table-layout: fixed;
         }
 
-        /* HEADER KUNING RATA TENGAH */
         .report-table th {
             background: #FFEB3B;
             border: 1px solid #000;
-            padding: 8px 4px;
-            font-size: 10px;
+            padding: 4px 2px;
+            font-size: 9px;
             font-weight: 800;
             text-transform: uppercase;
             text-align: center;
+            overflow: hidden;
+            white-space: normal;
         }
 
         .report-table td {
             border: 1px solid #000;
-            padding: 6px 4px;
+            padding: 4px 2px;
             vertical-align: middle;
+            word-wrap: break-word;
         }
 
-        /* KOLOM RATA TENGAH */
         .text-center {
             text-align: center !important;
         }
@@ -100,7 +100,7 @@
 
         .signature-box {
             text-align: center;
-            width: 220px;
+            width: 200px;
         }
 
         .signature-box .lbl {
@@ -116,13 +116,6 @@
             font-weight: 700;
             padding-top: 4px;
         }
-
-        .report-table th,
-        .report-table td {
-            word-wrap: break-word;
-            /* Agar teks panjang tidak merusak kolom */
-            overflow: hidden;
-        }
     </style>
 </head>
 
@@ -130,50 +123,74 @@
 
     <div class="doc-title">
         <h2>Rekap Pemakaian Sparepart</h2>
-        {{-- REVISI: Menggunakan format Nama Bulan dan Tahun yang akurat --}}
         <p>Periode Bulan: {{ \Carbon\Carbon::create(null, $month, 1)->locale('id')->isoFormat('MMMM Y') }}</p>
     </div>
 
     @forelse($groupedUsages as $rayonName => $logs)
         <div class="rayon-badge-title"> RAYON: {{ strtoupper($rayonName) }}</div>
 
+        @php
+            // Kelompokkan berdasarkan kunjungan (tanggal + serial_number + teknisi)
+            // Sehingga 1 kunjungan = 1 baris, meski pakai banyak sparepart
+            $grouped = collect($logs)->groupBy(function ($item) {
+                return $item->tanggal . '|' . $item->serial_number . '|' . $item->nama_technician;
+            });
+        @endphp
+
         <table class="report-table">
+            <colgroup>
+                <col style="width: 30px;">
+                <col style="width: 80px;">
+                <col>
+                <col style="width: 70px;">
+                <col style="width: 120px;">
+                <col>
+                <col style="width: 40px;">
+                <col style="width: 40px;">
+                <col style="width: 60px;">
+                <col style="width: 60px;">
+                <col style="width: 80px;">
+            </colgroup>
             <thead>
                 <tr>
-                    <th class="text-center" rowspan="2">NO</th>
-                    <th class="text-center" rowspan="2">TGL</th>
+                    <th rowspan="2">NO</th>
+                    <th rowspan="2">TGL</th>
                     <th rowspan="2">NAMA CUSTOMER</th>
-                    <th class="text-center" rowspan="2">TIPE</th>
-                    <th class="text-center" rowspan="2">NO SERI</th>
+                    <th rowspan="2">TIPE</th>
+                    <th rowspan="2">NO SERI</th>
                     <th rowspan="2">NAMA PART</th>
-                    <th class="text-center" colspan="2">PEMAKAIAN BLN LALU</th>
-                    <th class="text-center" colspan="2">COUNTER AKHIR</th>
-                    <th class="text-center" rowspan="2">TEKNISI</th>
+                    <th colspan="2">PEMAKAIAN BLN LALU</th>
+                    <th colspan="2">COUNTER AKHIR</th>
+                    <th rowspan="2">TEKNISI</th>
                 </tr>
                 <tr>
-                    <th class="text-center">BW</th>
-                    <th class="text-center">CL</th>
-                    <th class="text-center">BW</th>
-                    <th class="text-center">CL</th>
+                    <th>BW</th>
+                    <th>CL</th>
+                    <th>BW</th>
+                    <th>CL</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($logs as $index => $item)
+                @foreach ($grouped as $index => $items)
+                    @php
+                        // Ambil data kunjungan dari baris pertama
+                        $first = $items->first();
+
+                        // Gabungkan semua nama part jadi satu string dipisah koma
+                        $namaParts = $items->pluck('nama_part')->filter()->unique()->implode(', ');
+                    @endphp
                     <tr>
-                        <td class="text-center">{{ $index + 1 }}</td>
-                        <td class="text-center">{{ \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y') }}</td>
-                        <td>{{ $item->nama_customer }}</td>
-                        <td class="text-center">{{ $item->tipe_model }}</td>
-                        <td class="text-center font-mono">{{ $item->serial_number }}</td>
-                        <td>{{ $item->nama_part }}</td>
-
-                        <td class="text-center">{{ number_format($item->usage_bw ?? 0) }}</td>
-                        <td class="text-center">{{ number_format($item->usage_color ?? 0) }}</td>
-
-                        <td class="text-center font-mono">{{ number_format($item->counter_bw ?? 0) }}</td>
-                        <td class="text-center font-mono">{{ number_format($item->counter_color ?? 0) }}</td>
-
-                        <td class="text-center">{{ $item->nama_technician }}</td>
+                        <td class="text-center">{{ $loop->iteration }}</td>
+                        <td class="text-center">{{ \Carbon\Carbon::parse($first->tanggal)->format('d-m-Y') }}</td>
+                        <td>{{ $first->nama_customer }}</td>
+                        <td class="text-center">{{ $first->tipe_model }}</td>
+                        <td class="text-center font-mono">{{ $first->serial_number }}</td>
+                        <td>{{ $namaParts ?: '-' }}</td>
+                        <td class="text-center">{{ number_format($first->usage_bw ?? 0) }}</td>
+                        <td class="text-center">{{ number_format($first->usage_color ?? 0) }}</td>
+                        <td class="text-center font-mono">{{ number_format($first->counter_bw ?? 0) }}</td>
+                        <td class="text-center font-mono">{{ number_format($first->counter_color ?? 0) }}</td>
+                        <td class="text-center">{{ $first->nama_technician }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -184,8 +201,7 @@
 
     <div class="signature-area">
         <div class="signature-box">
-            <div class="lbl">CIREBON,
-                {{ strtoupper(\Carbon\Carbon::now()->locale('id')->isoFormat('D MMMM Y')) }}<br>
+            <div class="lbl">CIREBON, {{ strtoupper(\Carbon\Carbon::now()->locale('id')->isoFormat('D MMMM Y')) }}
             </div>
             <div class="line">( ADMIN GUDANG )</div>
         </div>

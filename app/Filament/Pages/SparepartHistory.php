@@ -49,7 +49,7 @@ class SparepartHistory extends Page
                 'tipe'    => 'MASUK',
                 'tanggal' => $item->created_at,
                 'jumlah'  => $item->jumlah,
-                'detail'  => 'DARI: ' . ($item->supplier ?? 'Gudang'),
+                'detail'  => 'DARI: ' . ($item->supplier ?? 'Supplier Tidak Diketahui'),
                 'part'    => $item->sparepart->nama_sparepart ?? '-',
             ]);
 

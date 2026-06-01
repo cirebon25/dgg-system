@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Widgets;
+namespace App\Filament\Resources\Widgets;
 
 use App\Models\MachinePartHealth;
 use Filament\Tables;

@@ -4,13 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\UppercaseAttributes;
 use Illuminate\Database\Eloquent\SoftDeletes; // Wajib untuk fitur Arsip/Trashed
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Customer extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, UppercaseAttributes;
 
     /**
      * DAFTAR KOLOM YANG BOLEH DIISI (FILLABLE)

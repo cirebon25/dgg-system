@@ -23,7 +23,6 @@ class ServiceLogResource extends Resource
     {
         return $form
             ->schema([
-                // --- SECTION 1: DATA KUNJUNGAN ---
                 Forms\Components\Section::make('Data Kunjungan')
                     ->schema([
                         Forms\Components\Select::make('machine_id')
@@ -33,9 +32,8 @@ class ServiceLogResource extends Resource
                             ->searchable()
                             ->reactive()
                             ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                // GANTI: latest('tanggal') → latest('id') agar selalu ambil yang paling baru
                                 $lastLog = ServiceLog::where('machine_id', $state)
-                                    ->latest('id')  // ← ubah dari latest('tanggal') ke latest('id')
+                                    ->latest('id')
                                     ->first();
 
                                 if ($lastLog) {
@@ -46,12 +44,10 @@ class ServiceLogResource extends Resource
                                     $set('color_lalu', 0);
                                 }
 
-                                // 2. OTOMATIS SET CUSTOMER & TEKNISI SESUAI MESIN YANG DIPILIH
                                 $machine = Machine::find($state);
                                 if ($machine) {
                                     $set('customer_id', $machine->customer_id);
 
-                                    // Jika mesin itu ada customer dan customernya punya teknisi utama, set otomatis
                                     if ($machine->customer?->technician_id) {
                                         $set('technician_id', $machine->customer->technician_id);
                                     }
@@ -89,7 +85,6 @@ class ServiceLogResource extends Resource
                         ]),
                     ])->columns(2),
 
-                // --- SECTION 2: PENCATATAN COUNTER (KUNCI PERBAIKAN ANTI-DELAY) ---
                 Forms\Components\Section::make('Pencatatan Counter')
                     ->schema([
                         Forms\Components\TextInput::make('bw_lalu')
@@ -101,7 +96,6 @@ class ServiceLogResource extends Resource
                             ->label('BW Sekarang')
                             ->numeric()
                             ->required()
-                            // ->live(onBlur: true) // ✅ FIX MASTER: Anti delay, ketikan dilepas dulu baru hitung otomatis
                             ->afterStateUpdated(fn($state, $get, $set) => $set('usage_bw', (int) $state - (int) $get('bw_lalu'))),
 
                         Forms\Components\TextInput::make('usage_bw')
@@ -117,7 +111,7 @@ class ServiceLogResource extends Resource
                         Forms\Components\TextInput::make('counter_color')
                             ->label('Color Sekarang')
                             ->numeric()
-                            ->live(onBlur: true) // ✅ FIX MASTER: Mengunci input color agar lancar tanpa terhapus otomatis
+                            ->live(onBlur: true)
                             ->afterStateUpdated(fn($state, $get, $set) => $set('usage_color', (int) $state - (int) $get('color_lalu'))),
 
                         Forms\Components\TextInput::make('usage_color')
@@ -126,7 +120,6 @@ class ServiceLogResource extends Resource
                             ->readOnly(),
                     ])->columns(3),
 
-                // --- SECTION 3: SPAREPART (DENGAN GEMBOK STOK) ---
                 Forms\Components\Section::make('Sparepart yang Diganti')
                     ->schema([
                         Forms\Components\Repeater::make('serviceLogSpareparts')
@@ -172,7 +165,6 @@ class ServiceLogResource extends Resource
                             ->addActionLabel('Tambah Sparepart'),
                     ]),
 
-                // --- SECTION 4: DETAIL TEKNISI ---
                 Forms\Components\Section::make('Detail Teknisi & Perbaikan')
                     ->schema([
                         Forms\Components\Textarea::make('kerusakan')->required(),
@@ -254,20 +246,6 @@ class ServiceLogResource extends Resource
                     ])
                     ->action(fn(array $data) => redirect()->route('print.tech-performance', $data)),
 
-                // Tables\Actions\Action::make('printBulanan')
-                //     ->label('Cetak Per Bulan')
-                //     ->color('success')
-                //     ->icon('heroicon-o-calendar')
-                //     ->form([
-                //         Forms\Components\Select::make('month')
-                //             ->options(['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'])
-                //             ->required()->default(date('m')),
-                //         Forms\Components\Select::make('year')
-                //             ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
-                //             ->required()->default(date('Y')),
-                //     ])
-                //     ->action(fn(array $data) => redirect()->route('service-log.monthly', $data)),
-
                 Tables\Actions\CreateAction::make(),
             ])
             ->columns([
@@ -343,6 +321,16 @@ class ServiceLogResource extends Resource
                 Tables\Actions\DeleteAction::make(),
             ])
             ->defaultSort('tanggal', 'desc');
+    }
+
+    // ← OPTIMASI: Eager load semua relasi yang dipakai di tabel
+    // Kolom machine_id->getStateUsing mengakses 3 jalur berbeda:
+    // customer langsung, machine->customer, machine->deployment->customer
+    // Semua di-load sekaligus agar tidak ada N+1 query
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['customer', 'machine.customer', 'machine.deployment.customer', 'technician']);
     }
 
     public static function getPages(): array

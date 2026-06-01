@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\UppercaseAttributes;
 
 class TechnicianStock extends Model
 {
+    use UppercaseAttributes;
     // Buka akses agar bisa ditambah/dikurangi secara otomatis
     protected $guarded = [];
 

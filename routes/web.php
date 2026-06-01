@@ -545,131 +545,11 @@ Route::get('/admin/rekap-horizontal', [App\Http\Controllers\ReportController::cl
 
 
 // 1. ROUTE LAPORAN PEMASANGAN BARU 
-Route::get('/cetak-pemasangan-baru/{bulan?}/{tahun?}', function ($bulan = null, $tahun = null) {
-    // 🌟 KUNCI FIX FILTER: Jika ada kiriman dari form Filament gunakan itu, jika kosong baru pakai bulan berjalan
-    $bulan = $bulan ?? date('m');
-    $tahun = $tahun ?? date('Y');
+Route::get(
+    '/cetak-pemasangan-baru/{bulan?}/{tahun?}',
+    [App\Http\Controllers\CetakPemasanganController::class, 'index']
+)->name('cetak.pemasangan');
 
-    $data = Deployment::with(['machine', 'customer.rayon', 'technician'])
-        ->whereMonth('created_at', $bulan)
-        ->whereYear('created_at', $tahun)
-        ->orderBy('created_at', 'asc')
-        ->get();
-
-    $bulanIndo = [
-        '01' => 'Januari',
-        '02' => 'Februari',
-        '03' => 'Maret',
-        '04' => 'April',
-        '05' => 'Mei',
-        '06' => 'Juni',
-        '07' => 'Juli',
-        '08' => 'Agustus',
-        '09' => 'September',
-        '10' => 'Oktober',
-        '11' => 'November',
-        '12' => 'Desember'
-    ];
-    $namaBulan = $bulanIndo[$bulan] ?? 'Tidak Diketahui';
-
-    $html = "
-    <!DOCTYPE html>
-    <html lang='id'>
-    <head>
-        <meta charset='UTF-8'>
-        <title>Laporan Pemasangan Baru</title>
-        <style>
- @page{ size: landscape; margin: 10mm; }
-            body { font-family: sans-serif; font-size: 11px; color: #333; } 
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; } 
-            
-            /* 🌟 REVISI UTAMA: Font Header No s/d Keterangan Wajib Hitam Pekat */
-            th { background-color: #f2f2f2; color: #000000; padding: 10px 5px; border: 1px solid #000; font-weight: bold; text-transform: uppercase; font-size: 10px; } 
-            
-            td { padding: 8px 5px; border: 1px solid #666; vertical-align: middle; } 
-            .text-center { text-align: center; } 
-            .footer { margin-top: 30px; width: 100%; } 
-            .ttd-box { float: right; width: 250px; text-align: center; }
-        </style>
-    </head>
-    <body onload='window.print()'>
-        <div style='text-align:center; border-bottom: 3px double #000; padding-bottom:10px;'>
-            <h2>DAFTAR CUSTOMER PASANG BARU DGG CIREBON</h2>
-            <h3>Periode: $namaBulan $tahun</h3>
-        </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Tgl Pasang</th>
-                    <th>Nama Customer</th>
-                    <th>Tipe Model</th>
-                    <th>No Seri</th>
-                    <th>Volt</th>
-                    <th>Ctr Awal</th>
-                    <th>Teknisi</th>
-                    <th>Part</th>
-                    <th>Keterangan</th>
-                </tr>
-            </thead>
-            <tbody>";
-
-    if ($data->isEmpty()) {
-        $html .= "<tr><td colspan='10' class='text-center' style='padding: 20px; color: #666; font-weight: bold;'>Tidak ada data pemasangan baru pada periode $namaBulan $tahun.</td></tr>";
-    } else {
-        foreach ($data as $index => $row) {
-            $no = $index + 1;
-            $tgl = date('d-m-Y', strtotime($row->created_at));
-
-            $html .= "<tr>
-                <td class='text-center'>$no</td>
-                <td class='text-center'>$tgl</td>
-               <td>{$row->customer?->nama_customer}</td>
-                <td>{$row->machine->tipe_model}</td>
-                <td><b>{$row->machine->serial_number}</b></td>
-                <td class='text-center'>{$row->volt} V</td>
-                <td>BW: " . number_format($row->counter_bw) . " <br> CL: " . number_format($row->counter_color) . "</td>
-                <td>{$row->technician->nama_technician}</td>
-                <td>";
-
-            // 🌟 JOIN LANGSUNG KE TABEL MASTER SPAREPART
-            $parts = DB::table('deployment_sparepart')
-                ->join('spareparts', 'deployment_sparepart.sparepart_id', '=', 'spareparts.id')
-                ->where('deployment_sparepart.deployment_id', $row->id)
-                ->select('spareparts.nama_sparepart', 'deployment_sparepart.jumlah')
-                ->get();
-
-            if ($parts->isNotEmpty()) {
-                $html .= "<ul style='margin:0; padding-left:12px;'>";
-                foreach ($parts as $p) {
-                    $html .= "<li><b>" . strtoupper($p->nama_sparepart) . "</b> ({$p->jumlah} Pcs)</li>";
-                }
-                $html .= "</ul>";
-            } else {
-                $html .= "-";
-            }
-
-            $html .= "</td>
-                <td>{$row->keterangan}</td>
-            </tr>";
-        }
-    }
-
-    $html .= "
-            </tbody>
-        </table>
-        <div class='footer'>
-            <div class='ttd-box'>
-                <p>Indramayu, " . date('d F Y') . "</p>
-                <p style='margin-bottom:60px;'>Admin Operasional,</p>
-                <strong>( _________________________ )</strong>
-            </div>
-        </div>
-    </body>
-    </html>";
-
-    return response($html);
-})->name('cetak.pemasangan');
 
 Route::get('/sparepart/report/outflow', function (Request $request) {
 
@@ -700,93 +580,6 @@ Route::get('/sparepart/report/outflow', function (Request $request) {
         ->with('month', $month)
         ->with('year', $year);
 })->name('sparepart.report.outflow');
-
-// /* cetak-rekap pamakaian teknisi-sparepart */
-// Route::get('/cetak-rekap-sparepart', function (Request $request) {
-//     $month = str_pad($request->query('bulan', date('m')), 2, '0', STR_PAD_LEFT);
-//     $year  = trim($request->query('tahun', date('Y')));
-
-//     $masterUsages = collect();
-
-//     // 🌟 KANAL 1: SEDOT DATA DARI SERVICE LOG (SERVIS RUTIN / CM / TN)
-//     $serviceLogs = \App\Models\ServiceLog::with(['machine', 'customer', 'technician.rayon'])
-//         ->whereYear('tanggal', $year)
-//         ->whereMonth('tanggal', (int) $month)
-//         ->whereNotNull('sparepart_id')
-//         ->get();
-
-//     foreach ($serviceLogs as $log) {
-//         $masterUsages->push((object)[
-//             'tanggal'        => $log->tanggal,
-//             'nama_customer'  => $log->customer?->nama_customer ?? '-',
-//             'tipe_model'     => $log->machine?->tipe_model ?? '-',
-//             'serial_number'  => $log->machine?->serial_number ?? '-',
-//             'nama_part'      => $log->sparepart_id . ($log->jumlah_sparepart ? " ({$log->jumlah_sparepart} Pcs)" : ""),
-//             'usage_bw'       => $log->usage_bw ?? 0,
-//             'usage_color'    => $log->usage_color ?? 0,
-//             'counter_bw'     => $log->counter_bw ?? 0,
-//             'counter_color'  => $log->counter_color ?? 0,
-//             'nama_technician' => $log->technician?->nama_technician ?? '-',
-//             'nama_rayon'     => $log->technician?->rayon?->nama_rayon ?? 'WILAYAH LAIN'
-//         ]);
-//     }
-
-//     // 🌟 KANAL 2: SEDOT DATA DARI DEPLOYMENT (PEMASANGAN MESIN BARU)
-//     if (class_exists('\App\Models\DeploymentSparepart')) {
-//         $deployments = \App\Models\DeploymentSparepart::with(['deployment.machine', 'deployment.customer', 'sparepart', 'deployment.technician.rayon'])
-//             ->whereHas('deployment', function ($q) use ($year, $month) {
-//                 $q->whereYear('tanggal_pasang', $year)->whereMonth('tanggal_pasang', (int) $month);
-//             })->get();
-
-//         foreach ($deployments as $dep) {
-//             $masterUsages->push((object)[
-//                 'tanggal'        => $dep->deployment?->tanggal_pasang ?? date('Y-m-d'),
-//                 'nama_customer'  => $dep->deployment?->customer?->nama_customer ?? '-',
-//                 'tipe_model'     => $dep->deployment?->machine?->tipe_model ?? '-',
-//                 'serial_number'  => $dep->deployment?->machine?->serial_number ?? '-',
-//                 'nama_part'      => ($dep->sparepart?->nama_sparepart ?? 'Part Bawaan') . " ({$dep->jumlah} Pcs) [INSTAL BARU]",
-//                 'usage_bw'       => 0,
-//                 'usage_color'    => 0,
-//                 'counter_bw'     => 0,
-//                 'counter_color'  => 0,
-//                 'nama_technician' => $dep->deployment?->technician?->nama_technician ?? 'Ekspedisi',
-//                 'nama_rayon'     => $dep->deployment?->technician?->rayon?->nama_rayon ?? 'WILAYAH LAIN'
-//             ]);
-//         }
-//     }
-
-//     // 🌟 KANAL 3: SEDOT DATA DARI MACHINE REPLACEMENT (TUKAR SWAP UNIT MESIN)
-//     if (class_exists('\App\Models\MachineReplacement')) {
-//         $replacements = \App\Models\MachineReplacement::with(['machine', 'customer', 'technician.rayon'])
-//             ->whereYear('tanggal_tukar', $year)
-//             ->whereMonth('tanggal_tukar', (int) $month)
-//             ->get();
-
-//         foreach ($replacements as $rep) {
-//             $masterUsages->push((object)[
-//                 'tanggal'        => $rep->tanggal_tukar,
-//                 'nama_customer'  => $rep->customer?->nama_customer ?? '-',
-//                 'tipe_model'     => $rep->machine?->tipe_model ?? '-',
-//                 'serial_number'  => $rep->machine?->serial_number ?? '-',
-//                 'nama_part'      => 'Unit Swap [GANTI UNIT MESIN]',
-//                 'usage_bw'       => $rep->usage_bw_terakhir ?? 0,
-//                 'usage_color'    => $rep->usage_color_terakhir ?? 0,
-//                 'counter_bw'     => $rep->counter_bw_masuk ?? 0,
-//                 'counter_color'  => $rep->counter_color_masuk ?? 0,
-//                 'nama_technician' => $rep->technician?->nama_technician ?? '-',
-//                 'nama_rayon'     => $rep->technician?->rayon?->nama_rayon ?? 'WILAYAH LAIN'
-//             ]);
-//         }
-//     }
-
-//     // Kelompokkan data gabungan sakti 3 lini berdasarkan Rayon Wilayah
-//     $groupedUsages = $masterUsages->groupBy('nama_rayon');
-
-//     return view('print.sparepart-outflow')
-//         ->with('groupedUsages', $groupedUsages)
-//         ->with('month', $month)
-//         ->with('year', $year);
-// })->name('cetak.rekap-sparepart');
 
 
 // ROUTE OTOMATIS CETAK BUKTI NOTA PINJAM SPAREPART TEKNISI (DGG SYSTEM)
@@ -1533,7 +1326,7 @@ Route::get('/cetak-rekap-sparepart', function (Request $request) {
 
             'serial_number' => $log->serial_number ?? '-',
 
-            'nama_part' => ($log->nama_alias ? $log->nama_alias : ($log->nama_sparepart ?? '-')) . ' (' . ($log->jumlah ?? 0) . ' Pcs)',
+            'nama_part' => ($log->nama_alias ? $log->nama_alias : ($log->nama_sparepart ?? '-')) . ' (' . ($log->jumlah ?? 0) . ' pcs)',
             'usage_bw' => $log->usage_bw ?? 0,
 
             'usage_color' => $log->usage_color ?? 0,
@@ -1623,7 +1416,7 @@ Route::get('/cetak-rekap-sparepart', function (Request $request) {
 
             'serial_number' => $log->serial_number ?? '-',
 
-            'nama_part' => ($log->nama_alias ? $log->nama_alias : ($log->nama_sparepart ?? '-')) . ' (' . ($log->jumlah ?? 0) . ' Pcs) [New Install]',
+            'nama_part' => ($log->nama_alias ? $log->nama_alias : ($log->nama_sparepart ?? '-')) . ' (' . ($log->jumlah ?? 0) . ' pcs) [New Install]',
 
 
             'usage_bw' => 0,
@@ -1744,160 +1537,8 @@ Route::get('/withdrawal/rekap', function (Request $request) {
 Route::get('/cetak/part-per-mesin', [\App\Http\Controllers\PartReplacementController::class, 'cetakPerMesin'])->name('cetak.part.mesin');
 Route::get('/cetak/part-per-bulan', [\App\Http\Controllers\PartReplacementController::class, 'cetakPerBulan'])->name('cetak.part.bulan');
 
-Route::get('/cetak-tukar-guling', function (Request $request) {
-
-    $bulan = $request->query('bulan', date('m'));
-    $tahun = $request->query('tahun', date('Y'));
-
-    $data = DB::table('machine_replacements')
-        ->leftJoin('customers', 'machine_replacements.customer_id', '=', 'customers.id')
-        ->leftJoin('machines as m_old', 'machine_replacements.old_machine_id', '=', 'm_old.id')
-        ->leftJoin('machines as m_new', 'machine_replacements.new_machine_id', '=', 'm_new.id')
-        ->leftJoin('technicians', 'machine_replacements.technician_id', '=', 'technicians.id')
-        ->leftJoin('service_logs as log_old', function ($join) {
-            $join->on('machine_replacements.old_machine_id', '=', 'log_old.machine_id')
-                ->on('machine_replacements.customer_id', '=', 'log_old.customer_id')
-                ->on('machine_replacements.tanggal', '=', 'log_old.tanggal')
-                ->where('log_old.kerusakan', '=', 'ROLLING OUT');
-        })
-        ->leftJoin('service_logs as log_new', function ($join) {
-            $join->on('machine_replacements.new_machine_id', '=', 'log_new.machine_id')
-                ->on('machine_replacements.customer_id', '=', 'log_new.customer_id')
-                ->on('machine_replacements.tanggal', '=', 'log_new.tanggal')
-                ->where('log_new.kerusakan', '=', 'ROLLING IN');
-        })
-        ->leftJoin('deployments', 'machine_replacements.customer_id', '=', 'deployments.customer_id')
-        ->whereMonth('machine_replacements.tanggal', (int) $bulan)
-        ->whereYear('machine_replacements.tanggal', (int) $tahun)
-        ->select(
-            'machine_replacements.tanggal',
-            'customers.nama_customer',
-            'customers.kota',
-            'm_old.serial_number as sn_lama',
-            'm_old.tipe_model as tipe_lama',
-            'm_new.serial_number as sn_baru',
-            'm_new.tipe_model as tipe_baru',
-            'technicians.nama_technician',
-            'log_old.counter_bw as counter_bw_old',
-            'log_old.counter_color as counter_color_old',
-            'log_old.perbaikan as alasan_ganti',
-            'log_new.counter_bw as counter_bw_new',
-            'log_new.counter_color as counter_color_new',
-            'deployments.volt as volt_mesin'
-        )
-        ->orderBy('machine_replacements.tanggal', 'desc')
-        ->get();
-
-    $namaBulan = \Carbon\Carbon::createFromFormat('m', $bulan)->translatedFormat('F');
-
-    $html = "
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Laporan Tukar Guling DGG</title>
-        <style>
-            @page { size: landscape; margin: 8mm; }
-            body { font-family: sans-serif; font-size: 10px; padding: 10px; color: #333; }
-            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-            th, td { border: 1px solid #000; padding: 6px 4px; vertical-align: middle; }
-            th {
-                text-align: center;
-                color: #000000 !important;
-                font-weight: bold;
-                text-transform: uppercase;
-                font-size: 9px;
-            }
-            .th-normal { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .th-awal { background-color: #2563eb !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .th-awal-sub { background-color: #93c5fd !important; color: #000000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .th-new { background-color: #16a34a !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .th-new-sub { background-color: #86efac !important; color: #000000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .td-awal { background-color: #eff6ff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .td-new { background-color: #f0fdf4 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .header-box { text-align: center; border-bottom: 3px double #000; padding-bottom: 8px; margin-bottom: 15px; }
-            .text-center { text-align: center; }
-            .font-bold { font-weight: bold; }
-        </style>
-    </head>
-    <body onload='window.print()'>
-        <div class='header-box'>
-            <h1 style='margin:0; color:#000; font-size: 18px;'>DGG SYSTEM - OPERATIONAL HUB</h1>
-            <h2 style='margin:4px 0; color:#000; font-size: 13px;'>BERITA ACARA & REKAP LAPORAN TUKAR GULING MESIN (SWAP)</h2>
-            <p style='font-weight:bold; margin:0;'>Periode: {$namaBulan} {$tahun}</p>
-        </div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th rowspan='2' width='3%' class='th-normal'>No</th>
-                    <th rowspan='2' width='7%' class='th-normal'>Tgl</th>
-                    <th rowspan='2' width='14%' class='th-normal'>Nama Customer</th>
-                    <th colspan='4' class='th-awal'>UNIT AWAL (DITARIK)</th>
-                    <th colspan='4' class='th-new'>UNIT BARU (TERPASANG)</th>
-                    <th rowspan='2' width='12%' class='th-normal'>Keterangan Ganti</th>
-                </tr>
-                <tr>
-                    <th width='9%' class='th-awal-sub'>Tipe Awal</th>
-                    <th width='9%' class='th-awal-sub'>NS</th>
-                    <th width='10%' class='th-awal-sub'>Counter Mesin Awal</th>
-                    <th width='6%' class='th-awal-sub'>Volt</th>
-                    <th width='9%' class='th-new-sub'>Tipe Mesin Baru</th>
-                    <th width='9%' class='th-new-sub'>NS</th>
-                    <th width='10%' class='th-new-sub'>Counter</th>
-                    <th width='6%' class='th-new-sub'>Volt</th>
-                </tr>
-            </thead>
-            <tbody>";
-
-    if ($data->isEmpty()) {
-        $html .= "<tr><td colspan='12' class='text-center' style='padding:20px; font-weight:bold; color:#666;'>
-            Belum ada riwayat tukar guling pada periode {$namaBulan} {$tahun}.
-        </td></tr>";
-    } else {
-        foreach ($data as $index => $row) {
-            $no       = $index + 1;
-            $tgl      = $row->tanggal ? date('d/m/Y', strtotime($row->tanggal)) : date('d/m/Y');
-            $customer = "<strong>" . strtoupper($row->nama_customer ?? 'Umum') . "</strong><br><small style='color:#555;'>{$row->kota}</small>";
-            $voltase  = !empty($row->volt_mesin) ? trim($row->volt_mesin) . ' V' : '220 V';
-
-            $html .= "
-            <tr>
-                <td class='text-center'>{$no}</td>
-                <td class='text-center'>{$tgl}</td>
-                <td>{$customer}</td>
-
-                <td class='td-awal'>" . ($row->tipe_lama ?? '-') . "</td>
-                <td class='td-awal font-bold'>" . ($row->sn_lama ?? '-') . "</td>
-                <td class='td-awal'>
-                    BW: " . number_format($row->counter_bw_old ?? 0) . "<br>
-                    CL: " . number_format($row->counter_color_old ?? 0) . "
-                </td>
-                <td class='td-awal text-center font-bold' style='color:#1e40af;'>{$voltase}</td>
-
-                <td class='td-new'>" . ($row->tipe_baru ?? '-') . "</td>
-                <td class='td-new font-bold'>" . ($row->sn_baru ?? '-') . "</td>
-                <td class='td-new'>
-                    BW: " . number_format($row->counter_bw_new ?? 0) . "<br>
-                    CL: " . number_format($row->counter_color_new ?? 0) . "
-                </td>
-                <td class='td-new text-center font-bold' style='color:#16a34a;'>{$voltase}</td>
-
-                <td>" . ($row->alasan_ganti ?? 'Rolling Unit') . "</td>
-            </tr>";
-        }
-    }
-
-    $html .= "
-            </tbody>
-        </table>
-        <div style='margin-top: 35px; float: right; width: 220px; text-align: center;'>
-            <p>Indramayu, " . date('d M Y') . "</p>
-            <br><br><br>
-            <strong>( ________________ )</strong><br>
-            <p style='margin:5px 0; font-weight:bold;'>Admin Operasional</p>
-        </div>
-    </body>
-    </html>";
-
-    return response($html);
-})->name('cetak.swap');
+// Ganti route lama di routes/web.php dengan ini:
+Route::get(
+    '/cetak-tukar-guling',
+    [App\Http\Controllers\CetakSwapController::class, 'index']
+)->name('cetak.swap');

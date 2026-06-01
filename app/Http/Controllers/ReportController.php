@@ -11,16 +11,16 @@ class ReportController extends Controller
 {
     public function rekapHorizontal(Request $request)
     {
-        $month = $request->month;
-        $year = $request->year;
+        // Support dua nama parameter: month/year (baru) dan bulan/tahun (lama dari pusat cetak)
+        $month = $request->input('month') ?? $request->input('bulan') ?? now()->month;
+        $year  = $request->input('year')  ?? $request->input('tahun')  ?? now()->year;
 
-        // Ambil data Rayon -> Customer -> Machine -> ServiceLogs (Eager Loading)
-        $rayons = Rayon::with(['customers.machines' => function($q) use ($month, $year) {
-            $q->with(['serviceLogs' => function($logQ) use ($month, $year) {
+        $rayons = Rayon::with(['customers.machines' => function ($q) use ($month, $year) {
+            $q->with(['serviceLogs' => function ($logQ) use ($month, $year) {
                 $logQ->whereMonth('tanggal', $month)
-                     ->whereYear('tanggal', $year)
-                     ->with(['technician', 'serviceLogSpareparts.sparepart'])
-                     ->orderBy('tanggal', 'asc');
+                    ->whereYear('tanggal', $year)
+                    ->with(['technician', 'serviceLogSpareparts.sparepart'])
+                    ->orderBy('tanggal', 'asc');
             }]);
         }])->get();
 

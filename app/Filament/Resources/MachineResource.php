@@ -14,15 +14,10 @@ use Illuminate\Database\Eloquent\Builder;
 class MachineResource extends Resource
 {
     protected static ?string $model = Machine::class;
-
     protected static ?string $navigationIcon = 'heroicon-o-cpu-chip';
-
     protected static ?string $navigationLabel = 'Data Mesin';
-
     protected static ?string $navigationGroup = 'Master Data';
-
-    protected static ?int $navigationSort = 2; // Urutan nomor 2
-
+    protected static ?int $navigationSort = 2;
     protected static bool $globallySearchable = true;
 
     public static function getGloballySearchableAttributes(): array
@@ -48,7 +43,6 @@ class MachineResource extends Resource
     {
         return $form
             ->schema([
-                // --- SECTION 1: INFORMASI UMUM ---
                 Forms\Components\Section::make('Informasi Unit Mesin')
                     ->description('Masukkan detail mesin fotokopi sesuai label SN di bodi mesin.')
                     ->schema([
@@ -99,7 +93,6 @@ class MachineResource extends Resource
                             ->columnSpanFull(),
                     ])->columns(2),
 
-                // --- SECTION 2: DETAIL TEKNIS (VOLT, DLL) ---
                 Forms\Components\Section::make('Detail Teknis Mesin')
                     ->description('Informasi tambahan untuk spesifikasi teknis unit')
                     ->schema([
@@ -132,37 +125,13 @@ class MachineResource extends Resource
         return $table
             ->modifyQueryUsing(function (Builder $query) {
                 return $query
-                    // 1. Urutkan Status: 'Ready' jadi nomor 0 (paling atas), selain itu nomor 1
                     ->orderByRaw("CASE WHEN status = 'Ready' THEN 0 ELSE 1 END")
-                    // 2. Urutkan berdasarkan tanggal buat terbaru
                     ->orderBy('created_at', 'desc');
             })
             ->headerActions([
-                // 🌟 TOMBOL INPUT BARU
                 Tables\Actions\CreateAction::make()
                     ->label('Input Mesin Baru')
                     ->icon('heroicon-o-plus'),
-
-                // 🌟 TOMBOL REKAP RAYON
-                // Tables\Actions\Action::make('cetak_rekap_rayon')
-                //     ->label('Rekap Per Rayon')
-                //     ->icon('heroicon-o-map')
-                //     ->color('warning')
-                //     ->form([
-                //         Forms\Components\Select::make('month')
-                //             ->label('Bulan')
-                //             ->options([
-                //                 '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
-                //                 '04' => 'April', '05' => 'Mei', '06' => 'Juni',
-                //                 '07' => 'Juli', '08' => 'Agustus', '09' => 'September',
-                //                 '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
-                //             ])->required()->default(date('m')),
-                //         Forms\Components\Select::make('year')
-                //             ->label('Tahun')
-                //             ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
-                //             ->required()->default(date('Y')),
-                //     ])
-                //     ->action(fn (array $data) => redirect()->route('cetak.rekap-rayon', $data)),
             ])
             ->columns([
                 Tables\Columns\TextColumn::make('serial_number')
@@ -201,6 +170,14 @@ class MachineResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    // ← OPTIMASI: Eager load customer agar kolom 'Lokasi / Pelanggan'
+    // tidak trigger N+1 query (1 query untuk semua, bukan 1 per baris)
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['customer']);
     }
 
     public static function getPages(): array

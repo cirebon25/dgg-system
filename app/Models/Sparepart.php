@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\UppercaseAttributes;
 
 class Sparepart extends Model
 {
-    use HasFactory;
+    use HasFactory, UppercaseAttributes;
 
     protected $fillable = [
         'nama_sparepart',

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Filament\Facades\Filament;
+use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\ServiceProvider;
@@ -32,6 +33,26 @@ class AppServiceProvider extends ServiceProvider
             </p>
         </div>
     ')
+        );
+
+        // Tambahan: Menghilangkan panah spinner pada input angka secara global
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::HEAD_END,
+            fn(): HtmlString => new HtmlString('
+                <style>
+                    /* Menghilangkan panah di Chrome, Safari, Edge, Opera */
+                    input::-webkit-outer-spin-button,
+                    input::-webkit-inner-spin-button {
+                        -webkit-appearance: none;
+                        margin: 0;
+                    }
+
+                    /* Menghilangkan panah di Firefox */
+                    input[type=number] {
+                        -moz-appearance: textfield;
+                    }
+                </style>
+            '),
         );
     }
 }

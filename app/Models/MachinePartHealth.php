@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\UppercaseAttributes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MachinePartHealth extends Model
 {
-    use HasFactory;
+    use HasFactory, UppercaseAttributes;
 
     // Nama tabelnya (pastikan sesuai dengan migrasi)
     protected $table = 'machine_part_health';

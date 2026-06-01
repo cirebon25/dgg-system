@@ -62,15 +62,15 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
-                \App\Filament\Widgets\DeploymentChart::class,
-                \App\Filament\Widgets\StatsOverview::class,
-                \App\Filament\Widgets\StockAlert::class,
-                \App\Filament\Widgets\RecentServiceLogs::class,
-                \App\Filament\Widgets\LowStockParts::class,
-                \App\Filament\Widgets\TopSpareparts::class,
-                \App\Filament\Widgets\LatestCustomers::class,
-                \App\Filament\Widgets\MachineLocationStats::class,
-                \App\Filament\Widgets\MachineRayonStats::class,
+                \App\Filament\Resources\Widgets\DeploymentChart::class,
+                \App\Filament\Resources\Widgets\StatsOverview::class,
+                \App\Filament\Resources\Widgets\StockAlert::class,
+                \App\Filament\Resources\Widgets\RecentServiceLogs::class,
+                \App\Filament\Resources\Widgets\LowStockParts::class,
+                \App\Filament\Resources\Widgets\TopSpareparts::class,
+                \App\Filament\Resources\Widgets\LatestCustomers::class,
+                \App\Filament\Resources\Widgets\MachineLocationStats::class,
+                \App\Filament\Resources\Widgets\MachineRayonStats::class,
             ])
             ->databaseNotifications()
             ->middleware([

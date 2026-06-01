@@ -28,13 +28,10 @@
             font-size: 11px;
             margin-top: 15px;
             text-transform: uppercase;
-
-            /* Mengaktifkan sistem koordinat relatif untuk anak elemennya */
             position: relative;
             display: flex;
             align-items: center;
             min-height: 16px;
-            /* Menjaga tinggi baris tetap stabil */
         }
 
         .nama-rayon-kiri {
@@ -46,11 +43,8 @@
             margin: 0;
             color: #131111;
             font-size: 7px;
-            /* Ukuran font disesuaikan agar pas dalam satu baris kertas landscape */
             font-weight: normal;
             letter-spacing: 0.3px;
-
-            /* Formula mutlak pengunci posisi tengah */
             position: absolute;
             left: 50%;
             top: 50%;
@@ -60,7 +54,6 @@
             z-index: 1;
         }
 
-        /* Tabel Statistik Horizontal - Full Warna Biru, Font Putih */
         .stat-table {
             width: 60%;
             margin: 15px 0 25px 0;
@@ -72,32 +65,8 @@
             border: 1px solid #000;
             padding: 5px;
             text-align: center;
-        }
-
-        /* .stat-table th {
-            background: #002766;
-            color: white;
-            font-size: 7.5px;
-            font-weight: bold;
-            text-transform: uppercase;
-        } */
-
-        /* .stat-table td {
-            background: #0050b3;
-            color: white;
-            font-weight: bold;
-            font-size: 8.5px;
-        } */
-
-        /* Sifat dasar text & border tabel stat tetap sama */
-        .stat-table th,
-        .stat-table td {
-            border: 1px solid #000;
-            padding: 5px;
-            text-align: center;
             font-weight: bold;
             color: #000;
-            /* Font default diubah ke hitam agar kontras dengan warna cerah */
         }
 
         .stat-table th {
@@ -109,63 +78,50 @@
             font-size: 8.5px;
         }
 
-        /* =============================================
-   WARNA SPESIFIK STATUS (HEADER & DATA)
-============================================= */
-        /* RN (Install Machine) - Hijau */
         .stat-rn {
             background-color: #09f043 !important;
         }
 
-        /* RM (Reguler Maintenance) - Biru Teks Putih */
         .stat-rm {
             background-color: #072cfa !important;
             color: #ffffff !important;
         }
 
-        /* CM (Call Maintenance) - Merah Teks Putih */
         .stat-cm {
             background-color: #f71a06 !important;
             color: #ffffff !important;
         }
 
-        /* TN (Call Toner) - Abu-abu */
         .stat-tn {
             background-color: #f5f5f5 !important;
             color: #595959 !important;
         }
 
-        /* RR (Ganti Mesin) - Jingga/Orange */
         .stat-rr {
             background-color: #fff7e6 !important;
             color: #d46b08 !important;
         }
 
-        /* BELUM RM - Merah Lembut */
         .stat-blm {
             background-color: #fff1f0 !important;
             color: #cf1322 !important;
         }
 
-        /* SUDAH RM - Biru Lembut */
         .stat-sudah {
             background-color: #e6f7ff !important;
             color: #0050b3 !important;
         }
 
-        /* TOTAL MESIN - Kuning Stabilo */
         .stat-total {
             background-color: #fffb8f !important;
         }
 
-        /* Tabel Utama */
         table.main-table {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
         }
 
-        /* Header Utama FULL Hijau */
         .main-table th {
             background: #09bd15;
             color: rgb(44, 42, 42);
@@ -189,7 +145,6 @@
             padding-left: 3px !important;
         }
 
-        /* Baris Pemisah Kota Dalam Tabel */
         .row-kota {
             background-color: #eceff1 !important;
             font-weight: bold;
@@ -199,7 +154,6 @@
             text-align: left !important;
         }
 
-        /* Background Kolom Spesifik */
         .bg-seri {
             background-color: #fffb8f !important;
             color: #000 !important;
@@ -267,14 +221,20 @@
             text-transform: uppercase;
         }
 
+        /* ← TAMBAHAN: Warna kolom Sabtu dan Minggu */
+        .col-sabtu {
+            background-color: #b3937e !important;
+        }
+
+        .col-minggu {
+            background-color: #b3937e !important;
+        }
+
         .page-break {
             page-break-after: always;
             break-after: page;
         }
 
-        /* =============================================
-            TABEL PRESTASI - HALAMAN TERAKHIR
-        ============================================= */
         .prestasi-page {
             padding: 10px;
         }
@@ -408,7 +368,6 @@
                 }
             }
 
-            /* FIX: Menambahkan key 'RN' ke dalam data array statistik utama agar tidak memicu Undefined Array Key */
             $stat = [
                 'RM' => $allLogs->where('tipe_kunjungan', 'RM')->count(),
                 'CM' => $allLogs->where('tipe_kunjungan', 'CM')->count(),
@@ -423,13 +382,14 @@
             $deploymentsByKota = $deployments->groupBy(function ($dep) {
                 return $dep->customer->kota ? strtoupper($dep->customer->kota) : 'TANPA KOTA';
             });
+
+            // ← TAMBAHAN: Hitung jumlah hari valid di bulan ini
+            $daysInMonth = \Carbon\Carbon::create($year, $month)->daysInMonth;
         @endphp
 
-        {{-- Setiap rayon selalu page-break --}}
         <div class="page-break">
             <div class="rayon-title">
                 <span class="nama-rayon-kiri"> RAYON: {{ $rayon->nama_rayon }}</span>
-
                 <p class="ket-singkatan">
                     KETERANGAN : RM = REGULER MAINTENANCE | CM = CALL MAINTENANCE | TN = CALL TONER | RN = INSTALL
                     MACHINE | JK = JARINGAN KOMPUTER | L = LANJUTAN | RR = GANTI MESIN
@@ -452,8 +412,17 @@
                         <th rowspan="2" width="50">KETERANGAN</th>
                     </tr>
                     <tr>
+                        {{-- ← TAMBAHAN: Deteksi Sabtu/Minggu di header tanggal --}}
                         @for ($i = 1; $i <= 31; $i++)
-                            <th width="18" style="font-size: 6.5px; padding: 1px; white-space: nowrap;">
+                            @php
+                                $thWeekendClass = '';
+                                if ($i <= $daysInMonth) {
+                                    $dow = \Carbon\Carbon::create($year, $month, $i)->dayOfWeek;
+                                    $thWeekendClass = $dow == 6 ? 'col-sabtu' : ($dow == 0 ? 'col-minggu' : '');
+                                }
+                            @endphp
+                            <th width="18" class="{{ $thWeekendClass }}"
+                                style="font-size: 6.5px; padding: 1px; white-space: nowrap;">
                                 {{ $i }}</th>
                         @endfor
                         <th width="60">TEKNISI 1</th>
@@ -549,12 +518,19 @@
                                         {{ $dep->tanggal_instal ? \Carbon\Carbon::parse($dep->tanggal_instal)->format('d M Y') : '-' }}
                                     </td>
 
+                                    {{-- ← TAMBAHAN: Deteksi Sabtu/Minggu di cell data --}}
                                     @for ($day = 1; $day <= 31; $day++)
                                         @php
                                             $logHariIni = $logs->first(
                                                 fn($log) => \Carbon\Carbon::parse($log->tanggal)->day == $day,
                                             );
+                                            // Default: cek weekend dulu
                                             $bgClass = '';
+                                            if ($day <= $daysInMonth) {
+                                                $dow = \Carbon\Carbon::create($year, $month, $day)->dayOfWeek;
+                                                $bgClass = $dow == 6 ? 'col-sabtu' : ($dow == 0 ? 'col-minggu' : '');
+                                            }
+                                            // Jika ada kunjungan, warna kunjungan menimpa warna weekend
                                             if ($logHariIni) {
                                                 switch (strtoupper($logHariIni->tipe_kunjungan)) {
                                                     case 'RM':
@@ -638,146 +614,6 @@
         </div>
     @endforeach
 
-    {{-- =============================================
-         BAGIAN 2: HALAMAN PRESTASI (LEMBAR TERPISAH PALING BAWAH)
-    ============================================= --}}
-    {{-- <div class="prestasi-page">
-        <div class="prestasi-page-title">📊 REKAP PRESTASI SEMUA RAYON — PERIODE:
-            {{ Carbon\Carbon::create()->year($year)->month($month)->translatedFormat('F') }} {{ $year }}
-        </div>
-
-        @foreach ($rayons as $rayon)
-            @php
-                $depsPrestasi = \App\Models\Deployment::with([
-                    'customer',
-                    'machine.serviceLogs' => function ($query) use ($month, $year) {
-                        $query->whereMonth('tanggal', $month)->whereYear('tanggal', $year)->orderBy('tanggal', 'asc');
-                    },
-                ])
-                    ->whereHas('customer', function ($q) use ($rayon) {
-                        $q->where('rayon_id', $rayon->id);
-                    })
-                    ->get();
-
-                $depsByKotaPrestasi = $depsPrestasi->groupBy(function ($dep) {
-                    return $dep->customer->kota ? strtoupper($dep->customer->kota) : 'TANPA KOTA';
-                });
-
-                $kotaStats = [];
-                foreach ($depsByKotaPrestasi as $kotaNama => $kotaDeps) {
-                    $kotaLogs = $kotaDeps->flatMap(function ($dep) {
-                        return $dep->machine ? $dep->machine->serviceLogs : collect();
-                    });
-
-                    $rmTertunda = $kotaDeps
-                        ->filter(function ($dep) {
-                            if (!$dep->machine) {
-                                return false;
-                            }
-                            return !$dep->machine->serviceLogs->contains(
-                                fn($log) => strtoupper($log->tipe_kunjungan) === 'RM',
-                            );
-                        })
-                        ->count();
-
-                    $kotaStats[$kotaNama] = [
-                        'CM' => $kotaLogs->where('tipe_kunjungan', 'CM')->count(),
-                        'RM' => $kotaLogs->where('tipe_kunjungan', 'RM')->count(),
-                        'RN' => $kotaLogs->where('tipe_kunjungan', 'RN')->count(),
-                        'RR' => $kotaLogs->where('tipe_kunjungan', 'RR')->count(),
-                        'TOTAL_MESIN' => $kotaDeps->whereNotNull('machine_id')->count(),
-                        'RM_TERTUNDA' => $rmTertunda,
-                    ];
-                }
-
-                $jumlahPrestasi = [
-                    'CM' => array_sum(array_column($kotaStats, 'CM')),
-                    'RM' => array_sum(array_column($kotaStats, 'RM')),
-                    'RN' => array_sum(array_column($kotaStats, 'RN')),
-                    'RR' => array_sum(array_column($kotaStats, 'RR')),
-                    'TOTAL_MESIN' => array_sum(array_column($kotaStats, 'TOTAL_MESIN')),
-                    'RM_TERTUNDA' => array_sum(array_column($kotaStats, 'RM_TERTUNDA')),
-                ];
-
-                $totalMesinPres = $jumlahPrestasi['TOTAL_MESIN'] ?: 1;
-                $persenPrestasi = [
-                    'CM' => round(($jumlahPrestasi['CM'] / $totalMesinPres) * 100, 2) . '%',
-                    'RM' => round(($jumlahPrestasi['RM'] / $totalMesinPres) * 100, 2) . '%',
-                    'RN' => '',
-                    'RR' => '',
-                    'TOTAL_MESIN' => '',
-                    'RM_TERTUNDA' => round(($jumlahPrestasi['RM_TERTUNDA'] / $totalMesinPres) * 100, 2) . '%',
-                ];
-
-                $jumlahHari = \Carbon\Carbon::create($year, $month)->daysInMonth;
-                $totalKunjungan =
-                    $jumlahPrestasi['CM'] + $jumlahPrestasi['RM'] + $jumlahPrestasi['RN'] + $jumlahPrestasi['RR'];
-                $rataHari = $jumlahHari > 0 ? round($totalKunjungan / $jumlahHari, 1) : 0;
-            @endphp
-
-            <div style="margin-top: 14px; margin-bottom: 4px;">
-                <span
-                    style="background:#15b607; color:#fff; font-weight:bold; font-size:9px; padding: 3px 10px; text-transform:uppercase; letter-spacing:1px;">
-                     RAYON: {{ $rayon->nama_rayon }}
-                </span>
-            </div>
-
-            <table class="prestasi-table">
-                <thead>
-                    <tr>
-                        <th class="pres-header-group">KOTA / KABUPATEN</th>
-                        <th class="pres-header-col">TOTAL<br>CM</th>
-                        <th class="pres-header-col">TOTAL<br>RM</th>
-                        <th class="pres-header-col">TOTAL<br>RN</th>
-                        <th class="pres-header-col">TOTAL<br>RR</th>
-                        <th class="pres-header-col">TOTAL<br>MESIN</th>
-                        <th class="pres-header-col">RM<br>TERTUNDA</th>
-                        <th class="pres-header-rata">RATA - RATA<br>KUNJUNGAN / HARI</th>
-                        <th class="pres-header-ket">KETERANGAN</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($kotaStats as $kotaNama => $kotaStat)
-                        <tr class="pres-row-data">
-                            <td style="text-align:left; font-weight:bold;">{{ $kotaNama }}</td>
-                            <td>{{ $kotaStat['CM'] }}</td>
-                            <td>{{ $kotaStat['RM'] }}</td>
-                            <td>{{ $kotaStat['RN'] }}</td>
-                            <td>{{ $kotaStat['RR'] }}</td>
-                            <td>{{ $kotaStat['TOTAL_MESIN'] }}</td>
-                            <td>{{ $kotaStat['RM_TERTUNDA'] }}</td>
-                            <td>-</td>
-                            <td></td>
-                        </tr>
-                    @endforeach
-
-                    <tr class="pres-row-jumlah">
-                        <td style="text-align:left;">JUMLAH</td>
-                        <td>{{ $jumlahPrestasi['CM'] }}</td>
-                        <td>{{ $jumlahPrestasi['RM'] }}</td>
-                        <td>{{ $jumlahPrestasi['RN'] }}</td>
-                        <td>{{ $jumlahPrestasi['RR'] }}</td>
-                        <td>{{ $jumlahPrestasi['TOTAL_MESIN'] }}</td>
-                        <td>{{ $jumlahPrestasi['RM_TERTUNDA'] }}</td>
-                        <td style="font-size: 11px; font-weight: bold;">{{ $rataHari }}</td>
-                        <td></td>
-                    </tr>
-
-                    <tr class="pres-row-persen">
-                        <td style="text-align:left; font-weight:bold;">PERSENTASE</td>
-                        <td>{{ $persenPrestasi['CM'] }}</td>
-                        <td>{{ $persenPrestasi['RM'] }}</td>
-                        <td>{{ $persenPrestasi['RN'] }}</td>
-                        <td>{{ $persenPrestasi['RR'] }}</td>
-                        <td>{{ $persenPrestasi['TOTAL_MESIN'] }}</td>
-                        <td>{{ $persenPrestasi['RM_TERTUNDA'] }}</td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                </tbody>
-            </table>
-        @endforeach
-    </div>
 </body>
 
-</html> --}}
+</html>

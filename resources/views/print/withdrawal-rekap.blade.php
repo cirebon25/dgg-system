@@ -139,7 +139,7 @@
 
     <div class="summary">
         Total Penarikan: <span>{{ $records->count() }} Unit</span>
-        &nbsp;|&nbsp; Kondisi Baik: <span>{{ $records->where('kondisi_akhir', 'Baik')->count() }}</span>
+        &nbsp;|&nbsp; Kondisi Baik: <span>{{ $records->where('kondisi_akhir', 'Baik / Ready Gudang')->count() }}</span>
         &nbsp;|&nbsp; Rusak Ringan: <span>{{ $records->where('kondisi_akhir', 'Rusak Ringan')->count() }}</span>
         &nbsp;|&nbsp; Rusak Berat: <span>{{ $records->where('kondisi_akhir', 'Rusak Berat')->count() }}</span>
     </div>
@@ -165,13 +165,13 @@
                     <td class="text-center">{{ $row->machine->tipe_model ?? '-' }}</td>
                     <td>{{ $row->customer->nama_customer ?? '-' }}</td>
                     <td class="text-center">
-                        @if ($row->kondisi_akhir === 'Baik')
+                        {{-- @if ($row->kondisi_akhir === 'Baik')
                             <span class="badge badge-baik">Baik / Ready</span>
                         @elseif($row->kondisi_akhir === 'Rusak Ringan')
                             <span class="badge badge-ringan">Rusak Ringan</span>
                         @else
-                            <span class="badge badge-berat">Rusak Berat</span>
-                        @endif
+                            <span class="badge badge-berat">Rusak berat</span>
+                        @endif --}}
                     </td>
                     <td>{{ $row->alasan_penarikan }}</td>
                 </tr>

@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\UppercaseAttributes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PartReplacement extends Model
 {
+    use UppercaseAttributes;
     protected $fillable = [
         'machine_id',
         'sparepart_id',

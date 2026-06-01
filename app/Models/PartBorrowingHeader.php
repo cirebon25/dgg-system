@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\UppercaseAttributes;
 
 class PartBorrowingHeader extends Model
 {
+    use UppercaseAttributes;
     protected $guarded = [];
 
     public function technician()

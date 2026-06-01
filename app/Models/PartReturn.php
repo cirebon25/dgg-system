@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\UppercaseAttributes;
 
 class PartReturn extends Model
 {
+    use UppercaseAttributes;
     protected $guarded = [];
 
     // KOSONGKAN booted() — semua logika stok ditangani

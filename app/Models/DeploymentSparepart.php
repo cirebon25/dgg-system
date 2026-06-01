@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\UppercaseAttributes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DeploymentSparepart extends Model
 {
+    use UppercaseAttributes;
     protected $table = 'deployment_sparepart'; // Nama tabel pivot Akang
 
     protected $fillable = [

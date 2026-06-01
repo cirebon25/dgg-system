@@ -161,14 +161,14 @@
         </div>
 
         {{-- 11. Rekap Part Keluar Per Bulan --}}
-        <div class="p-6 bg-white border rounded-xl shadow-sm dark:bg-gray-800">
+        {{-- <div class="p-6 bg-white border rounded-xl shadow-sm dark:bg-gray-800">
             <h3 class="text-lg font-bold mb-2">📤 Rekap Part Keluar Per Bulan</h3>
             <p class="text-sm text-gray-500 mb-4">Rincian sparepart yang keluar via servis & pemasangan per bulan.</p>
             <x-filament::button onclick="bukaModal('sparepart.report.outflow', 'Part Keluar', 'month', 'year')"
                 icon="heroicon-m-printer" color="pink">
                 Cetak Part Keluar
             </x-filament::button>
-        </div>
+        </div> --}}
 
         <script>
             // Nama parameter query string tiap route berbeda, simpan di sini

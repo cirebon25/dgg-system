@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\UppercaseAttributes;
 
 class MachineReplacement extends Model
 {
-    use HasFactory;
+    use HasFactory, UppercaseAttributes;
 
     protected $fillable = [
         'customer_id',

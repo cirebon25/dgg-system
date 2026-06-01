@@ -34,8 +34,8 @@
         }
 
         .teknisi-name {
-            background: #3f3e3d;
-            color: rgb(228, 18, 18);
+            background: #cccac9;
+            color: rgb(12, 12, 12);
             padding: 6px 10px;
             font-weight: bold;
             border-radius: 4px 4px 0 0;

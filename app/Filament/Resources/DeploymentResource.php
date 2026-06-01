@@ -111,7 +111,6 @@ class DeploymentResource extends Resource
                                             $sp = Sparepart::find($sparepartId);
                                             if (!$sp) return;
 
-                                            // Saat edit, tambahkan kuota lama agar tidak blokir diri sendiri
                                             $kuotaLama = 0;
                                             if ($record) {
                                                 $kuotaLama = (int) DB::table('deployment_sparepart')
@@ -120,7 +119,6 @@ class DeploymentResource extends Resource
                                                     ->value('jumlah');
                                             }
 
-                                            // Pakai stok fisik bukan accessor virtual
                                             $maksimalTersedia = $sp->stok + $kuotaLama;
 
                                             if ($maksimalTersedia <= 0) {
@@ -144,23 +142,19 @@ class DeploymentResource extends Resource
                             })
 
                             ->saveRelationshipsUsing(function ($record, $state) {
-                                // Ambil data lama sebelum dihapus
                                 $oldItems = DB::table('deployment_sparepart')
                                     ->where('deployment_id', $record->id)
                                     ->get(['sparepart_id', 'jumlah']);
 
-                                // Kembalikan stok fisik dari data lama
                                 foreach ($oldItems as $old) {
                                     Sparepart::where('id', $old->sparepart_id)
                                         ->increment('stok', $old->jumlah);
                                 }
 
-                                // Hapus data lama
                                 DB::table('deployment_sparepart')
                                     ->where('deployment_id', $record->id)
                                     ->delete();
 
-                                // Simpan data baru dan potong stok fisik
                                 if (is_array($state)) {
                                     foreach ($state as $item) {
                                         DB::table('deployment_sparepart')->insert([
@@ -171,7 +165,6 @@ class DeploymentResource extends Resource
                                             'updated_at'    => now(),
                                         ]);
 
-                                        // Potong stok fisik gudang
                                         Sparepart::where('id', $item['sparepart_id'])
                                             ->decrement('stok', $item['jumlah']);
                                     }
@@ -244,6 +237,14 @@ class DeploymentResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    // ← OPTIMASI: Eager load relasi yang ditampilkan di tabel
+    // Mencegah N+1 query (dari ratusan query → jadi 3 query saja)
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['customer', 'machine', 'technician']);
     }
 
     public static function getPages(): array

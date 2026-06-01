@@ -46,7 +46,6 @@ class TechnicianStockResource extends Resource
                         default     => 'danger',
                     })
                     ->sortable()
-                    // Tampilkan total jumlah per group teknisi
                     ->summarize([
                         Tables\Columns\Summarizers\Sum::make()
                             ->label('Total Item di Tas'),
@@ -63,7 +62,6 @@ class TechnicianStockResource extends Resource
                     ->label('Filter Teknisi'),
             ])
             ->headerActions([
-                // Tombol cetak semua teknisi
                 Tables\Actions\Action::make('cetak_semua')
                     ->label('Cetak Semua Kartu Stok')
                     ->icon('heroicon-o-printer')
@@ -72,7 +70,6 @@ class TechnicianStockResource extends Resource
                     ->openUrlInNewTab(),
             ])
             ->actions([
-                // Tombol cetak per baris/teknisi
                 Tables\Actions\Action::make('cetak')
                     ->label('Cetak')
                     ->icon('heroicon-o-printer')
@@ -87,6 +84,14 @@ class TechnicianStockResource extends Resource
                     ->collapsible()
                     ->titlePrefixedWithLabel(false)
             );
+    }
+
+    // ← OPTIMASI: Eager load technician & sparepart
+    // Tanpa ini, setiap baris di tabel akan trigger 2 query terpisah
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['technician', 'sparepart']);
     }
 
     public static function canCreate(): bool

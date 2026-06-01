@@ -28,9 +28,11 @@ class SparepartEntryResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('supplier')
                             ->label('Nama Supplier / Toko')
+                            ->default('DGG Bandung')
                             ->placeholder('Contoh: CV. Jaya Bersama Jakarta'),
                         Forms\Components\Textarea::make('keterangan')
                             ->label('Catatan Tambahan Nota')
+                            ->default('Datang Barang')
                             ->placeholder('Contoh: Kiriman Paket Cargo Gelombang 2')
                             ->rows(2),
                     ])->columns(2),
