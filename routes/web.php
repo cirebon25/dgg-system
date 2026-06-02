@@ -1022,7 +1022,7 @@ Route::get('/cetak-surat-jalan/{id}', function ($id) {
                 <div style='display:flex; justify-content:space-between; border-bottom:2px solid #000; padding-bottom:5px;'>
                     <div>
                         <h2 style='margin:0 0 5px 0; font-size:16px;'>PT. DINAMIKA GLOBAL GEMILANG</h2>
-                        <p style='margin:0; font-weight:bold; letter-spacing:1px;'>SURAT JALAN</p>
+                        <p style='margin:0; font-weight:bold; letter-spacing:1px;'>SURAT JALAN KIRIM MESIN BARU</p>
                     </div>
                     <div style='text-align:right;'>
                         <p style='margin:0 0 5px 0;'><b>Nomor: SJ/FC/CRB/" . date('dmy', strtotime($d->created_at)) . "/" . str_pad($d->id, 3, '0', STR_PAD_LEFT) . "</b></p>
@@ -1042,7 +1042,7 @@ Route::get('/cetak-surat-jalan/{id}', function ($id) {
                             <th>NAMA BARANG / DESKRIPSI</th>
                             <th>SN / KODE PART</th>
                             <th width='70'>JUMLAH</th>
-                            <th>KETERANGAN</th>
+                            <th>KETERANGAN / CTR</th>
                         </tr>
                     </thead>
                     <tbody>

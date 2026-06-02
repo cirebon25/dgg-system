@@ -48,10 +48,11 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
+        {{-- Laporan Performance Rayon --}}
         <div class="p-6 bg-white border rounded-xl shadow-sm dark:bg-gray-800">
             <h5 class="text-lg font-bold mb-2">🔄 Laporan Performance Rayon</h5>
             <p class="text-sm text-gray-500 mb-4">Presentase performance rayon.</p>
-            <x-filament::button tag="a" href="{{ route('print.performance-rayon') }}" target="_blank"
+            <x-filament::button onclick="bukaModal('print.performance-rayon', 'Performance Rayon', 'month', 'year')"
                 icon="heroicon-m-arrows-right-left" color="fuchsia">
                 Cetak Performance Rayon
             </x-filament::button>
@@ -211,6 +212,7 @@
                 'sparepart.report.outflow': "{{ route('sparepart.report.outflow', ['month' => '__B__', 'year' => '__T__']) }}",
                 'print.performance-rayon': "{{ route('print.performance-rayon', ['month' => '__B__', 'year' => '__T__']) }}",
                 'cetak.swap': "{{ route('cetak.swap', ['bulan' => '__B__', 'tahun' => '__T__']) }}",
+                'print.performance-rayon': "{{ route('print.performance-rayon', ['month' => '__B__', 'year' => '__T__']) }}",
             };
 
             function cetakDariModal() {

@@ -495,7 +495,12 @@
                                         }
 
                                         $perbaikanDisplay = $logs
-                                            ->map(fn($log) => $log->perbaikan ? Str::limit($log->perbaikan, 35) : '-')
+                                            ->map(function ($log) {
+                                                if (strtoupper($log->tipe_kunjungan) === 'RN') {
+                                                    return 'INSTALASI UNIT BARU';
+                                                }
+                                                return $log->perbaikan ? Str::limit($log->perbaikan, 35) : '-';
+                                            })
                                             ->implode(' | ');
                                     }
 

@@ -35,7 +35,7 @@ class StockAlert extends BaseWidget
                 ->color('info'),
 
             // Stat 2: Customer
-            Stat::make('Total Customer', $totalCustomer . ' Lokasi')
+            Stat::make('Total Customer', $totalCustomer . ' Customer')
                 ->description('Unit yang tersebar')
                 ->descriptionIcon('heroicon-m-user-group')
                 ->color('success'),
