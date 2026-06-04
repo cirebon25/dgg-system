@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Route;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Collection;
 use App\Models\Technician;
+use App\Http\Controllers\SaldoSparepartController;
+use App\Http\Controllers\SparepartOutflowController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -551,35 +553,35 @@ Route::get(
 )->name('cetak.pemasangan');
 
 
-Route::get('/sparepart/report/outflow', function (Request $request) {
+// Route::get('/sparepart/report/outflow', function (Request $request) {
 
-    $month = $request->query('month', date('m'));
-    $year  = $request->query('year', date('Y'));
+//     $month = $request->query('month', date('m'));
+//     $year  = $request->query('year', date('Y'));
 
-    $usages = ServiceLogSparepart::with([
-        'sparepart',
-        'serviceLog.machine.deployment.customer',
-        'serviceLog.technician.rayon',
-    ])
-        ->whereHas('serviceLog', function ($q) use ($month, $year) {
-            $q->whereMonth('tanggal', (int) $month)
-                ->whereYear('tanggal', (int) $year);
-        })
-        ->get();
+//     $usages = ServiceLogSparepart::with([
+//         'sparepart',
+//         'serviceLog.machine.deployment.customer',
+//         'serviceLog.technician.rayon',
+//     ])
+//         ->whereHas('serviceLog', function ($q) use ($month, $year) {
+//             $q->whereMonth('tanggal', (int) $month)
+//                 ->whereYear('tanggal', (int) $year);
+//         })
+//         ->get();
 
-    $groupedUsages = $usages->groupBy(function ($item) {
-        return optional(
-            optional(
-                optional($item->serviceLog)->technician
-            )->rayon
-        )->nama_rayon ?? 'TIDAK DIKETAHUI';
-    });
+//     $groupedUsages = $usages->groupBy(function ($item) {
+//         return optional(
+//             optional(
+//                 optional($item->serviceLog)->technician
+//             )->rayon
+//         )->nama_rayon ?? 'TIDAK DIKETAHUI';
+//     });
 
-    return view('print.sparepart-outflow')
-        ->with('groupedUsages', $groupedUsages)
-        ->with('month', $month)
-        ->with('year', $year);
-})->name('sparepart.report.outflow');
+//     return view('print.sparepart-outflow')
+//         ->with('groupedUsages', $groupedUsages)
+//         ->with('month', $month)
+//         ->with('year', $year);
+// })->name('sparepart.report.outflow');
 
 
 // ROUTE OTOMATIS CETAK BUKTI NOTA PINJAM SPAREPART TEKNISI (DGG SYSTEM)
@@ -1110,102 +1112,102 @@ Route::get('/cetak-surat-jalan/{id}', function ($id) {
 
 
 // ROUTE UTUH: HTML REALTIME CETAK SALDO GUDANG SPAREPART
-Route::get('/saldo-sparepart', function () {
+// Route::get('/saldo-sparepart', function () {
 
-    // Tarik data realtime dari tabel spareparts
-    $spareparts = DB::table('spareparts')
-        ->orderByRaw("CASE WHEN no_part LIKE 'S%' THEN 0 ELSE 1 END")
-        ->orderBy('no_part', 'asc')
-        ->get();
+//     // Tarik data realtime dari tabel spareparts
+//     $spareparts = DB::table('spareparts')
+//         ->orderByRaw("CASE WHEN no_part LIKE 'S%' THEN 0 ELSE 1 END")
+//         ->orderBy('no_part', 'asc')
+//         ->get();
 
-    $tanggalCetak = date('d/m/Y H:i');
+//     $tanggalCetak = date('d/m/Y H:i');
 
-    return "
-    <!DOCTYPE html>
-    <html lang='id'>
-    <head>
-        <meta charset='UTF-8'>
-        <title>Cetak Saldo Sparepart - PT DGG</title>
-        <style>
-            body { font-family: 'Arial', sans-serif; color: #000; margin: 20px; padding: 0; }
-            .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
-            .header h2 { margin: 0; text-transform: uppercase; font-size: 18px; letter-spacing: 1px; }
-            .header p { margin: 5px 0 0 0; font-size: 11px; color: #444; }
-            .meta-info { text-align: right; font-size: 11px; margin-bottom: 10px; font-weight: bold; }
-            table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-            th { background-color: #f2f2f2 !important; border: 1px solid #000; padding: 10px 8px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
-            td { border: 1px solid #000; padding: 8px; font-size: 11px; vertical-align: middle; }
-            .text-center { text-align: center; }
-            .font-bold { font-weight: bold; }
-            .text-danger { color: red; font-weight: bold; }
+//     return "
+//     <!DOCTYPE html>
+//     <html lang='id'>
+//     <head>
+//         <meta charset='UTF-8'>
+//         <title>Cetak Saldo Sparepart - PT DGG</title>
+//         <style>
+//             body { font-family: 'Arial', sans-serif; color: #000; margin: 20px; padding: 0; }
+//             .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
+//             .header h2 { margin: 0; text-transform: uppercase; font-size: 18px; letter-spacing: 1px; }
+//             .header p { margin: 5px 0 0 0; font-size: 11px; color: #444; }
+//             .meta-info { text-align: right; font-size: 11px; margin-bottom: 10px; font-weight: bold; }
+//             table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+//             th { background-color: #f2f2f2 !important; border: 1px solid #000; padding: 10px 8px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+//             td { border: 1px solid #000; padding: 8px; font-size: 11px; vertical-align: middle; }
+//             .text-center { text-align: center; }
+//             .font-bold { font-weight: bold; }
+//             .text-danger { color: red; font-weight: bold; }
             
-            /* Tombol Panel Atas */
-            .btn-area { background: #f4f4f5; padding: 12px; margin-bottom: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e4e4e7; }
-            .btn { padding: 6px 14px; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; text-decoration: none; display: inline-block; }
-            .btn-print { background-color: #eab308; color: #000; border: 1px solid #ca8a04; }
-            .btn-close { background-color: #6b7280; color: #fff; border: none; }
+//             /* Tombol Panel Atas */
+//             .btn-area { background: #f4f4f5; padding: 12px; margin-bottom: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e4e4e7; }
+//             .btn { padding: 6px 14px; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; text-decoration: none; display: inline-block; }
+//             .btn-print { background-color: #eab308; color: #000; border: 1px solid #ca8a04; }
+//             .btn-close { background-color: #6b7280; color: #fff; border: none; }
 
-            @media print {
-                .btn-area { display: none !important; }
-                body { margin: 10mm; }
-            }
-        </style>
-    </head>
-    <body onload='window.print()'>
+//             @media print {
+//                 .btn-area { display: none !important; }
+//                 body { margin: 10mm; }
+//             }
+//         </style>
+//     </head>
+//     <body onload='window.print()'>
 
-        <div class='btn-area'>
-            <span style='font-size: 12px; color: #71717a; font-style: italic;'>💡 Halaman otomatis memicu cetak. Klik tombol jika dialog printer belum muncul.</span>
-            <div>
-                <button onclick='window.print()' class='btn btn-print'>🖨️ Cetak Sekarang</button>
-                <button onclick='window.close()' class='btn btn-close'>Tutup</button>
-            </div>
-        </div>
+//         <div class='btn-area'>
+//             <span style='font-size: 12px; color: #71717a; font-style: italic;'>💡 Halaman otomatis memicu cetak. Klik tombol jika dialog printer belum muncul.</span>
+//             <div>
+//                 <button onclick='window.print()' class='btn btn-print'>🖨️ Cetak Sekarang</button>
+//                 <button onclick='window.close()' class='btn btn-close'>Tutup</button>
+//             </div>
+//         </div>
 
-        <div class='header'>
-            <h2>PT. DINAMIKA GLOBAL GEMILANG</h2>
-            <p>LAPORAN SALDO GUDANG SPAREPART REALTIME — DEPO CIREBON</p>
-        </div>
+//         <div class='header'>
+//             <h2>PT. DINAMIKA GLOBAL GEMILANG</h2>
+//             <p>LAPORAN SALDO GUDANG SPAREPART REALTIME — DEPO CIREBON</p>
+//         </div>
 
-        <div class='meta-info'>
-            Tanggal Cetak: {$tanggalCetak} WIB
-        </div>
+//         <div class='meta-info'>
+//             Tanggal Cetak: {$tanggalCetak} WIB
+//         </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th width='5%' class='text-center'>No</th>
-                    <th width='20%' class='text-center'>NO PART</th>
-                    <th width='20%'>KODE PART</th>
-                    <th width='50%'>NAMA SPAREPART</th>
-                    <th width='20%' class='text-center'>SALDO GUDANG</th>
-                </tr>
-            </thead>
-            <tbody>
-    " . (function () use ($spareparts) {
-        $htmlRows = "";
-        foreach ($spareparts as $index => $part) {
-            // Beri tanda warna merah menyala jika stok kosong (0)
-            $stokStyle = $part->stok <= 0 ? "class='text-danger'" : "class='font-bold'";
-            $nomorBaris = $index + 1;
+//         <table>
+//             <thead>
+//                 <tr>
+//                     <th width='5%' class='text-center'>No</th>
+//                     <th width='20%' class='text-center'>NO PART</th>
+//                     <th width='20%'>KODE PART</th>
+//                     <th width='50%'>NAMA SPAREPART</th>
+//                     <th width='20%' class='text-center'>SALDO GUDANG</th>
+//                 </tr>
+//             </thead>
+//             <tbody>
+//     " . (function () use ($spareparts) {
+//         $htmlRows = "";
+//         foreach ($spareparts as $index => $part) {
+//             // Beri tanda warna merah menyala jika stok kosong (0)
+//             $stokStyle = $part->stok <= 0 ? "class='text-danger'" : "class='font-bold'";
+//             $nomorBaris = $index + 1;
 
-            // 🌟 FIX PERBAIKAN: Tanda petik diselaraskan dan penomoran PHP murni
-            $htmlRows .= "
-                <tr>
-                    <td class='text-center'>{$nomorBaris}</td>
-                    <td class='font-bold text-center'>" . ($part->no_part) . "</td>
-                    <td><strong>" . ($part->code_part ?? '-') . "</strong></td>
-                    <td>" . strtoupper($part->nama_sparepart ?? '-') . "</td>
-                    <td class='text-center' {$stokStyle}>{$part->stok} Pcs</td>
-                </tr>";
-        }
-        return $htmlRows ?: "<tr><td colspan='5' class='text-center' style='color:#999; padding:20px;'>Belum ada data sparepart di gudang.</td></tr>";
-    })() . "
-            </tbody>
-        </table>
+//             // 🌟 FIX PERBAIKAN: Tanda petik diselaraskan dan penomoran PHP murni
+//             $htmlRows .= "
+//                 <tr>
+//                     <td class='text-center'>{$nomorBaris}</td>
+//                     <td class='font-bold text-center'>" . ($part->no_part) . "</td>
+//                     <td><strong>" . ($part->code_part ?? '-') . "</strong></td>
+//                     <td>" . strtoupper($part->nama_sparepart ?? '-') . "</td>
+//                     <td class='text-center' {$stokStyle}>{$part->stok} Pcs</td>
+//                 </tr>";
+//         }
+//         return $htmlRows ?: "<tr><td colspan='5' class='text-center' style='color:#999; padding:20px;'>Belum ada data sparepart di gudang.</td></tr>";
+//     })() . "
+//             </tbody>
+//         </table>
 
-    </body>
-    </html>";
-})->name('saldo-sparepart');
+//     </body>
+//     </html>";
+// })->name('saldo-sparepart');
 
 
 // Cetak kartu stok per teknisi
@@ -1542,3 +1544,81 @@ Route::get(
     '/cetak-tukar-guling',
     [App\Http\Controllers\CetakSwapController::class, 'index']
 )->name('cetak.swap');
+
+
+// REALTIME CETAK SALDO GUDANG SPAREPART
+Route::get('/saldo-sparepart', [SaldoSparepartController::class, 'index'])->name('saldo-sparepart');
+
+
+
+
+Route::get('/sparepart/report/outflow', [SparepartOutflowController::class, 'index'])
+    ->name('sparepart.report.outflow');
+
+
+// Route::get('/sparepart/report/outflow', function (Request $request) {
+
+//     $month = $request->query('month', date('m'));
+//     $year  = $request->query('year', date('Y'));
+
+//     $usages = ServiceLogSparepart::with([
+//         'sparepart',
+//         'serviceLog',
+//         'serviceLog.machine',
+//         'serviceLog.machine.deployment',
+//         'serviceLog.machine.deployment.customer',
+//         'serviceLog.technician',
+//         'serviceLog.technician.rayon',
+//     ])
+//         ->whereHas('serviceLog', function ($q) use ($month, $year) {
+//             $q->whereMonth('tanggal', (int) $month)
+//               ->whereYear('tanggal', (int) $year);
+//         })
+//         ->get();
+
+//     // Flatten: ubah setiap relasi ke object flat agar mudah diakses di blade
+//     $flat = $usages->map(function ($item) {
+//         $log        = $item->serviceLog;
+//         $machine    = optional($log)->machine;
+//         $deploy     = optional($machine)->deployment;
+//         $customer   = optional($deploy)->customer;
+//         $technician = optional($log)->technician;
+//         $rayon      = optional($technician)->rayon;
+
+//         return (object) [
+//             // Data kunjungan
+//             'tanggal'          => optional($log)->tanggal,
+//             'nama_customer'    => optional($customer)->nama_customer
+//                                   ?? optional($customer)->nama  // fallback nama kolom
+//                                   ?? '-',
+//             'tipe_model'       => optional($machine)->tipe_model
+//                                   ?? optional($machine)->tipe
+//                                   ?? '-',
+//             'serial_number'    => optional($machine)->serial_number
+//                                   ?? optional($machine)->no_seri
+//                                   ?? '-',
+//             // Counter & usage — sesuaikan nama kolom jika berbeda
+//             'usage_bw'         => optional($log)->usage_bw    ?? optional($log)->pemakaian_bw    ?? 0,
+//             'usage_color'      => optional($log)->usage_color ?? optional($log)->pemakaian_color ?? 0,
+//             'counter_bw'       => optional($log)->counter_bw  ?? optional($log)->counter_akhir_bw ?? 0,
+//             'counter_color'    => optional($log)->counter_color ?? optional($log)->counter_akhir_color ?? 0,
+//             // Sparepart
+//             'nama_part'        => optional($item->sparepart)->nama_sparepart
+//                                   ?? optional($item->sparepart)->nama_part
+//                                   ?? '-',
+//             // Teknisi & rayon
+//             'nama_technician'  => optional($technician)->nama_technician
+//                                   ?? optional($technician)->nama
+//                                   ?? '-',
+//             'nama_rayon'       => optional($rayon)->nama_rayon
+//                                   ?? optional($rayon)->nama
+//                                   ?? 'TIDAK DIKETAHUI',
+//         ];
+//     });
+
+//     // Group by rayon
+//     $groupedUsages = $flat->groupBy('nama_rayon');
+
+//     return view('print.sparepart-outflow', compact('groupedUsages', 'month', 'year'));
+
+// })->name('sparepart.report.outflow'); 
