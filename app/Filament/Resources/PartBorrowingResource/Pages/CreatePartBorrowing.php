@@ -16,7 +16,7 @@ class CreatePartBorrowing extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        dd($data); // SEMENTARA UNTUK DEBUG
+        // dd($data); // SEMENTARA UNTUK DEBUG
 
         $jumlah = (int) ($data['jumlah'] ?? 0);
         $partId = $data['sparepart_id'] ?? null;

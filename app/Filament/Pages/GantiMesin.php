@@ -200,7 +200,10 @@ class GantiMesin extends Page implements HasForms
     {
         $data = $this->form->getState();
 
-        DB::transaction(function () use ($data) {
+        // Simpan $newDeploymentId di luar transaction agar bisa diakses setelahnya
+        $newDeploymentId = null;
+
+        DB::transaction(function () use ($data, &$newDeploymentId) {
             $dep        = Deployment::with(['customer', 'machine'])->findOrFail($data['deployment_id']);
             $oldMachine = Machine::findOrFail($data['old_machine_id']);
             $newMachine = Machine::findOrFail($data['new_machine_id']);
@@ -236,14 +239,14 @@ class GantiMesin extends Page implements HasForms
             $dep->delete();
 
             $newDeploymentId = DB::table('deployments')->insertGetId([
-                'machine_id'    => $newMachine->id,
-                'customer_id'   => $customer->id,
-                'technician_id' => $data['technician_id'],
+                'machine_id'     => $newMachine->id,
+                'customer_id'    => $customer->id,
+                'technician_id'  => $data['technician_id'],
                 'tanggal_instal' => $data['tanggal'],
-                'counter_bw'    => 0,
-                'counter_color' => 0,
-                'created_at'    => now(),
-                'updated_at'    => now(),
+                'counter_bw'     => 0,
+                'counter_color'  => 0,
+                'created_at'     => now(),
+                'updated_at'     => now(),
             ]);
 
             // 5. Potong stok GUDANG & catat ke deployment_sparepart
@@ -265,26 +268,34 @@ class GantiMesin extends Page implements HasForms
             }
         });
 
-        // 6. Ambil data untuk SJ (fresh dari DB setelah transaksi)
-        $dep        = Deployment::with(['customer', 'machine'])->find($data['deployment_id']);
-        $oldMachine = Machine::find($data['old_machine_id']);
-        $newMachine = Machine::find($data['new_machine_id']);
-        $customer   = $dep?->customer;
+        // 6. Ambil data untuk SJ fresh dari DB menggunakan $newDeploymentId
+        $dep = DB::table('deployments')
+            ->where('deployments.id', $newDeploymentId)
+            ->join('customers', 'deployments.customer_id', '=', 'customers.id')
+            ->join('machines', 'deployments.machine_id', '=', 'machines.id')
+            ->first(['customers.nama_customer', 'customers.alamat', 'machines.serial_number as new_sn']);
 
-        $partsForSj = collect($data['spareparts'] ?? [])->map(function ($p) {
-            $sparepart = Sparepart::find($p['sparepart_id']);
-            return [
-                'nama_part' => $sparepart?->nama_alias ?: $sparepart?->nama_sparepart ?? '-',
-                'jumlah'    => $p['jumlah'],
-                'ket_part'  => $p['ket_part'] ?? '',
-            ];
-        })->toArray();
+        $rep = DB::table('machine_replacements')
+            ->where('new_machine_id', $data['new_machine_id'])
+            ->join('machines', 'machine_replacements.old_machine_id', '=', 'machines.id')
+            ->first(['machines.serial_number as old_sn', 'machine_replacements.counter_bw_final as bw', 'machine_replacements.counter_color_final as cl']);
+
+        $partsForSj = DB::table('deployment_sparepart')
+            ->where('deployment_id', $newDeploymentId)
+            ->join('spareparts', 'deployment_sparepart.sparepart_id', '=', 'spareparts.id')
+            ->get(['spareparts.nama_sparepart', 'spareparts.nama_alias', 'deployment_sparepart.jumlah'])
+            ->map(fn($p) => [
+                'nama_part' => $p->nama_alias ?: $p->nama_sparepart,
+                'jumlah'    => $p->jumlah,
+                'ket_part'  => '',
+            ])
+            ->toArray();
 
         $payload = base64_encode(json_encode([
-            'cust'   => $customer?->nama_customer ?? '-',
-            'alamat' => $customer?->alamat ?? '-',
-            'old_sn' => $oldMachine?->serial_number ?? '-',
-            'new_sn' => $newMachine?->serial_number ?? '-',
+            'cust'   => $dep?->nama_customer ?? '-',
+            'alamat' => $dep?->alamat ?? '-',
+            'old_sn' => $rep?->old_sn ?? '-',
+            'new_sn' => $dep?->new_sn ?? '-',
             'bw'     => $data['counter_bw_final'],
             'cl'     => $data['counter_color_final'],
             'parts'  => $partsForSj,
@@ -295,7 +306,7 @@ class GantiMesin extends Page implements HasForms
         // 7. Notifikasi sukses + tombol cetak SJ
         Notification::make()
             ->title('✅ Rolling Berhasil!')
-            ->body("Mesin {$oldMachine?->serial_number} → {$newMachine?->serial_number} untuk {$customer?->nama_customer}")
+            ->body("Mesin {$rep?->old_sn} → {$dep?->new_sn} untuk {$dep?->nama_customer}")
             ->success()
             ->duration(10000)
             ->actions([

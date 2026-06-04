@@ -1622,3 +1622,9 @@ Route::get('/sparepart/report/outflow', [SparepartOutflowController::class, 'ind
 //     return view('print.sparepart-outflow', compact('groupedUsages', 'month', 'year'));
 
 // })->name('sparepart.report.outflow'); 
+
+
+Route::get('/cetak-surat-retur/{id}', function ($id) {
+    $retur = \App\Models\MachineReturn::with(['machine'])->findOrFail($id);
+    return view('print.surat-retur', compact('retur'));
+})->name('cetak.surat-retur')->middleware('auth');

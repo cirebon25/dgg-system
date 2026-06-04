@@ -133,8 +133,8 @@
 <body onload="window.print()">
 
     <div class="header-box">
-        <h1>DGG SYSTEM - OPERATIONAL HUB</h1>
-        <h2>BERITA ACARA & REKAP LAPORAN TUKAR GULING MESIN (SWAP)</h2>
+        <h1>PT DINAMIKA GLOBAL GEMILANG</h1>
+        <h2>LAPORAN TUKAR MESIN DGG CIREBON </h2>
         <p>Periode: {{ $namaBulan }} {{ $tahun }}</p>
     </div>
 

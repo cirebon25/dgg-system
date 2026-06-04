@@ -13,11 +13,16 @@ class CetakPemasanganController extends Controller
         $bulan = $bulan ?? date('m');
         $tahun = $tahun ?? date('Y');
 
-        $data = Deployment::with(['machine', 'customer.rayon', 'technician'])
-            ->whereMonth('created_at', $bulan)
-            ->whereYear('created_at', $tahun)
-            ->orderBy('created_at', 'asc')
-            ->get();
+       // Sesudah
+$data = Deployment::with(['machine', 'customer.rayon', 'technician'])
+    ->whereMonth('created_at', $bulan)
+    ->whereYear('created_at', $tahun)
+    // Exclude deployment yang machine_id-nya ada di machine_replacements sebagai new_machine_id
+    ->whereNotIn('machine_id', function ($query) {
+        $query->select('new_machine_id')->from('machine_replacements');
+    })
+    ->orderBy('created_at', 'asc')
+    ->get();
 
         // Ambil sparepart per deployment sekaligus (hindari N+1 query)
         $sparepartPerDeployment = DB::table('deployment_sparepart')

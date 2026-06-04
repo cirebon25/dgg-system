@@ -98,11 +98,11 @@
         }
 
         .stat-rr {
-            background-color: #fff7e6 !important;
-            color: #d46b08 !important;
+            background-color: #c23f1f !important;
+            color: #f8f3f0 !important;
         }
 
-        .stat-blm {
+        .stat-blm { 
             background-color: #fff1f0 !important;
             color: #cf1322 !important;
         }
@@ -184,8 +184,8 @@
         }
 
         .bg-rr {
-            background-color: #fff7e6 !important;
-            color: #d46b08 !important;
+            background-color: #d64646 !important;
+            color: #e6e2e0 !important;
             font-weight: bold;
         }
 

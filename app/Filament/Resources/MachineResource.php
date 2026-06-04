@@ -83,6 +83,7 @@ class MachineResource extends Resource
                                 'Ready' => 'Ready (Siap Pakai)',
                                 'Rented' => 'Rented (Sedang Disewa)',
                                 'Refurbish' => 'Refurbish (Dalam Perbaikan)',
+                                 'Returned'  => 'Returned (Dikirim ke Bandung)',
                             ])
                             ->default('Ready')
                             ->required(),
@@ -149,6 +150,7 @@ class MachineResource extends Resource
                         'Ready' => 'success',
                         'Rented' => 'warning',
                         'Refurbish' => 'danger',
+                         'Returned'  => 'lime',
                         default => 'gray',
                     }),
 
