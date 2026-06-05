@@ -1628,3 +1628,9 @@ Route::get('/cetak-surat-retur/{id}', function ($id) {
     $retur = \App\Models\MachineReturn::with(['machine'])->findOrFail($id);
     return view('print.surat-retur', compact('retur'));
 })->name('cetak.surat-retur')->middleware('auth');
+
+// CETAK KLAIM AKOMODASI LUAR KOTA
+Route::get('/cetak-klaim-akomodasi/{id}', function ($id) {
+    $claim = \App\Models\AccommodationClaim::with(['technician', 'visits'])->findOrFail($id);
+    return view('print.klaim-akomodasi', compact('claim'));
+})->name('cetak.klaim-akomodasi')->middleware('auth');
