@@ -96,7 +96,7 @@ class AdminPanelProvider extends PanelProvider
                 'Sistem Arsip',
                 'Laporan',
                 'Pemakaian sparepart',
-                'Form SPM',
+                'Keuangan',
                 'Bantuan',
             ])
 

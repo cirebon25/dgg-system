@@ -16,13 +16,12 @@ use Filament\Tables\Actions\Action;
 class AccommodationClaimResource extends Resource
 {
     protected static ?string $model          = AccommodationClaim::class;
-    protected static ?string $navigationLabel  = 'Klaim Akomodasi';
+    protected static ?string $navigationLabel  = 'Klaim Akomodasi Luar Kota';
     protected static ?string $navigationIcon   = 'heroicon-o-banknotes';
     protected static ?string $navigationGroup  = 'Keuangan';
     protected static ?int    $navigationSort   = 1;
     protected static ?string $modelLabel       = 'Klaim Akomodasi';
     protected static ?string $pluralModelLabel = 'Klaim Akomodasi';
-
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -86,12 +85,12 @@ class AccommodationClaimResource extends Resource
                     //     Forms\Components\TextInput::make('keterangan_lain_2')
                     //         ->label('Keterangan Pengeluaran Lain #2')
                     //         ->placeholder('Contoh: Penginapan...'),
-                        // Forms\Components\TextInput::make('pengeluaran_lain_2')
-                        //     ->label('Nominal')
-                        //     ->numeric()
-                        //     ->prefix('Rp')
-                        //     ->default(0)
-                        //     ->live(onBlur: true),
+                    // Forms\Components\TextInput::make('pengeluaran_lain_2')
+                    //     ->label('Nominal')
+                    //     ->numeric()
+                    //     ->prefix('Rp')
+                    //     ->default(0)
+                    //     ->live(onBlur: true),
                     // ]),
 
                     Forms\Components\Placeholder::make('total_preview')
@@ -120,24 +119,24 @@ class AccommodationClaimResource extends Resource
                                 ->numeric()
                                 ->default(fn($state, $context) => 1)
                                 ->columnSpan(1),
-            Forms\Components\Select::make('nama_customer')
-                        ->label('Nama Customer')
-                        ->options(fn() => \App\Models\Customer::orderBy('nama_customer')->pluck('nama_customer', 'nama_customer'))
-                        ->searchable()
-                        ->required()
-                        ->reactive()
-                        ->afterStateUpdated(function ($state, Forms\Set $set) {
-                        if ($state) {
-                        $customer = \App\Models\Customer::where('nama_customer', $state)->first();
-                        $set('alamat', $customer?->alamat ?? '');
-                        }
-                        })
-                        ->columnSpan(4),
+                            Forms\Components\Select::make('nama_customer')
+                                ->label('Nama Customer')
+                                ->options(fn() => \App\Models\Customer::orderBy('nama_customer')->pluck('nama_customer', 'nama_customer'))
+                                ->searchable()
+                                ->required()
+                                ->reactive()
+                                ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                    if ($state) {
+                                        $customer = \App\Models\Customer::where('nama_customer', $state)->first();
+                                        $set('alamat', $customer?->alamat ?? '');
+                                    }
+                                })
+                                ->columnSpan(4),
 
-            Forms\Components\TextInput::make('alamat')
-                        ->label('Alamat / Kota')
-                        ->required()
-                        ->columnSpan(3),
+                            Forms\Components\TextInput::make('alamat')
+                                ->label('Alamat / Kota')
+                                ->required()
+                                ->columnSpan(3),
 
                             Forms\Components\Select::make('keterangan')
                                 ->label('Keterangan')

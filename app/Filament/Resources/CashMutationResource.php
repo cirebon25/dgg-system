@@ -15,6 +15,7 @@ class CashMutationResource extends Resource
     protected static ?string $model = CashMutation::class;
     protected static ?string $navigationIcon  = 'heroicon-o-banknotes';
     protected static ?string $navigationLabel = 'Form SPM';
+     protected static ?string $navigationGroup  = 'Keuangan';
 
     public static function form(Form $form): Form
     {
