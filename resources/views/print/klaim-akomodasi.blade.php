@@ -112,15 +112,16 @@
             text-align: center;
         }
 
+        /* Dioptimalkan agar RP dan Nominal bergeser penuh ke kanan */
         .form-table td.eq {
-            width: 15%;
+            width: 44%;
             text-align: right;
             padding-right: 4px;
             font-weight: bold;
         }
 
         .form-table td.val {
-            width: 49%;
+            width: 20%;
             text-align: right;
             font-weight: bold;
         }
@@ -147,12 +148,12 @@
             border-bottom: 1.5px solid #000;
         }
 
-        .total-row td.val-total span {
-            border-bottom: 1.5px solid #000;
-            /* Garis bawah nominal total belanja */
-            padding-bottom: 1px;
-            display: inline-block;
-            width: 80%;
+        .total-row td.eq-total {
+            text-align: right;
+            padding-right: 4px;
+        }
+
+        .total-row td.val-total {
             text-align: right;
         }
 
@@ -395,12 +396,12 @@
                     </tr>
                 @endif
 
-                {{-- TOTAL TRANSAKSI AKUNTANSI --}}
+                {{-- TOTAL TRANSAKSI AKUNTANSI (Sudah Diperbaiki Sejajar Kanan Pas) --}}
                 <tr class="total-row">
                     <td class="lbl-total">TOTAL BIAYA PENGELUARAN</td>
                     <td class="sym-total">:</td>
                     <td class="eq-total">= RP.</td>
-                    <td class="val-total"><span>{{ number_format($claim->total_biaya, 0, ',', '.') }}</span></td>
+                    <td class="val-total">{{ number_format($claim->total_biaya, 0, ',', '.') }}</td>
                 </tr>
             </table>
 
@@ -565,7 +566,7 @@
                         </tr>
                         <tr>
                             <td class="lbl">NOMINAL</td>
-                            <td>: RP.{{ number_format($claim->konsumsi_karyawan, 0, ',', '.') }}</td>
+                              <td>:</td>
                         </tr>
                     </table>
                     <div class="disetujui">DISETUJUI</div>

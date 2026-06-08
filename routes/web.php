@@ -15,6 +15,7 @@ use Illuminate\Support\Collection;
 use App\Models\Technician;
 use App\Http\Controllers\SaldoSparepartController;
 use App\Http\Controllers\SparepartOutflowController;
+use App\Http\Controllers\CashMutationPrintController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -1651,3 +1652,8 @@ return view('cetak.surat-retur-tanggal', compact('returns', 'tanggal'));
 })->name('cetak.surat-retur-tanggal');
 
 
+
+
+Route::get('/cash-mutation/print/{id}', [CashMutationPrintController::class, 'print'])
+->name('cash-mutation.print')
+->middleware(['auth']); // Opsional: pastikan hanya user login yang bisa akses
