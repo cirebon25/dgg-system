@@ -8,6 +8,8 @@ use App\Models\Machine;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use App\Filament\Traits\HasRoleAccess;
+
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Notifications\Notification;
@@ -15,6 +17,10 @@ use Filament\Tables\Actions\Action;
 
 class MachineReturnResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin', 'manager'];
+
     protected static ?string $model            = MachineReturn::class;
     protected static ?string $navigationLabel  = 'Retur ke Bandung';
     protected static ?string $navigationIcon   = 'heroicon-o-arrow-uturn-left';

@@ -7,6 +7,8 @@ use App\Models\Customer;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use App\Filament\Traits\HasRoleAccess;
+
 use Filament\Tables;
 use Filament\Tables\Columns\Summarizers\Count;
 use Filament\Tables\Columns\TextColumn;
@@ -17,6 +19,10 @@ use Filament\Tables\Grouping\Group;
 
 class CustomerResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin'];
+
     protected static ?string $model = Customer::class;
     protected static ?string $navigationLabel = 'Customer';
     protected static ?string $navigationIcon = 'heroicon-o-user-group';

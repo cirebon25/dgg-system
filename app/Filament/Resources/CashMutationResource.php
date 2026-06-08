@@ -7,20 +7,25 @@ use App\Models\CashMutation;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use App\Filament\Traits\HasRoleAccess;
+
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class CashMutationResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin', 'keuangan', 'manager', 'teknisi'];
+
     protected static ?string $model = CashMutation::class;
     protected static ?string $navigationIcon  = 'heroicon-o-banknotes';
     protected static ?string $navigationLabel = 'Form SPM';
-     protected static ?string $navigationGroup  = 'Keuangan';
+    protected static ?string $navigationGroup  = 'Keuangan';
 
     public static function form(Form $form): Form
     {
         return $form->schema([
-
             Forms\Components\Section::make('Informasi Utama')
                 ->columns(2)
                 ->schema([
@@ -60,7 +65,7 @@ class CashMutationResource extends Resource
                                 ->label('Jumlah (Rp)')
                                 ->numeric()
                                 ->required()
-                                ->live(debounce: 500)           // ← pakai live() bukan reactive()
+                                ->live(debounce: 500)
                                 ->afterStateUpdated(function (callable $set, callable $get) {
                                     self::recalculateTotal($set, $get);
                                 }),
@@ -68,9 +73,8 @@ class CashMutationResource extends Resource
                         ->columns(4)
                         ->addActionLabel('Tambah Baris Uraian')
                         ->defaultItems(1)
-                        ->live()                                // ← Repeater juga live
+                        ->live()
                         ->afterStateUpdated(function (callable $set, callable $get) {
-                            // Dipanggil saat baris ditambah/dihapus
                             self::recalculateTotal($set, $get);
                         }),
                 ]),
@@ -104,16 +108,17 @@ class CashMutationResource extends Resource
         ]);
     }
 
-    // -------------------------------------------------------
-    // Helper: hitung ulang total + terbilang dari semua items
-    // -------------------------------------------------------
     protected static function recalculateTotal(callable $set, callable $get): void
     {
         $items = $get('items') ?? [];
         $total = collect($items)->sum(fn($item) => (float) ($item['jumlah'] ?? 0));
 
         $set('total_jumlah', $total);
-        $set('terbilang', CashMutation::konversiTerbilang($total) . ' rupiah');
+
+        // Cek jika class CashMutation ada sebelum panggil konversiTerbilang
+        if (class_exists(CashMutation::class)) {
+            $set('terbilang', CashMutation::konversiTerbilang($total) . ' rupiah');
+        }
     }
 
     public static function table(Table $table): Table
@@ -122,13 +127,15 @@ class CashMutationResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('no_voucher')
                     ->label('No. Voucher')
-                    ->searchable(),
+                    ->searchable()
+                    ->default('-'),
                 Tables\Columns\TextColumn::make('tanggal')
                     ->label('Tanggal')
                     ->date('d M Y'),
                 Tables\Columns\TextColumn::make('total_jumlah')
                     ->label('Total')
-                    ->money('IDR'),
+                    ->money('IDR')
+                    ->default(0),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -136,7 +143,7 @@ class CashMutationResource extends Resource
                     ->label('Cetak')
                     ->icon('heroicon-o-printer')
                     ->color('success')
-                    ->url(fn ($record) => route('cash-mutation.print', $record->id))
+                    ->url(fn($record) => route('cash-mutation.print', $record->id))
                     ->openUrlInNewTab(),
             ]);
     }

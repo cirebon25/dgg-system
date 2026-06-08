@@ -8,6 +8,8 @@ use App\Models\Sparepart;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use App\Filament\Traits\HasRoleAccess;
+
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,6 +17,10 @@ use Illuminate\Support\Facades\DB;
 
 class DeploymentResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin', 'manager'];
+
     protected static ?string $model = Deployment::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-truck';

@@ -8,12 +8,18 @@ use App\Models\Machine;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use App\Filament\Traits\HasRoleAccess;
+
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 class ServiceLogResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin', 'manager'];
+
     protected static ?string $model = ServiceLog::class;
     protected static ?string $navigationLabel = 'Input Servis Teknisi';
     protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';

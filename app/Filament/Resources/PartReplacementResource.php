@@ -7,12 +7,18 @@ use App\Models\PartReplacement;
 use Filament\Forms\Form;
 use Filament\Forms;
 use Filament\Resources\Resource;
+use App\Filament\Traits\HasRoleAccess;
+
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Grouping\Group;
 
 class PartReplacementResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin', 'manager'];
+
     protected static ?string $model          = PartReplacement::class;
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path';
     protected static ?string $navigationLabel = 'Riwayat Ganti Part';

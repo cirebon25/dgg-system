@@ -10,22 +10,26 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\Summarizers\Sum;
+use Illuminate\Database\Eloquent\Collection;
+use App\Filament\Traits\HasRoleAccess;
 
 class CashLedgerResource extends Resource
 {
-    protected static ?string $model = CashLedger::class;
-
-    protected static ?string $navigationIcon       = 'heroicon-o-banknotes';
-    protected static ?string $navigationLabel      = 'Buku Kas Umum';
-    protected static ?string $navigationGroup      = 'Keuangan';
-    protected static ?int    $navigationSort        = 10;
-    protected static ?string $modelLabel            = 'Transaksi Kas';
-    protected static ?string $pluralModelLabel      = 'Buku Kas Umum';
+    use HasRoleAccess;
+    protected static ?string $model           = CashLedger::class;
+    protected static ?string $navigationIcon  = 'heroicon-o-banknotes';
+    protected static ?string $navigationLabel = 'Buku Kas Umum';
+    protected static ?string $navigationGroup = 'Keuangan';
+    protected static ?int    $navigationSort  = 10;
+    protected static ?string $modelLabel      = 'Transaksi Kas';
+    protected static ?string $pluralModelLabel = 'Buku Kas Umum';
+    protected static array $allowedRoles = ['admin', 'keuangan', 'manager'];
 
     public static function form(Form $form): Form
     {
         return $form->schema([
             Forms\Components\Section::make('Data Transaksi')->schema([
+
                 Forms\Components\DatePicker::make('tanggal')
                     ->label('Tanggal')
                     ->required()
@@ -35,31 +39,38 @@ class CashLedgerResource extends Resource
                 Forms\Components\TextInput::make('no_surat')
                     ->label('No. Surat')
                     ->placeholder('Otomatis jika kosong')
-                    ->helperText('Format: 01/VI/26 — dibuat otomatis jika tidak diisi'),
+                    ->helperText('Format: 01/VI/26 — dibuat otomatis jika tidak diisi')
+                    ->maxLength(30),
 
                 Forms\Components\TextInput::make('keterangan')
                     ->label('Keterangan / Pembelian')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->columnSpanFull(),
 
                 Forms\Components\TextInput::make('uang_masuk')
                     ->label('Uang Masuk (Rp)')
-                    ->numeric()
-                    ->default(0)
                     ->prefix('Rp')
-                    ->minValue(0),
+                    ->placeholder('0')
+                    ->integer()                          // pakai integer, bukan numeric()
+                    ->minValue(0)
+                    ->rules(['integer', 'min:0'])        // validasi server-side
+                    ->live(onBlur: true),               // update hanya saat blur, bukan tiap keystroke
 
                 Forms\Components\TextInput::make('uang_keluar')
                     ->label('Uang Keluar (Rp)')
-                    ->numeric()
-                    ->default(0)
                     ->prefix('Rp')
-                    ->minValue(0),
+                    ->placeholder('0')
+                    ->integer()
+                    ->minValue(0)
+                    ->rules(['integer', 'min:0'])
+                    ->live(onBlur: true),
 
                 Forms\Components\TextInput::make('dibuat_oleh')
                     ->label('Dibuat Oleh')
                     ->default(fn() => auth()->user()?->name ?? '')
                     ->maxLength(100),
+
             ])->columns(2),
         ]);
     }
@@ -71,7 +82,7 @@ class CashLedgerResource extends Resource
                 Tables\Columns\TextColumn::make('no_urut')
                     ->label('No.')
                     ->sortable()
-                    ->width(60),
+                    ->width(50),
 
                 Tables\Columns\TextColumn::make('tanggal')
                     ->label('Tanggal')
@@ -89,15 +100,49 @@ class CashLedgerResource extends Resource
 
                 Tables\Columns\TextColumn::make('uang_masuk')
                     ->label('Uang Masuk')
-                    ->money('IDR')
-                    ->color('success')
+                    ->formatStateUsing(
+                        fn($state) => $state > 0
+                            ? 'Rp ' . number_format($state, 0, ',', '.')
+                            : '-'
+                    )
+                    ->color(fn($state) => $state > 0 ? 'success' : 'gray')
                     ->summarize(Sum::make()->money('IDR')->label('Total Masuk')),
 
                 Tables\Columns\TextColumn::make('uang_keluar')
                     ->label('Uang Keluar')
-                    ->money('IDR')
-                    ->color('danger')
+                    ->formatStateUsing(
+                        fn($state) => $state > 0
+                            ? 'Rp ' . number_format($state, 0, ',', '.')
+                            : '-'
+                    )
+                    ->color(fn($state) => $state > 0 ? 'danger' : 'gray')
                     ->summarize(Sum::make()->money('IDR')->label('Total Keluar')),
+
+                // ── KOLOM SALDO AKHIR (running balance) ──────────────────
+                Tables\Columns\TextColumn::make('sisa_saldo')
+                    ->label('Sisa Saldo')
+                    ->getStateUsing(function (CashLedger $record) {
+                        $saldoAwal = CashLedger::saldoAwalBulan(
+                            $record->tanggal->year,
+                            $record->tanggal->month
+                        );
+
+                        // BENAR: pakai scope langsung tanpa wrap Builder manual
+                        $totalMasuk = CashLedger::whereYear('tanggal', $record->tanggal->year)
+                            ->whereMonth('tanggal', $record->tanggal->month)
+                            ->where('id', '<=', $record->id)
+                            ->sum('uang_masuk');
+
+                        $totalKeluar = CashLedger::whereYear('tanggal', $record->tanggal->year)
+                            ->whereMonth('tanggal', $record->tanggal->month)
+                            ->where('id', '<=', $record->id)
+                            ->sum('uang_keluar');
+
+                        return $saldoAwal + $totalMasuk - $totalKeluar;
+                    })
+                    ->formatStateUsing(fn($state) => 'Rp ' . number_format($state, 0, ',', '.'))
+                    ->color(fn($state) => $state >= 0 ? 'success' : 'danger')
+                    ->weight('bold'),
 
                 Tables\Columns\TextColumn::make('dibuat_oleh')
                     ->label('Dibuat Oleh')
@@ -133,13 +178,13 @@ class CashLedgerResource extends Resource
                             ->default(now()->year),
                     ])
                     ->query(function ($query, array $data) {
-                        if ($data['bulan'] && $data['tahun']) {
+                        if (filled($data['bulan']) && filled($data['tahun'])) {
                             $query->whereYear('tanggal', $data['tahun'])
                                 ->whereMonth('tanggal', $data['bulan']);
                         }
                     })
                     ->indicateUsing(function (array $data): ?string {
-                        if ($data['bulan'] && $data['tahun']) {
+                        if (filled($data['bulan']) && filled($data['tahun'])) {
                             $namaBulan = [
                                 1 => 'Januari',
                                 2 => 'Februari',

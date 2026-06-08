@@ -7,6 +7,8 @@ use App\Models\TechnicianStock;
 use App\Models\Technician;
 use Filament\Forms;
 use Filament\Resources\Resource;
+use App\Filament\Traits\HasRoleAccess;
+
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Grouping\Group;
@@ -14,6 +16,10 @@ use Illuminate\Database\Eloquent\Builder;
 
 class TechnicianStockResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin'];
+
     protected static ?string $model = TechnicianStock::class;
     protected static ?string $navigationLabel = 'Kartu Stok Teknisi';
     protected static ?string $pluralModelLabel = 'Kartu Stok Teknisi';

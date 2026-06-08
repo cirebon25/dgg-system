@@ -18,36 +18,51 @@ class AppServiceProvider extends ServiceProvider
         //
     }
 
+    /**
+     * Bootstrap any application services.
+     */
     public function boot(): void
     {
-        // Observer yang sudah ada — jangan dihapus
-        \App\Models\MachineReplacement::observe(\App\Observers\ReplacementObserver::class);
+        /*
+        |--------------------------------------------------------------------------
+        | Registrasi Model Observers (Sistem Finansial & Inventaris)
+        |--------------------------------------------------------------------------
+        | PENTING: AccommodationClaimObserver SUDAH DICABUT TOTAL dari sini
+        | untuk menghindari error 500 Class Not Found.
+        */
+        if (class_exists(\App\Models\MachineReplacement::class) && class_exists(\App\Observers\ReplacementObserver::class)) {
+            \App\Models\MachineReplacement::observe(\App\Observers\ReplacementObserver::class);
+        }
 
-        // Watermark sidebar Filament
+        if (class_exists(\App\Models\CashMutation::class) && class_exists(\App\Observers\CashMutationObserver::class)) {
+            \App\Models\CashMutation::observe(\App\Observers\CashMutationObserver::class);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Kustomisasi Antarmuka Global Filament UI
+        |--------------------------------------------------------------------------
+        */
         Filament::renderHook(
             PanelsRenderHook::SIDEBAR_FOOTER,
             fn(): HtmlString => new HtmlString('
-        <div class="px-3 py-2 border-t border-gray-200 dark:border-gray-700">
-            <p class="text-[9px] text-center text-gray-400 dark:text-gray-600 leading-snug">
-                  © ' . date('Y') . ' Developer RUDIANTO 
-            </p>
-        </div>
-    ')
+                <div class="px-3 py-2 border-t border-gray-200 dark:border-gray-700 mt-2">
+                    <p class="text-[10px] text-center text-gray-400 dark:text-gray-500 leading-relaxed font-medium">
+                        © ' . date('Y') . ' Developer RUDIANTO
+                    </p>
+                </div>
+            ')
         );
 
-        // Tambahan: Menghilangkan panah spinner pada input angka secara global
         FilamentView::registerRenderHook(
             PanelsRenderHook::HEAD_END,
             fn(): HtmlString => new HtmlString('
                 <style>
-                    /* Menghilangkan panah di Chrome, Safari, Edge, Opera */
                     input::-webkit-outer-spin-button,
                     input::-webkit-inner-spin-button {
                         -webkit-appearance: none;
                         margin: 0;
                     }
-
-                    /* Menghilangkan panah di Firefox */
                     input[type=number] {
                         -moz-appearance: textfield;
                     }

@@ -8,6 +8,8 @@ use App\Models\Technician;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use App\Filament\Traits\HasRoleAccess;
+
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Notifications\Notification;
@@ -15,6 +17,10 @@ use Filament\Tables\Actions\Action;
 
 class AccommodationClaimResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin', 'keuangan', 'manager', 'teknisi'];
+
     protected static ?string $model          = AccommodationClaim::class;
     protected static ?string $navigationLabel  = 'Klaim Akomodasi Luar Kota';
     protected static ?string $navigationIcon   = 'heroicon-o-banknotes';

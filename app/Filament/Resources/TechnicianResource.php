@@ -6,11 +6,17 @@ use App\Filament\Resources\TechnicianResource\Pages;
 use App\Models\Technician;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use App\Filament\Traits\HasRoleAccess;
+
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class TechnicianResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin'];
+
     protected static ?string $model = Technician::class;
 
     protected static ?string $navigationLabel = 'Teknisi';

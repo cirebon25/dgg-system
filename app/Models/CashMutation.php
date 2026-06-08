@@ -8,8 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 class CashMutation extends Model
 {
     protected $fillable = [
-        'no_voucher', 'no_urut', 'tanggal', 'jenis_pembayaran',
-        'total_jumlah', 'terbilang', 'pembuat', 'pemeriksa', 'penerima',
+        'no_voucher',
+        'no_urut',
+        'tanggal',
+        'jenis_pembayaran',
+        'total_jumlah',
+        'terbilang',
+        'pembuat',
+        'pemeriksa',
+        'penerima',
     ];
 
     /**
@@ -35,7 +42,7 @@ class CashMutation extends Model
     {
         static::creating(function (self $model) {
             if (empty($model->no_voucher)) {
-                $bulanRomawi = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+                $bulanRomawi = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 
                 // Gunakan tanggal yang diisi user, fallback ke now()
                 $tgl = $model->tanggal
@@ -47,8 +54,8 @@ class CashMutation extends Model
 
                 // Urutan per bulan
                 $urutan = self::whereYear('tanggal', $tgl->year)
-                              ->whereMonth('tanggal', $tgl->month)
-                              ->count() + 1;
+                    ->whereMonth('tanggal', $tgl->month)
+                    ->count() + 1;
 
                 $model->no_urut    = $urutan;
                 $model->no_voucher = $urutan . ' / ' . $bln . ' / ' . $thn;
@@ -65,26 +72,44 @@ class CashMutation extends Model
         $prefix = $angka < 0 ? 'minus ' : '';
 
         $satuan = [
-            '', 'satu', 'dua', 'tiga', 'empat', 'lima',
-            'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh', 'sebelas',
+            '',
+            'satu',
+            'dua',
+            'tiga',
+            'empat',
+            'lima',
+            'enam',
+            'tujuh',
+            'delapan',
+            'sembilan',
+            'sepuluh',
+            'sebelas',
         ];
 
         if ($angka < 12)          return $prefix . $satuan[$angka];
         if ($angka < 20)          return $prefix . self::konversiTerbilang($angka - 10) . ' belas';
         if ($angka < 100)         return $prefix . self::konversiTerbilang((int)($angka / 10)) . ' puluh'
-                                       . ($angka % 10 ? ' ' . self::konversiTerbilang($angka % 10) : '');
+            . ($angka % 10 ? ' ' . self::konversiTerbilang($angka % 10) : '');
         if ($angka < 200)         return $prefix . 'seratus'
-                                       . ($angka - 100 ? ' ' . self::konversiTerbilang($angka - 100) : '');
+            . ($angka - 100 ? ' ' . self::konversiTerbilang($angka - 100) : '');
         if ($angka < 1_000)       return $prefix . self::konversiTerbilang((int)($angka / 100)) . ' ratus'
-                                       . ($angka % 100 ? ' ' . self::konversiTerbilang($angka % 100) : '');
+            . ($angka % 100 ? ' ' . self::konversiTerbilang($angka % 100) : '');
         if ($angka < 2_000)       return $prefix . 'seribu'
-                                       . ($angka - 1_000 ? ' ' . self::konversiTerbilang($angka - 1_000) : '');
+            . ($angka - 1_000 ? ' ' . self::konversiTerbilang($angka - 1_000) : '');
         if ($angka < 1_000_000)   return $prefix . self::konversiTerbilang((int)($angka / 1_000)) . ' ribu'
-                                       . ($angka % 1_000 ? ' ' . self::konversiTerbilang($angka % 1_000) : '');
+            . ($angka % 1_000 ? ' ' . self::konversiTerbilang($angka % 1_000) : '');
         if ($angka < 1_000_000_000) return $prefix . self::konversiTerbilang((int)($angka / 1_000_000)) . ' juta'
-                                       . ($angka % 1_000_000 ? ' ' . self::konversiTerbilang($angka % 1_000_000) : '');
+            . ($angka % 1_000_000 ? ' ' . self::konversiTerbilang($angka % 1_000_000) : '');
 
         return $prefix . self::konversiTerbilang((int)($angka / 1_000_000_000)) . ' miliar'
-             . ($angka % 1_000_000_000 ? ' ' . self::konversiTerbilang($angka % 1_000_000_000) : '');
+            . ($angka % 1_000_000_000 ? ' ' . self::konversiTerbilang($angka % 1_000_000_000) : '');
+    }
+
+    public function getNoSuratFormatted(): string
+    {
+        if (empty($this->no_voucher)) return '';
+        // Convert "2 / VI / 26" → "02/VI/26"
+        $parts = array_map('trim', explode('/', $this->no_voucher));
+        return str_pad($parts[0], 2, '0', STR_PAD_LEFT) . '/' . ($parts[1] ?? '') . '/' . ($parts[2] ?? '');
     }
 }

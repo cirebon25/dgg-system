@@ -7,11 +7,17 @@ use App\Models\TypeModel;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use App\Filament\Traits\HasRoleAccess;
+
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class TypeModelResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin'];
+
     protected static ?string $model = TypeModel::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-square-3-stack-3d';

@@ -8,11 +8,17 @@ use App\Models\SparepartEntry;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use App\Filament\Traits\HasRoleAccess;
+
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class SparepartEntryResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin'];
+
     protected static ?string $model = SparepartEntry::class;
 
     protected static ?string $navigationLabel = 'Input Stok Masuk';

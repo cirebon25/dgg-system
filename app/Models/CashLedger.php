@@ -54,12 +54,12 @@ class CashLedger extends Model
     // -------------------------------------------------------
     public static function saldoAwalBulan(int $year, int $month): int
     {
-        $batasAwal = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $batas = \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth();
 
-        $totalMasuk  = self::where('tanggal', '<', $batasAwal)->sum('uang_masuk');
-        $totalKeluar = self::where('tanggal', '<', $batasAwal)->sum('uang_keluar');
-
-        return (int) ($totalMasuk - $totalKeluar);
+        return (int) (
+            self::where('tanggal', '<', $batas)->sum('uang_masuk') -
+            self::where('tanggal', '<', $batas)->sum('uang_keluar')
+        );
     }
 
     // -------------------------------------------------------

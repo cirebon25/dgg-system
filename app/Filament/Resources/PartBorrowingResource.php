@@ -8,11 +8,17 @@ use App\Models\Sparepart;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use App\Filament\Traits\HasRoleAccess;
+
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class PartBorrowingResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin', 'manager'];
+
     protected static ?string $model = PartBorrowing::class;
 
     protected static ?string $navigationLabel = 'Pinjam Part';

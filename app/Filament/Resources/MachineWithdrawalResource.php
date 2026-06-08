@@ -10,12 +10,18 @@ use App\Models\Machine;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use App\Filament\Traits\HasRoleAccess;
+
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 
 class MachineWithdrawalResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin', 'manager'];
+
     protected static ?string $model = MachineWithdrawal::class;
     protected static ?string $navigationLabel = 'Penarikan Mesin';
     protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';

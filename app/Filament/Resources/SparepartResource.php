@@ -7,6 +7,8 @@ use App\Models\Sparepart;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use App\Filament\Traits\HasRoleAccess;
+
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -14,6 +16,10 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class SparepartResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin'];
+
     protected static ?string $model = Sparepart::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';

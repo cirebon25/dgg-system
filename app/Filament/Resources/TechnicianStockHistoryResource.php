@@ -7,11 +7,17 @@ use App\Models\TechnicianStockHistory;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use App\Filament\Traits\HasRoleAccess;
+
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class TechnicianStockHistoryResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin'];
+
     protected static ?string $model = TechnicianStockHistory::class;
 
     // Nama Menu di Sidebar

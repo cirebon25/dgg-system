@@ -325,4 +325,9 @@ class GantiMesin extends Page implements HasForms
         $this->form->fill();
         $this->loadRiwayat();
     }
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasRole(['admin', 'manager']) ?? false;
+    }
 }

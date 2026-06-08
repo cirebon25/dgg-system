@@ -17,6 +17,7 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        'role',
     ];
 
     protected $hidden = [
@@ -26,13 +27,44 @@ class User extends Authenticatable implements FilamentUser
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
+        'password'          => 'hashed',
     ];
 
-    // INI KUNCI IZIN MASUKNYA BOSS
+    // ── Role Constants ────────────────────────────────────────
+    const ROLE_ADMIN    = 'admin';
+    const ROLE_TEKNISI  = 'teknisi';
+    const ROLE_KEUANGAN = 'keuangan';
+    const ROLE_MANAGER  = 'manager';
+
+    // ── Helper Methods ────────────────────────────────────────
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function isTeknisi(): bool
+    {
+        return $this->role === self::ROLE_TEKNISI;
+    }
+
+    public function isKeuangan(): bool
+    {
+        return $this->role === self::ROLE_KEUANGAN;
+    }
+
+    public function isManager(): bool
+    {
+        return $this->role === self::ROLE_MANAGER;
+    }
+
+    public function hasRole(string|array $roles): bool
+    {
+        return in_array($this->role, (array) $roles);
+    }
+
+    // ── Filament Access ───────────────────────────────────────
     public function canAccessPanel(Panel $panel): bool
     {
-        // Kita buka untuk semua user dulu biar Boss bisa masuk
-        return true;
+        return true; // semua user bisa masuk panel
     }
 }

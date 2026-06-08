@@ -7,11 +7,17 @@ use App\Models\Rayon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use App\Filament\Traits\HasRoleAccess;
+
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class RayonResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin'];
+
     protected static ?string $navigationLabel = 'Rayon';
     protected static ?string $model = Rayon::class;
     protected static ?string $navigationIcon = 'heroicon-o-map-pin';
