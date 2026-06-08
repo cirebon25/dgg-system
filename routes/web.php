@@ -1634,3 +1634,20 @@ Route::get('/cetak-klaim-akomodasi/{id}', function ($id) {
     $claim = \App\Models\AccommodationClaim::with(['technician', 'visits'])->findOrFail($id);
     return view('print.klaim-akomodasi', compact('claim'));
 })->name('cetak.klaim-akomodasi')->middleware('auth');
+
+Route::get('/cetak-surat-retur-tanggal/{tanggal}', function ($tanggal) {
+$returns = \App\Models\MachineReturn::with('machine')
+->whereDate('tanggal_retur', $tanggal)
+->whereNull('deleted_at')
+->orderBy('created_at')
+->get();
+
+if ($returns->isEmpty()) abort(404);
+
+// ✅ Format tanggal bersih
+$tanggal = \Carbon\Carbon::parse($tanggal)->toDateString();
+
+return view('cetak.surat-retur-tanggal', compact('returns', 'tanggal'));
+})->name('cetak.surat-retur-tanggal');
+
+

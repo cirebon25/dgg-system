@@ -19,8 +19,8 @@ class AccommodationClaimVisit extends Model
         'keterangan',
     ];
 
-    public function claim(): BelongsTo
+    public function customer()
     {
-        return $this->belongsTo(AccommodationClaim::class, 'accommodation_claim_id');
+    return $this->belongsTo(\App\Models\Customer::class);
     }
 }

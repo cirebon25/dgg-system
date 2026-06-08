@@ -3,25 +3,55 @@
 namespace App\Filament\Resources\MachineReturnResource\Pages;
 
 use App\Filament\Resources\MachineReturnResource;
+use App\Models\MachineReturn;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Str;
 
 class CreateMachineReturn extends CreateRecord
 {
     protected static string $resource = MachineReturnResource::class;
 
-    // Setelah submit, langsung redirect ke halaman cetak surat jalan
-    protected function getRedirectUrl(): string
-    {
-        return route('cetak.surat-retur', $this->record->id);
-    }
+    private string $batchId = '';
 
-    protected function afterCreate(): void
+    protected function handleRecordCreation(array $data): \Illuminate\Database\Eloquent\Model
     {
-        $sn = $this->record->machine->serial_number ?? '-';
+        $machineList = $data['machine_list'] ?? [];
+        unset($data['machine_list']);
+
+        if (empty($machineList)) {
+            Notification::make()->title('Pilih minimal 1 mesin!')->danger()->send();
+            throw new \Exception('Tidak ada mesin yang dipilih.');
+        }
+
+        // Generate 1 batch_id untuk semua mesin dalam sesi ini
+        $this->batchId = (string) Str::uuid();
+
+        $firstRecord = null;
+
+        foreach ($machineList as $item) {
+            $record = MachineReturn::create(array_merge($data, [
+                'machine_id' => $item['machine_id'],
+                'batch_id'   => $this->batchId,
+            ]));
+
+            if (!$firstRecord) {
+                $firstRecord = $record;
+            }
+        }
+
+        $count = count($machineList);
         Notification::make()
-            ->title("Mesin {$sn} dicatat dikirim ke Bandung. Mencetak surat jalan...")
+            ->title("{$count} mesin berhasil diretur ke Bandung!")
             ->success()
             ->send();
+
+        return $firstRecord;
+    }
+
+    // ✅ Redirect ke halaman cetak setelah create
+    protected function getRedirectUrl(): string
+    {
+        return route('cetak.surat-retur-batch', $this->batchId);
     }
 }

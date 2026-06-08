@@ -15,7 +15,7 @@ use Filament\Tables\Actions\Action;
 
 class MachineReturnResource extends Resource
 {
-    protected static ?string $model          = MachineReturn::class;
+    protected static ?string $model            = MachineReturn::class;
     protected static ?string $navigationLabel  = 'Retur ke Bandung';
     protected static ?string $navigationIcon   = 'heroicon-o-arrow-uturn-left';
     protected static ?string $navigationGroup  = 'Transaksi';
@@ -31,19 +31,29 @@ class MachineReturnResource extends Resource
                 ->description('Catat pengiriman mesin dari Gudang Cirebon ke Bandung untuk servis / perbaikan.')
                 ->schema([
 
-                    Forms\Components\Select::make('machine_id')
-                        ->label('Pilih SN Mesin')
-                        ->options(function () {
-                            return Machine::query()
-                                ->whereIn('status', ['Ready', 'Refurbish'])
-                                ->get()
-                                ->mapWithKeys(fn(Machine $m) => [
-                                    $m->id => "[{$m->serial_number} - {$m->tipe_model}] {$m->status}",
-                                ]);
-                        })
-                        ->searchable()
-                        ->required()
-                        ->helperText('Hanya mesin Ready/Refurbish (di gudang Cirebon) yang bisa diretur. Mesin Rented harus ditarik dulu via Penarikan Mesin.'),
+                    Forms\Components\Repeater::make('machine_list')
+                        ->label('Mesin yang Diretur')
+                        ->schema([
+                            Forms\Components\Select::make('machine_id')
+                                ->label('Pilih SN Mesin')
+                                ->options(function () {
+                                    return Machine::query()
+                                        ->whereIn('status', ['Ready', 'Refurbish'])
+                                        ->get()
+                                        ->mapWithKeys(fn(Machine $m) => [
+                                            $m->id => "[{$m->serial_number} - {$m->tipe_model}] {$m->status}",
+                                        ]);
+                                })
+                                ->searchable()
+                                ->required()
+                                ->distinct()
+                                ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                ->columnSpanFull(),
+                        ])
+                        ->addActionLabel('Tambah Mesin')
+                        ->minItems(1)
+                        ->maxItems(10)
+                        ->columnSpanFull(),
 
                     Forms\Components\Grid::make(2)->schema([
                         Forms\Components\TextInput::make('dari_lokasi')
@@ -86,7 +96,7 @@ class MachineReturnResource extends Resource
 
                     Forms\Components\DatePicker::make('tanggal_selesai_servis')
                         ->label('Tgl Selesai Servis')->nullable()
-                        ->visible(fn(Forms\Get $get) => in_array($get('status_retur'), ['Selesai Servis','Kembali ke Cirebon'])),
+                        ->visible(fn(Forms\Get $get) => in_array($get('status_retur'), ['Selesai Servis', 'Kembali ke Cirebon'])),
 
                     Forms\Components\DatePicker::make('tanggal_kembali')
                         ->label('Tgl Kembali ke Cirebon')->nullable()
@@ -94,7 +104,7 @@ class MachineReturnResource extends Resource
 
                     Forms\Components\Textarea::make('hasil_servis')
                         ->label('Laporan Hasil Servis')->columnSpanFull()->nullable()
-                        ->visible(fn(Forms\Get $get) => in_array($get('status_retur'), ['Selesai Servis','Kembali ke Cirebon'])),
+                        ->visible(fn(Forms\Get $get) => in_array($get('status_retur'), ['Selesai Servis', 'Kembali ke Cirebon'])),
 
                 ])->columns(2),
         ]);
@@ -154,6 +164,14 @@ class MachineReturnResource extends Resource
                     ]),
                 Tables\Filters\TrashedFilter::make(),
             ])
+            ->headerActions([
+                Action::make('cetak_hari_ini')
+                    ->label('🖨️ Cetak Hari Ini')
+                    ->icon('heroicon-o-printer')
+                    ->color('gray')
+                    ->url(fn(): string => route('cetak.surat-retur-tanggal', now()->toDateString()))
+                    ->openUrlInNewTab(),
+            ])
             ->actions([
                 Action::make('selesai_servis')
                     ->label('Selesai Servis')->icon('heroicon-o-check-circle')->color('info')
@@ -189,12 +207,18 @@ class MachineReturnResource extends Resource
                             ->title("Mesin {$record->machine->serial_number} sekarang READY di Cirebon!")
                             ->success()->send();
                     }),
-Action::make('cetak_surat_jalan')
-    ->label('Cetak Surat Jalan')
-    ->icon('heroicon-o-printer')
-    ->color('gray')
-    ->url(fn(MachineReturn $record): string => route('cetak.surat-retur', $record->id))
-    ->openUrlInNewTab(),
+
+                Action::make('cetak_per_tanggal')
+                    ->label('Cetak Tanggal Ini')
+                    ->icon('heroicon-o-printer')
+                    ->color('info')
+                    ->url(fn(MachineReturn $record): string =>
+                        route('cetak.surat-retur-tanggal',
+                            \Carbon\Carbon::parse($record->tanggal_retur)->toDateString()
+                        )
+                    )
+                    ->openUrlInNewTab(),
+
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

@@ -12,19 +12,19 @@ class MachineReturn extends Model
 {
     use HasFactory, SoftDeletes, UppercaseAttributes;
 
-    protected $fillable = [
-        'machine_id',
-        'dari_lokasi',
-        'ke_lokasi',
-        'tanggal_retur',
-        'kondisi_saat_retur',
-        'keterangan_kerusakan',
-        'catatan_tambahan',
-        'dikirim_oleh',
-        'status_retur',
-        'tanggal_selesai_servis',
-        'tanggal_kembali',
-        'hasil_servis',
+   protected $fillable = [
+   'batch_id',
+   'machine_id',
+   'dari_lokasi',
+   'ke_lokasi',
+   'tanggal_retur',
+   'kondisi_saat_retur',
+   'dikirim_oleh',
+   'keterangan_kerusakan',
+   'status_retur',
+   'tanggal_selesai_servis',
+   'tanggal_kembali',
+   'hasil_servis',
     ];
 
     protected $casts = [
