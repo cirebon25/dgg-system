@@ -1141,7 +1141,7 @@ Route::get('/cetak-surat-jalan/{id}', function ($id) {
 //             .text-center { text-align: center; }
 //             .font-bold { font-weight: bold; }
 //             .text-danger { color: red; font-weight: bold; }
-            
+
 //             /* Tombol Panel Atas */
 //             .btn-area { background: #f4f4f5; padding: 12px; margin-bottom: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e4e4e7; }
 //             .btn { padding: 6px 14px; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; text-decoration: none; display: inline-block; }
@@ -1629,6 +1629,7 @@ Route::get('/cetak-surat-retur/{id}', function ($id) {
     $retur = \App\Models\MachineReturn::with(['machine'])->findOrFail($id);
     return view('print.surat-retur', compact('retur'));
 })->name('cetak.surat-retur')->middleware('auth');
+<<<<<<< Updated upstream
 
 // CETAK KLAIM AKOMODASI LUAR KOTA
 Route::get('/cetak-klaim-akomodasi/{id}', function ($id) {
@@ -1657,3 +1658,5 @@ return view('cetak.surat-retur-tanggal', compact('returns', 'tanggal'));
 Route::get('/cash-mutation/print/{id}', [CashMutationPrintController::class, 'print'])
 ->name('cash-mutation.print')
 ->middleware(['auth']); // Opsional: pastikan hanya user login yang bisa akses
+=======
+>>>>>>> Stashed changes
