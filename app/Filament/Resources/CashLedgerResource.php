@@ -52,6 +52,7 @@ class CashLedgerResource extends Resource
                     ->label('Uang Masuk (Rp)')
                     ->prefix('Rp')
                     ->placeholder('0')
+                    ->default(0) // ── FIX: Mencegah nilai null saat dikosongkan ──
                     ->integer()                          // pakai integer, bukan numeric()
                     ->minValue(0)
                     ->rules(['integer', 'min:0'])        // validasi server-side
@@ -61,6 +62,7 @@ class CashLedgerResource extends Resource
                     ->label('Uang Keluar (Rp)')
                     ->prefix('Rp')
                     ->placeholder('0')
+                    ->default(0) // ── FIX: Mencegah nilai null saat dikosongkan ──
                     ->integer()
                     ->minValue(0)
                     ->rules(['integer', 'min:0'])

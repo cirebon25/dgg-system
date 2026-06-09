@@ -18,7 +18,8 @@ class TechnicianStockResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin'];
+    // Hak akses diberikan kepada admin dan teknisi
+    protected static array $allowedRoles = ['admin', 'teknisi'];
 
     protected static ?string $model = TechnicianStock::class;
     protected static ?string $navigationLabel = 'Kartu Stok Teknisi';
@@ -34,7 +35,8 @@ class TechnicianStockResource extends Resource
                     ->label('Teknisi')
                     ->searchable()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    // Kolom disembunyikan jika yang login adalah teknisi
+                    ->hidden(fn () => auth()->user()?->hasRole('teknisi')),
 
                 Tables\Columns\TextColumn::make('sparepart.nama_sparepart')
                     ->label('Nama Sparepart')
@@ -63,17 +65,33 @@ class TechnicianStockResource extends Resource
                     ->color('gray'),
             ])
             ->filters([
+                // Filter disembunyikan untuk teknisi karena datanya otomatis dikunci
                 Tables\Filters\SelectFilter::make('technician_id')
                     ->relationship('technician', 'nama_technician')
-                    ->label('Filter Teknisi'),
+                    ->label('Filter Teknisi')
+                    ->hidden(fn () => auth()->user()?->hasRole('teknisi')),
             ])
             ->headerActions([
+                // TOMBOL 1: Cetak Semua (Hanya muncul untuk Admin)
                 Tables\Actions\Action::make('cetak_semua')
                     ->label('Cetak Semua Kartu Stok')
                     ->icon('heroicon-o-printer')
                     ->color('warning')
                     ->url(fn() => route('cetak.kartu-stok-semua'))
-                    ->openUrlInNewTab(),
+                    ->openUrlInNewTab()
+                    ->hidden(fn () => auth()->user()?->hasRole('teknisi')),
+
+                // TOMBOL 2: Cetak Milik Saya (Hanya muncul untuk Teknisi - Aman dari error parameter)
+                Tables\Actions\Action::make('cetak_milik_saya')
+                    ->label('Cetak Kartu Stok Saya')
+                    ->icon('heroicon-o-printer')
+                    ->color('warning')
+                    ->url(fn() => auth()->user()?->technician_id 
+                        ? route('cetak.kartu-stok', auth()->user()->technician_id) 
+                        : '#'
+                    )
+                    ->openUrlInNewTab()
+                    ->visible(fn () => auth()->user()?->hasRole('teknisi')),
             ])
             ->actions([
                 Tables\Actions\Action::make('cetak')
@@ -81,10 +99,13 @@ class TechnicianStockResource extends Resource
                     ->icon('heroicon-o-printer')
                     ->color('gray')
                     ->url(fn(TechnicianStock $record) => route('cetak.kartu-stok', $record->technician_id))
-                    ->openUrlInNewTab(),
+                    ->openUrlInNewTab()
+                    ->hidden(fn () => auth()->user()?->hasRole('teknisi')),
             ])
             ->bulkActions([])
+            // Matikan fitur grouping jika yang login adalah teknisi
             ->defaultGroup(
+                auth()->user()?->hasRole('teknisi') ? null : 
                 Group::make('technician.nama_technician')
                     ->label('Tas Milik Teknisi')
                     ->collapsible()
@@ -92,12 +113,26 @@ class TechnicianStockResource extends Resource
             );
     }
 
-    // ← OPTIMASI: Eager load technician & sparepart
-    // Tanpa ini, setiap baris di tabel akan trigger 2 query terpisah
+    // SOLUSI: Mengunci query dengan pencarian berbasis Email/Nama User jika field ID kosong
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->with(['technician', 'sparepart']);
+        $user = auth()->user();
+        $query = parent::getEloquentQuery()->with(['technician', 'sparepart']);
+
+        if ($user && $user->hasRole('teknisi')) {
+            // Skenario A: Jika user punya technician_id langsung gunakan id-nya
+            if (!empty($user->technician_id)) {
+                return $query->where('technician_id', $user->technician_id);
+            }
+
+            // Skenario B (Cadangan Amat Sangat Aman): Jika technician_id di user kosong,
+            // kita cari ke tabel teknisi yang namanya/emailnya mirip dengan user yang sedang login
+            return $query->whereHas('technician', function ($q) use ($user) {
+                $q->where('nama_technician', 'LIKE', '%' . $user->name . '%');
+            });
+        }
+
+        return $query;
     }
 
     public static function canCreate(): bool
