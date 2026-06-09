@@ -64,6 +64,7 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Resources\Widgets\LatestCustomers::class,
                 \App\Filament\Resources\Widgets\MachineLocationStats::class,
                 \App\Filament\Resources\Widgets\MachineRayonStats::class,
+                 \App\Filament\Resources\Widgets\LatestDeployments::class,
             ])
             ->databaseNotifications()
             ->middleware([
