@@ -300,7 +300,9 @@
             </div>
             <div class="kop-right">
                 <div class="doc-title">Bukti Pinjam Part</div>
-                <div class="doc-no">No. {{ str_pad($header->id, 5, '0', STR_PAD_LEFT) }}/G-CRB/{{ \Carbon\Carbon::parse($header->created_at)->format('m/Y') }}</div>
+                <div class="doc-no">No.
+                    {{ str_pad($header->id, 5, '0', STR_PAD_LEFT) }}/G-CRB/{{ \Carbon\Carbon::parse($header->created_at)->format('m/Y') }}
+                </div>
             </div>
         </div>
         <div class="kop-line"></div>
@@ -310,7 +312,8 @@
             <tr>
                 <td>Tanggal</td>
                 <td>:</td>
-                <td>{{ \Carbon\Carbon::parse($header->created_at)->locale('id')->setTimezone('Asia/Jakarta')->isoFormat('D MMMM Y') }}</td>
+                <td>{{ \Carbon\Carbon::parse($header->created_at)->locale('id')->setTimezone('Asia/Jakarta')->isoFormat('D MMMM Y') }}
+                </td>
             </tr>
             <tr>
                 <td>Nama Teknisi</td>
@@ -338,7 +341,9 @@
                     <th style="width:24px;">No</th>
                     <th>Nama Sparepart</th>
                     <th class="center" style="width:40px;">Jml Pinjam</th>
-                    <th class="center" style="width:75px; background-color: #fef08a; color: #854d0e; border-left: 1px solid #e2e8f0;">Total Tas Teknisi</th>
+                    <th class="center"
+                        style="width:75px; background-color: #fef08a; color: #854d0e; border-left: 1px solid #e2e8f0;">
+                        Total Tas Teknisi</th>
                 </tr>
             </thead>
             <tbody>
@@ -350,7 +355,9 @@
                             <div class="part-code">{{ $item->code_part ?? '-' }}</div>
                         </td>
                         <td class="center" style="font-weight:700;">{{ $item->jumlah }}</td>
-                        <td class="center" style="font-weight:700; background-color: #fefcf0; border-left: 1px solid #e2e8f0;">{{ $saldoTeknisi[$item->sparepart_id] ?? 0 }}</td>
+                        <td class="center"
+                            style="font-weight:700; background-color: #fefcf0; border-left: 1px solid #e2e8f0;">
+                            {{ $saldoTeknisi[$item->sparepart_id] ?? 0 }}</td>
                     </tr>
                 @endforeach
             </tbody>
