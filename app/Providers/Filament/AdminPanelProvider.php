@@ -92,6 +92,18 @@ class AdminPanelProvider extends PanelProvider
                 'Pemakaian sparepart',
                 'Keuangan',
                 'Bantuan',
-            ]);
+            ])
+       ->renderHook(
+       \Filament\View\PanelsRenderHook::SIDEBAR_FOOTER,
+       fn () => new \Illuminate\Support\HtmlString('
+       <div
+           class="flex items-center justify-center gap-x-2 px-6 py-3 border-t border-gray-100 dark:border-white/5 select-none pointer-events-none">
+           <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+           <span class="text-[10px] tracking-wider font-medium uppercase text-gray-400 dark:text-gray-500 font-mono">
+               Developer RUDIANTO
+           </span>
+       </div>
+       ')
+       );
     }
 }

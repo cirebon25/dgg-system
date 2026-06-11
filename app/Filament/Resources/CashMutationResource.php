@@ -46,6 +46,15 @@ class CashMutationResource extends Resource
                                 ->required()
                                 ->columnSpan(2),
 
+                            Forms\Components\TextInput::make('jumlah')
+                                ->label('Nominal (Rp)')
+                                ->numeric()
+                                ->required()
+                                ->live(debounce: 500)
+                                ->afterStateUpdated(function (callable $set, callable $get) {
+                                self::recalculateTotal($set, $get);
+                                }),
+
                             Forms\Components\TextInput::make('plat_nomor')
                                 ->label('Nomor Polisi Kendaraan')
                                 ->placeholder('E 1234 AB'),
@@ -58,17 +67,8 @@ class CashMutationResource extends Resource
                                 ->label('Kilometer Akhir')
                                 ->numeric(),
 
-                            Forms\Components\TextInput::make('kode_perkiraan')
-                                ->label('Kode Akun / Perkiraan'),
-
-                            Forms\Components\TextInput::make('jumlah')
-                                ->label('Nominal (Rp)')
-                                ->numeric()
-                                ->required()
-                                ->live(debounce: 500)
-                                ->afterStateUpdated(function (callable $set, callable $get) {
-                                    self::recalculateTotal($set, $get);
-                                }),
+                            // Forms\Components\TextInput::make('kode_perkiraan')
+                            //     ->label('Kode Akun / Perkiraan'),
                         ])
                         ->columns(4)
                         ->addActionLabel('Tambah Baris Uraian')
@@ -95,7 +95,7 @@ class CashMutationResource extends Resource
 
                     Forms\Components\TextInput::make('pembuat')
                         ->label('Dibuat Oleh')
-                        ->default('RUDI'),
+                        ->default(''),
 
                     Forms\Components\TextInput::make('pemeriksa')
                         ->label('Diketahui / Diperiksa Oleh')
@@ -103,7 +103,7 @@ class CashMutationResource extends Resource
 
                     Forms\Components\TextInput::make('penerima')
                         ->label('Nama Penerima Dana')
-                        ->default('RUDI'),
+                        ->default(''),
                 ]),
         ]);
     }

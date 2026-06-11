@@ -16,6 +16,7 @@ use App\Models\Technician;
 use App\Http\Controllers\SaldoSparepartController;
 use App\Http\Controllers\SparepartOutflowController;
 use App\Http\Controllers\CashMutationPrintController;
+    use App\Http\Controllers\MachineReportController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -153,7 +154,7 @@ Route::get('/mesin/{id}/cetak-qr', function ($id) {
         <title>QR Mesin - {$machine->serial_number}</title>
         <style>
             /* 🛠️ SETTING UKURAN STIKER THERMAL (50mm x 40mm) */
- @page{
+@page{
                 size: 50mm 40mm; 
                 margin: 0; 
             } 
@@ -455,87 +456,26 @@ Route::get('/cetak-top-usage', function (Request $request) {
 })->name('cetak.top-usage');
 
 Route::get('/cetak-stok-gudang', function () {
-    // 1. KUNCINYA: Grouping HANYA berdasarkan tipe_model dan volt
-    $stocks = Machine::where('status', 'Ready')
-        ->select(
-            'tipe_model',
-            'volt',
-            'kaset',
-            'finisher',
-            'double_scan',
-            DB::raw('count(*) as total_unit'),
-            // Kita kumpulkan semua info kaset, finisher, dsb ke dalam kolom keterangan saja
-            DB::raw('GROUP_CONCAT(serial_number SEPARATOR ", ") as list_sn'),
-            DB::raw('GROUP_CONCAT(CONCAT(serial_number, "(K:", kaset, "/F:", finisher, ")") SEPARATOR " | ") as detail_unit')
-        )
-        ->groupBy('tipe_model', 'volt')
-        ->orderBy('tipe_model', 'asc')
-        ->get();
+// 1. Grouping berdasarkan tipe_model dan volt
+$stocks = Machine::where('status', 'Ready')
+->select(
+'tipe_model',
+'volt',
+'kaset',
+'finisher',
+'double_scan',
+DB::raw('count(*) as total_unit'),
+// Mengumpulkan semua serial number ke dalam satu baris teks koma
+DB::raw('GROUP_CONCAT(serial_number SEPARATOR ", ") as list_sn'),
+DB::raw('GROUP_CONCAT(CONCAT(serial_number, "(K:", COALESCE(kaset, 0), "/F:", COALESCE(finisher, 0), ")") SEPARATOR " |
+") as detail_unit')
+)
+->groupBy('tipe_model', 'volt')
+->orderBy('tipe_model', 'asc')
+->get();
 
-    $html = "
-    <!DOCTYPE html>
-    <html lang='id'>
-    <head>
-        <meta charset='UTF-8'>
-        <style>
- @page{ size: A4 landscape; margin: 10mm; }
-            body { font-family: Arial, sans-serif; font-size: 12px; }
-            header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #000; padding: 12px 8px; text-align: center; }
-            th { background: #f2f2f2; text-transform: uppercase; font-size: 11px; }
-            .bg-ready { background: #e0f2fe; font-weight: bold; font-size: 16px; }
-            .text-left { text-align: left; font-size: 10px; color: #333; }
-        </style>
-    </head>
-    <body onload='window.print()'>
-        <header>
-            <h1 style='margin:0;'>DINAMIKA GLOBAL GEMILANG (DGG)</h1>
-            <h2 style='margin:5px 0;'>REKAPITULASI STOK UNIT GUDANG</h2>
-            <p>Posisi Stok: " . date('d-m-Y H:i') . "</p>
-        </header>
-
-        <table>
-            <thead>
-               <tr>
-                    <th width='30'>NO</th>
-                    <th width='180'>TIPE MESIN</th>
-                    <th width='60'>VOLT</th>
-                    <th width='80' class='bg-blue'>TOTAL UNIT</th>
-                    <th width='60'>KASET</th>
-                    <th width='60'>FINISHER</th>
-                    <th width='60'>D. SCAN</th>
-                    <th class='text-left'>LIST SN / KETERANGAN</th>
-                </tr>
-            </thead>
-            <tbody>";
-
-    foreach ($stocks as $index => $s) {
-        $no = $index + 1;
-        $html .= "
-            <tr>
-                <td>$no</td>
-                <td class='text-left font-bold'>{$s->tipe_model}</td>
-                <td><span class='font-bold'>" . ($s->volt ?: '-') . "V</span></td>
-                <td class='bg-blue'>{$s->total_unit} UNIT</td>
-                <td>" . ($s->kaset ?: 0) . "</td>
-                <td>" . ($s->finisher ?: 0) . "</td>
-                <td>" . ($s->double_scan ?: 0) . "</td>
-                <td class='text-left' style='font-size:9px;'>
-                    <strong>SN:</strong> {$s->list_sn}<br>
-                    <small>Ket: " . ($s->info ?: '-') . "</small>
-                </td>
-            </tr>";
-    }
-
-    $html .= "
-            </tbody>
-        </table>
-        <h3 style='text-align:right;'>GRAND TOTAL STOK READY: " . $stocks->sum('total_unit') . " UNIT</h3>
-    </body>
-    </html>";
-
-    return response($html);
+// 2. Lempar data langsung ke file blade
+return view('print.stok-gudang', compact('stocks'));
 })->name('cetak.stok-gudang');
 
 Route::get('/admin/service-log/{serviceLog}/surat-jalan', function (\App\Models\ServiceLog $serviceLog) {
@@ -851,8 +791,8 @@ Route::get('/cetak-alokasi-mesin', function () {
                 page-break-inside: avoid;
             }
 
- @mediaprint{
- @page{
+@mediaprint{
+@page{
                     size: A4 landscape;
                     margin: 0;
                 }
@@ -972,7 +912,7 @@ Route::get('/cetak-surat-jalan/{id}', function ($id) {
     <head>
         <title>SJ - {$d->machine->serial_number}</title>
         <style>
- @page{
+@page{
                 size: A5 landscape; 
                 margin: 0mm;
             }
@@ -1664,3 +1604,7 @@ Route::get('/cash-mutation/print/{id}', [CashMutationPrintController::class, 'pr
 Route::get('/cetak-kas-bulanan', [\App\Http\Controllers\CashLedgerPrintController::class, 'cetakBulanan'])
     ->name('cetak.kas-bulanan')
     ->middleware('auth');
+
+
+
+Route::get('/report/rekap-mesin', [MachineReportController::class, 'rekapUnitCustomer'])->name('report.rekap-mesin');

@@ -29,46 +29,47 @@ class CashReceiptResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Data Penerimaan Kas')
-                ->columns(2)
-                ->schema([
-                    Forms\Components\DatePicker::make('tanggal')
-                        ->label('Tanggal Penerimaan')
-                        ->required()
-                        ->default(now())
-                        ->native(false),
+        Forms\Components\Section::make('Data Penerimaan Kas')
+        ->columns(2)
+        ->schema([
+        Forms\Components\DatePicker::make('tanggal')
+        ->label('Tanggal Penerimaan')
+        ->required()
+        ->default(now())
+        ->native(false),
 
-                    Forms\Components\TextInput::make('no_bukti')
-                        ->label('No. Bukti / Referensi')
-                        ->placeholder('Otomatis jika kosong')
-                        ->helperText('Contoh: KM-001/VI/26 — dibuat otomatis jika tidak diisi')
-                        ->maxLength(30),
+        Forms\Components\TextInput::make('no_bukti')
+        ->label('No. Bukti / Referensi')
+        ->placeholder('Otomatis jika kosong')
+        ->helperText('Contoh: KM-001/VI/26 â€¢ dibuat otomatis jika tidak diisi')
+        ->maxLength(30),
 
-                    Forms\Components\TextInput::make('sumber_dana')
-                        ->label('Sumber / Pengirim Dana')
-                        ->placeholder('Contoh: Bank BCA, Transfer Kantor Pusat...')
-                        ->required()
-                        ->maxLength(255),
+        Forms\Components\TextInput::make('sumber_dana')
+        ->label('Sumber / Pengirim Dana')
+        ->placeholder('Contoh: Bank BCA, Transfer Kantor Pusat...')
+        ->required()
+        ->maxLength(255),
 
-                    Forms\Components\TextInput::make('jumlah')
-                        ->label('Jumlah Kas Masuk (Rp)')
-                        ->prefix('Rp')
-                        ->required()
-                        ->integer()
-                        ->minValue(1),
+        Forms\Components\TextInput::make('jumlah')
+        ->label('Jumlah Kas Masuk (Rp)')
+        ->prefix('Rp')
+        ->required()
+        ->integer()
+        ->minValue(1),
 
-                    Forms\Components\Textarea::make('keterangan')
-                        ->label('Uraian / Keterangan')
-                        ->placeholder('Contoh: Penerimaan modal operasional bulan Juni...')
-                        ->required()
-                        ->rows(3)
-                        ->columnSpanFull(),
+        // REVISI NYATA: Menambahkan ->required() agar user wajib mengisi Uraian/Keterangan
+        Forms\Components\Textarea::make('keterangan')
+        ->label('Uraian / Keterangan')
+        ->placeholder('Contoh: Penerimaan modal operasional bulan Juni...')
+        ->required()
+        ->rows(3)
+        ->columnSpanFull(),
 
-                    Forms\Components\TextInput::make('dibuat_oleh')
-                        ->label('Nama Pembuat')
-                        ->default(fn() => auth()->user()?->name ?? '')
-                        ->maxLength(100),
-                ]),
+        Forms\Components\TextInput::make('dibuat_oleh')
+        ->label('Nama Pembuat')
+        ->default(fn() => auth()->user()?->name ?? '')
+        ->maxLength(100),
+        ]),
         ]);
     }
 
