@@ -8,7 +8,6 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use App\Filament\Traits\HasRoleAccess;
-
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -18,10 +17,11 @@ class CashMutationResource extends Resource
 
     protected static array $allowedRoles = ['admin', 'keuangan', 'manager', 'teknisi'];
 
-    protected static ?string $model = CashMutation::class;
-    protected static ?string $navigationIcon  = 'heroicon-o-banknotes';
-    protected static ?string $navigationLabel = 'Form SPM';
-    protected static ?string $navigationGroup  = 'Keuangan';
+    protected static ?string $model           = CashMutation::class;
+    protected static ?string $navigationIcon  = 'heroicon-o-arrow-up-circle';
+    protected static ?string $navigationLabel = 'Form SPM (Kas Keluar)';
+    protected static ?string $navigationGroup = 'Keuangan';
+    protected static ?int    $navigationSort  = 8;
 
     public static function form(Form $form): Form
     {
@@ -42,27 +42,27 @@ class CashMutationResource extends Resource
                         ->relationship('items')
                         ->schema([
                             Forms\Components\TextInput::make('uraian')
-                                ->label('Uraian Pembayaran')
+                                ->label('Uraian / Keperluan Pembayaran')
                                 ->required()
                                 ->columnSpan(2),
 
                             Forms\Components\TextInput::make('plat_nomor')
-                                ->label('Plat Nomor')
+                                ->label('Nomor Polisi Kendaraan')
                                 ->placeholder('E 1234 AB'),
 
                             Forms\Components\TextInput::make('km_awal')
-                                ->label('KM Awal')
+                                ->label('Kilometer Awal')
                                 ->numeric(),
 
                             Forms\Components\TextInput::make('km_akhir')
-                                ->label('KM Akhir')
+                                ->label('Kilometer Akhir')
                                 ->numeric(),
 
                             Forms\Components\TextInput::make('kode_perkiraan')
-                                ->label('Kode Perkiraan'),
+                                ->label('Kode Akun / Perkiraan'),
 
                             Forms\Components\TextInput::make('jumlah')
-                                ->label('Jumlah (Rp)')
+                                ->label('Nominal (Rp)')
                                 ->numeric()
                                 ->required()
                                 ->live(debounce: 500)
@@ -83,13 +83,13 @@ class CashMutationResource extends Resource
                 ->columns(2)
                 ->schema([
                     Forms\Components\TextInput::make('total_jumlah')
-                        ->label('Total Jumlah Rp.')
+                        ->label('Total Keseluruhan (Rp)')
                         ->numeric()
                         ->readOnly()
                         ->prefix('Rp.'),
 
                     Forms\Components\TextInput::make('terbilang')
-                        ->label('Terbilang Otomatis')
+                        ->label('Jumlah Terbilang')
                         ->readOnly()
                         ->placeholder('Akan terisi otomatis...'),
 
@@ -98,11 +98,11 @@ class CashMutationResource extends Resource
                         ->default('RUDI'),
 
                     Forms\Components\TextInput::make('pemeriksa')
-                        ->label('Diketahui Oleh')
+                        ->label('Diketahui / Diperiksa Oleh')
                         ->default('RIZEN'),
 
                     Forms\Components\TextInput::make('penerima')
-                        ->label('Penerima')
+                        ->label('Nama Penerima Dana')
                         ->default('RUDI'),
                 ]),
         ]);
@@ -112,10 +112,7 @@ class CashMutationResource extends Resource
     {
         $items = $get('items') ?? [];
         $total = collect($items)->sum(fn($item) => (float) ($item['jumlah'] ?? 0));
-
         $set('total_jumlah', $total);
-
-        // Cek jika class CashMutation ada sebelum panggil konversiTerbilang
         if (class_exists(CashMutation::class)) {
             $set('terbilang', CashMutation::konversiTerbilang($total) . ' rupiah');
         }
@@ -129,14 +126,32 @@ class CashMutationResource extends Resource
                     ->label('No. Voucher')
                     ->searchable()
                     ->default('-'),
+
                 Tables\Columns\TextColumn::make('tanggal')
-                    ->label('Tanggal')
-                    ->date('d M Y'),
+                    ->label('Tanggal Pengeluaran')
+                    ->date('d M Y')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('total_jumlah')
-                    ->label('Total')
-                    ->money('IDR')
+                    ->label('Total Keseluruhan')
+                    ->formatStateUsing(fn($state) => 'Rp ' . number_format($state, 0, ',', '.'))
+                    ->color('danger')
+                    ->weight('bold')
                     ->default(0),
+
+                Tables\Columns\TextColumn::make('pembuat')
+                    ->label('Dibuat Oleh')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\IconColumn::make('sudah_dicatat_kas')
+                    ->label('Tercatat di Kas')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('danger'),
             ])
+            ->defaultSort('tanggal', 'desc')
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('print')

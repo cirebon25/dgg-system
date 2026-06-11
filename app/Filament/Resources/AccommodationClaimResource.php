@@ -28,6 +28,7 @@ class AccommodationClaimResource extends Resource
     protected static ?int    $navigationSort   = 1;
     protected static ?string $modelLabel       = 'Klaim Akomodasi';
     protected static ?string $pluralModelLabel = 'Klaim Akomodasi';
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -36,23 +37,23 @@ class AccommodationClaimResource extends Resource
                 ->schema([
 
                     Forms\Components\Select::make('technician_id')
-                        ->label('Nama Teknisi')
+                        ->label('Nama Teknisi Pelaksana')
                         ->options(Technician::orderBy('nama_technician')->pluck('nama_technician', 'id'))
                         ->searchable()
                         ->required(),
 
                     Forms\Components\TextInput::make('wilayah')
-                        ->label('Wilayah / Tujuan')
+                        ->label('Wilayah / Kota Tujuan')
                         ->placeholder('Contoh: INDRAMAYU')
                         ->required(),
 
                     Forms\Components\DatePicker::make('dari_tanggal')
-                        ->label('Dari Tanggal')
+                        ->label('Tanggal Berangkat')
                         ->required()
                         ->live(),
 
                     Forms\Components\DatePicker::make('sampai_tanggal')
-                        ->label('S/D Tanggal')
+                        ->label('Tanggal Kembali')
                         ->required()
                         ->live(),
 
@@ -62,14 +63,14 @@ class AccommodationClaimResource extends Resource
                 ->schema([
 
                     Forms\Components\TextInput::make('biaya_transportasi')
-                        ->label('Biaya Transportasi')
+                        ->label('Biaya Transportasi (Rp)')
                         ->numeric()
                         ->prefix('Rp')
                         ->default(30000)
                         ->live(onBlur: true),
 
                     Forms\Components\TextInput::make('konsumsi_karyawan')
-                        ->label('Konsumsi Karyawan')
+                        ->label('Biaya Konsumsi (Rp)')
                         ->numeric()
                         ->prefix('Rp')
                         ->default(20000)
@@ -77,30 +78,18 @@ class AccommodationClaimResource extends Resource
 
                     Forms\Components\Grid::make(2)->schema([
                         Forms\Components\TextInput::make('keterangan_lain_1')
-                            ->label('Keterangan Pengeluaran Lain ')
+                            ->label('Keterangan Biaya Tambahan')
                             ->placeholder('Contoh: Parkir, Tol...'),
                         Forms\Components\TextInput::make('pengeluaran_lain_1')
-                            ->label('Nominal')
+                            ->label('Nominal Biaya Tambahan (Rp)')
                             ->numeric()
                             ->prefix('Rp')
                             ->default(0)
                             ->live(onBlur: true),
                     ]),
 
-                    // Forms\Components\Grid::make(2)->schema([
-                    //     Forms\Components\TextInput::make('keterangan_lain_2')
-                    //         ->label('Keterangan Pengeluaran Lain #2')
-                    //         ->placeholder('Contoh: Penginapan...'),
-                    // Forms\Components\TextInput::make('pengeluaran_lain_2')
-                    //     ->label('Nominal')
-                    //     ->numeric()
-                    //     ->prefix('Rp')
-                    //     ->default(0)
-                    //     ->live(onBlur: true),
-                    // ]),
-
                     Forms\Components\Placeholder::make('total_preview')
-                        ->label('Total Biaya Pengeluaran')
+                        ->label('Total Keseluruhan Biaya')
                         ->content(function (Forms\Get $get): string {
                             $total =
                                 (float)($get('biaya_transportasi') ?? 0) +
@@ -183,10 +172,10 @@ class AccommodationClaimResource extends Resource
                     ->label('Wilayah')->searchable(),
 
                 Tables\Columns\TextColumn::make('dari_tanggal')
-                    ->label('Dari')->date('d/m/Y'),
+                    ->label('Tgl Berangkat')->date('d/m/Y'),
 
                 Tables\Columns\TextColumn::make('sampai_tanggal')
-                    ->label('S/D')->date('d/m/Y'),
+                    ->label('Tgl Kembali')->date('d/m/Y'),
 
                 Tables\Columns\TextColumn::make('lama_hari')
                     ->label('Lama')->suffix(' Hari'),
@@ -220,7 +209,6 @@ class AccommodationClaimResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                // Cetak langsung
                 Action::make('cetak')
                     ->label('Cetak')
                     ->icon('heroicon-o-printer')
@@ -228,7 +216,6 @@ class AccommodationClaimResource extends Resource
                     ->url(fn(AccommodationClaim $record): string => route('cetak.klaim-akomodasi', $record->id))
                     ->openUrlInNewTab(),
 
-                // Ajukan klaim (dari Draft ke Diajukan)
                 Action::make('ajukan')
                     ->label('Ajukan')
                     ->icon('heroicon-o-paper-airplane')
@@ -242,7 +229,6 @@ class AccommodationClaimResource extends Resource
                         Notification::make()->title('Klaim berhasil diajukan!')->success()->send();
                     }),
 
-                // Setujui (dari Diajukan ke Disetujui)
                 Action::make('setujui')
                     ->label('Setujui')
                     ->icon('heroicon-o-check-circle')
@@ -255,7 +241,6 @@ class AccommodationClaimResource extends Resource
                         Notification::make()->title('Klaim disetujui!')->success()->send();
                     }),
 
-                // Tolak
                 Action::make('tolak')
                     ->label('Tolak')
                     ->icon('heroicon-o-x-circle')
