@@ -1610,3 +1610,5 @@ Route::get('/cetak-kas-bulanan', [\App\Http\Controllers\CashLedgerPrintControlle
 Route::get('/report/rekap-mesin', [MachineReportController::class, 'rekapUnitCustomer'])->name('report.rekap-mesin');
 Route::get('/lap-part-bdg', [App\Http\Controllers\LapPartBdgController::class, 'index'])
     ->name('lap-part-bdg');
+Route::get('/po-part/{id}/print', [App\Http\Controllers\PoPartController::class, 'print'])
+    ->name('po-part.print');
