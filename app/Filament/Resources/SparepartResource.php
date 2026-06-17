@@ -209,6 +209,37 @@ class SparepartResource extends Resource
                     ->url(fn() => route('saldo-sparepart'))
                     ->openUrlInNewTab(),
 
+                Tables\Actions\Action::make('cetakLapPartBdg')
+                    ->label('Cetak Lap Part BDG')
+                    ->color('success')
+                    ->icon('heroicon-o-printer')
+                    ->form([
+                        Forms\Components\Select::make('month')
+                            ->label('Pilih Bulan')
+                            ->options([
+                                '01' => 'Januari',
+                                '02' => 'Februari',
+                                '03' => 'Maret',
+                                '04' => 'April',
+                                '05' => 'Mei',
+                                '06' => 'Juni',
+                                '07' => 'Juli',
+                                '08' => 'Agustus',
+                                '09' => 'September',
+                                '10' => 'Oktober',
+                                '11' => 'November',
+                                '12' => 'Desember',
+                            ])
+                            ->required()
+                            ->default(date('m')),
+                        Forms\Components\Select::make('year')
+                            ->label('Pilih Tahun')
+                            ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
+                            ->required()
+                            ->default(date('Y')),
+                    ])
+                    ->action(fn(array $data) => redirect()->route('lap-part-bdg', $data)),
+
                 Tables\Actions\CreateAction::make(),
             ])
             ->actions([
@@ -241,4 +272,6 @@ class SparepartResource extends Resource
             ])
             ->toArray();
     }
+
+    
 }

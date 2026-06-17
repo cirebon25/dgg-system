@@ -116,16 +116,8 @@ class CashMutationObserver
                     'uang_masuk'  => $jenis['uang_masuk'],
                     'uang_keluar' => $jenis['uang_keluar'],
                 ]);
-            } else {
-                CashLedger::create([
-                    'tanggal'     => $tanggal,
-                    'no_surat'    => $newNoSurat,
-                    'keterangan'  => $keterangan,
-                    'uang_masuk'  => $jenis['uang_masuk'],
-                    'uang_keluar' => $jenis['uang_keluar'],
-                    'dibuat_oleh' => $cashMutation->pembuat ?? auth()->user()?->name ?? 'SYSTEM',
-                ]);
             }
+            // else dihapus — tidak boleh create dari updated
         });
     }
 
@@ -144,4 +136,4 @@ class CashMutationObserver
                 ->delete();
         });
     }
-}
+}/*  */

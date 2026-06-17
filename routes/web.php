@@ -16,7 +16,7 @@ use App\Models\Technician;
 use App\Http\Controllers\SaldoSparepartController;
 use App\Http\Controllers\SparepartOutflowController;
 use App\Http\Controllers\CashMutationPrintController;
-    use App\Http\Controllers\MachineReportController;
+use App\Http\Controllers\MachineReportController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -456,26 +456,26 @@ Route::get('/cetak-top-usage', function (Request $request) {
 })->name('cetak.top-usage');
 
 Route::get('/cetak-stok-gudang', function () {
-// 1. Grouping berdasarkan tipe_model dan volt
-$stocks = Machine::where('status', 'Ready')
-->select(
-'tipe_model',
-'volt',
-'kaset',
-'finisher',
-'double_scan',
-DB::raw('count(*) as total_unit'),
-// Mengumpulkan semua serial number ke dalam satu baris teks koma
-DB::raw('GROUP_CONCAT(serial_number SEPARATOR ", ") as list_sn'),
-DB::raw('GROUP_CONCAT(CONCAT(serial_number, "(K:", COALESCE(kaset, 0), "/F:", COALESCE(finisher, 0), ")") SEPARATOR " |
+    // 1. Grouping berdasarkan tipe_model dan volt
+    $stocks = Machine::where('status', 'Ready')
+        ->select(
+            'tipe_model',
+            'volt',
+            'kaset',
+            'finisher',
+            'double_scan',
+            DB::raw('count(*) as total_unit'),
+            // Mengumpulkan semua serial number ke dalam satu baris teks koma
+            DB::raw('GROUP_CONCAT(serial_number SEPARATOR ", ") as list_sn'),
+            DB::raw('GROUP_CONCAT(CONCAT(serial_number, "(K:", COALESCE(kaset, 0), "/F:", COALESCE(finisher, 0), ")") SEPARATOR " |
 ") as detail_unit')
-)
-->groupBy('tipe_model', 'volt')
-->orderBy('tipe_model', 'asc')
-->get();
+        )
+        ->groupBy('tipe_model', 'volt')
+        ->orderBy('tipe_model', 'asc')
+        ->get();
 
-// 2. Lempar data langsung ke file blade
-return view('print.stok-gudang', compact('stocks'));
+    // 2. Lempar data langsung ke file blade
+    return view('print.stok-gudang', compact('stocks'));
 })->name('cetak.stok-gudang');
 
 Route::get('/admin/service-log/{serviceLog}/surat-jalan', function (\App\Models\ServiceLog $serviceLog) {
@@ -1608,3 +1608,5 @@ Route::get('/cetak-kas-bulanan', [\App\Http\Controllers\CashLedgerPrintControlle
 
 
 Route::get('/report/rekap-mesin', [MachineReportController::class, 'rekapUnitCustomer'])->name('report.rekap-mesin');
+Route::get('/lap-part-bdg', [App\Http\Controllers\LapPartBdgController::class, 'index'])
+    ->name('lap-part-bdg');

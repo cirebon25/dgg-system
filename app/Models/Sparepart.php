@@ -51,4 +51,9 @@ class Sparepart extends Model
             ->withPivot('jumlah')
             ->withTimestamps();
     }
+
+        public function technicianStocks()
+{
+    return $this->hasMany(\App\Models\TechnicianStock::class, 'sparepart_id');
 }
+    }
