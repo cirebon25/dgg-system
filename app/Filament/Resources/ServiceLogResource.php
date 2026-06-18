@@ -81,6 +81,12 @@ class ServiceLogResource extends Resource
                             ->required()
                             ->default('RM'),
 
+                        Forms\Components\Toggle::make('is_mrc')
+                            ->label('Catat sebagai MRC (Pencatatan Counter Bulanan)')
+                            ->default(false)
+                            ->helperText('Centang jika kunjungan ini adalah pencatatan counter bulanan untuk tagihan.')
+                            ->columnSpanFull(),
+
                         Forms\Components\DatePicker::make('tanggal')
                             ->label('Tanggal Kunjungan')
                             ->default(now())

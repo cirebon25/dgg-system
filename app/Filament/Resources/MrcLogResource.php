@@ -19,13 +19,12 @@ class MrcLogResource extends Resource
     protected static ?string $slug            = 'mrc-log';
     protected static ?int    $navigationSort  = 2;
 
-    // Hanya tampilkan data MRC
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()
-            ->where('tipe_kunjungan', 'MRC')
-            ->with(['machine', 'customer', 'technician']);
-    }
+  public static function getEloquentQuery(): Builder
+{
+    return parent::getEloquentQuery()
+        ->where('is_mrc', true)   
+        ->with(['machine', 'customer', 'technician']);
+}
 
     public static function table(Table $table): Table
     {

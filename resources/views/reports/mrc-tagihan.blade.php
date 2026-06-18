@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Tagihan MRC - {{ $bulan }} {{ $tahun }}</title>
+    <title>Tagihan MRC - {{ $bulan ?? '' }} {{ $tahun ?? '' }}</title>
     <style>
         * {
             margin: 0;
@@ -82,17 +82,6 @@
             background: #e0e0e0;
         }
 
-        .grand-total {
-            margin-top: 12px;
-            padding: 8px 12px;
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 12px;
-            text-align: right;
-        }
-
         .footer {
             margin-top: 30px;
             display: flex;
@@ -136,19 +125,17 @@
 
     <div class="no-print">
         <button onclick="window.print()"
-            style="padding:7px 18px; background:#2563eb; color:#fff; border:none; border-radius:4px; cursor:pointer;">
-            🖨️ Print
-        </button>
+            style="padding:7px 18px; background:#2563eb; color:#fff; border:none; border-radius:4px; cursor:pointer;">🖨️
+            Print</button>
         <button onclick="window.close()"
-            style="padding:7px 18px; background:#6b7280; color:#fff; border:none; border-radius:4px; cursor:pointer; margin-left:8px;">
-            ✕ Tutup
-        </button>
+            style="padding:7px 18px; background:#6b7280; color:#fff; border:none; border-radius:4px; cursor:pointer; margin-left:8px;">✕
+            Tutup</button>
     </div>
 
     <div class="page">
         <div class="header">
-            <h2>Tagihan MRC — {{ $bulan }} {{ $tahun }}</h2>
-            <p>Periode &nbsp;&nbsp;: {{ $bulan }} {{ $tahun }}</p>
+            <h2>Tagihan MRC — {{ $bulan ?? '' }} {{ $tahun ?? '' }}</h2>
+            <p>Periode &nbsp;&nbsp;: {{ $bulan ?? '' }} {{ $tahun ?? '' }}</p>
             <p>Dicetak &nbsp;&nbsp;: {{ \Carbon\Carbon::now()->isoFormat('D MMMM YYYY, HH:mm') }} WIB</p>
         </div>
         <hr>
@@ -174,7 +161,7 @@
             </thead>
             <tbody>
                 @php $grandTotal = 0; @endphp
-                @forelse ($tagihans as $i => $item)
+                @forelse ($tagihans ?? [] as $i => $item)
                     @php
                         $t = $item['tagihan'];
                         $grandTotal += $t['total'];
@@ -187,47 +174,18 @@
                         <td class="right">{{ number_format($t['harga_sewa']) }}</td>
                         <td class="center">{{ number_format($t['usage_bw']) }}</td>
                         <td class="center">{{ number_format($t['free_bw']) }}</td>
-                        <td class="center">
-                            @if ($t['kelebihan_bw'] > 0)
-                                <span
-                                    style="color:#991b1b; font-weight:bold;">{{ number_format($t['kelebihan_bw']) }}</span>
-                            @else
-                                -
-                            @endif
-                        </td>
-                        <td class="right">
-                            @if ($t['biaya_bw'] > 0)
-                                <span style="color:#991b1b;">{{ number_format($t['biaya_bw']) }}</span>
-                            @else
-                                -
-                            @endif
-                        </td>
+                        <td class="center">{{ $t['kelebihan_bw'] > 0 ? number_format($t['kelebihan_bw']) : '-' }}</td>
+                        <td class="right">{{ $t['biaya_bw'] > 0 ? number_format($t['biaya_bw']) : '-' }}</td>
                         <td class="center">{{ number_format($t['usage_color']) }}</td>
                         <td class="center">{{ number_format($t['free_color']) }}</td>
-                        <td class="center">
-                            @if ($t['kelebihan_color'] > 0)
-                                <span
-                                    style="color:#991b1b; font-weight:bold;">{{ number_format($t['kelebihan_color']) }}</span>
-                            @else
-                                -
-                            @endif
+                        <td class="center">{{ $t['kelebihan_color'] > 0 ? number_format($t['kelebihan_color']) : '-' }}
                         </td>
-                        <td class="right">
-                            @if ($t['biaya_color'] > 0)
-                                <span style="color:#991b1b;">{{ number_format($t['biaya_color']) }}</span>
-                            @else
-                                -
-                            @endif
-                        </td>
-                        <td class="right" style="font-weight:bold;">
-                            Rp {{ number_format($t['total']) }}
-                        </td>
+                        <td class="right">{{ $t['biaya_color'] > 0 ? number_format($t['biaya_color']) : '-' }}</td>
+                        <td class="right" style="font-weight:bold;">Rp {{ number_format($t['total']) }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="14" class="center" style="padding:16px; color:#888;">
-                            Tidak ada kontrak MRC aktif.
-                        </td>
+                        <td colspan="14" class="center" style="padding:16px;">Tidak ada data tagihan.</td>
                     </tr>
                 @endforelse
             </tbody>

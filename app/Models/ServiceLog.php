@@ -27,6 +27,7 @@ class ServiceLog extends Model
         'kerusakan',
         'perbaikan',
         'nama_teknisi_2',
+        'is_mrc',
     ];
 
     protected $casts = [
