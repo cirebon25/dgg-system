@@ -113,7 +113,7 @@
             }
 
             @page {
-                size: A4 portrait;
+                size: A5 Landscape;
                 margin: 0;
             }
         }
@@ -135,8 +135,8 @@
 
     <div class="page">
         <div class="header">
-            <h2>Permintaan Part ke Pusat</h2>
-            <p>No PO &nbsp;&nbsp;&nbsp;: {{ $po->no_po }}</p>
+            <h2>Permintaan Sparepart / Mesin</h2>
+            {{-- <p>No PO &nbsp;&nbsp;&nbsp;: {{ $po->no_po }}</p> --}}
             <p>Tanggal &nbsp;: {{ \Carbon\Carbon::parse($po->tanggal)->isoFormat('D MMMM YYYY') }}</p>
             @if ($po->keterangan)
                 <p>Keterangan: {{ $po->keterangan }}</p>
@@ -186,12 +186,12 @@
         <div class="footer">
             <div class="ttd">
                 <p>Mengetahui,</p>
-                <p>Kepala Cabang</p>
+                <p> </p>
                 <div class="line"></div>
                 <p>( ........................... )</p>
             </div>
             <div class="ttd">
-                <p>Bandung, {{ \Carbon\Carbon::now()->isoFormat('D MMMM YYYY') }}</p>
+                <p>Cirebon, {{ \Carbon\Carbon::now()->isoFormat('D MMMM YYYY') }}</p>
                 <p>Dibuat oleh,</p>
                 <div class="line"></div>
                 <p>( ........................... )</p>

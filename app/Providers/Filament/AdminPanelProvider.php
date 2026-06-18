@@ -90,6 +90,7 @@ class AdminPanelProvider extends PanelProvider
                 'Sistem Arsip',
                 'Laporan',
                 'Pemakaian sparepart',
+                'MRC & Billing',
                 'Keuangan',
                 'Bantuan',
             ])
@@ -105,5 +106,8 @@ class AdminPanelProvider extends PanelProvider
        </div>
        ')
        );
-    }
+    
+
+       }
+
 }

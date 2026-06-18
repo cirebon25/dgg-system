@@ -20,7 +20,8 @@
         th,
         td {
             border: 1px solid #000;
-            padding: 2px 8px;  /* ✅ fix: 2in → 2px */
+            padding: 2px 8px;
+            /* ✅ fix: 2in → 2px */
         }
 
         th {
@@ -51,6 +52,7 @@
         }
     </style>
 </head>
+
 <body onload="window.print()">
 
     <div class="header">
@@ -75,7 +77,7 @@
             <td><b>Jumlah Mesin</b></td>
             <td>: <b>{{ $returns->count() }} unit</b></td>
             <td><b>Kondisi</b></td>
-            <td>: {{ $returns->pluck('kondisi_saat_retur')->unique()->join(', ') }}</td>
+            {{-- <td>: {{ $returns->pluck('kondisi_saat_retur')->unique()->join(', ') }}</td> --}}
         </tr>
     </table>
 
@@ -95,7 +97,7 @@
                     <td style="text-align:center">{{ $i + 1 }}</td>
                     <td><b>{{ $return->machine->serial_number }}</b></td>
                     <td>{{ $return->machine->tipe_model }}</td>
-                    <td style="text-align:center">{{ $return->kondisi_saat_retur }}</td>
+                    <td style="text-align:center">{{ '-' }}</td>
                     <td>{{ $return->keterangan_kerusakan ?? '-' }}</td>
                 </tr>
             @endforeach

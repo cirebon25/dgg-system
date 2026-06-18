@@ -14,6 +14,22 @@ class CreateServiceLog extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        $lastLog = ServiceLog::where('machine_id', $data['machine_id'])
+            ->latest('id')
+            ->first();
+
+        $bwLalu = (int) ($lastLog?->counter_bw ?? 0);
+
+        if ((int) ($data['counter_bw'] ?? 0) < $bwLalu) {
+            \Filament\Notifications\Notification::make()
+                ->title('Counter BW tidak valid!')
+                ->body("Counter BW sekarang tidak boleh kurang dari counter lalu ({$bwLalu}).")
+                ->danger()
+                ->persistent()
+                ->send();
+            $this->halt();
+        }
+
         unset($data['bw_lalu'], $data['color_lalu']);
         return $data;
     }
@@ -23,7 +39,6 @@ class CreateServiceLog extends CreateRecord
         $record    = $this->record;
         $machineId = $record->machine_id;
 
-        // === Hitung usage_bw & usage_color ===
         $lastLog = ServiceLog::where('machine_id', $machineId)
             ->where('id', '!=', $record->id)
             ->orderBy('tanggal', 'desc')
@@ -40,7 +55,6 @@ class CreateServiceLog extends CreateRecord
                 'usage_color' => max(0, (int)$record->counter_color - (int)$colorLalu),
             ]);
 
-        // === Simpan riwayat ganti part ===
         foreach ($record->serviceLogSpareparts as $item) {
             $sparepartId = $item->sparepart_id;
 

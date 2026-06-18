@@ -52,6 +52,6 @@ class CreateMachineReturn extends CreateRecord
     // ✅ Redirect ke halaman cetak setelah create
     protected function getRedirectUrl(): string
     {
-        return route('cetak.surat-retur-batch', $this->batchId);
+        return route('cetak.surat-retur', $this->batchId);
     }
 }

@@ -1,19 +1,54 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <title>Surat Jalan Retur</title>
     <style>
-        body { font-family: Arial, sans-serif; font-size: 12px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #000; padding: 5px 8px; }
-        th { background: #f0f0f0; text-align: center; }
-        .header { text-align: center; margin-bottom: 15px; }
-        .info { margin-bottom: 10px; }
-        .info td { border: none; padding: 2px 5px; }
-        @media print { body { margin: 0; } }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 5px 8px;
+        }
+
+        th {
+            background: #f0f0f0;
+            text-align: center;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .info {
+            margin-bottom: 10px;
+        }
+
+        .info td {
+            border: none;
+            padding: 2px 5px;
+        }
+
+        @media print {
+            body {
+                margin: 0;
+            }
+        }
     </style>
 </head>
+
 <body onload="window.print()">
 
     <div class="header">
@@ -30,15 +65,15 @@
         </tr>
         <tr>
             <td><b>Kondisi</b></td>
-            <td>: {{ $returns->first()->kondisi_saat_retur }}</td>
+            {{-- <td>: {{ $returns->first()->kondisi_saat_retur }}</td> --}}
             <td><b>Jumlah Mesin</b></td>
             <td>: {{ $returns->count() }} unit</td>
         </tr>
-        @if($returns->first()->keterangan_kerusakan)
-        <tr>
-            <td><b>Keterangan</b></td>
-            <td colspan="3">: {{ $returns->first()->keterangan_kerusakan }}</td>
-        </tr>
+        @if ($returns->first()->keterangan_kerusakan)
+            <tr>
+                <td><b>Keterangan</b></td>
+                <td colspan="3">: {{ $returns->first()->keterangan_kerusakan }}</td>
+            </tr>
         @endif
     </table>
 
@@ -52,13 +87,13 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($returns as $i => $return)
-            <tr>
-                <td style="text-align:center">{{ $i + 1 }}</td>
-                <td><b>{{ $return->machine->serial_number }}</b></td>
-                <td>{{ $return->machine->tipe_model }}</td>
-                <td style="text-align:center">{{ $return->machine->status }}</td>
-            </tr>
+            @foreach ($returns as $i => $return)
+                <tr>
+                    <td style="text-align:center">{{ $i + 1 }}</td>
+                    <td><b>{{ $return->machine->serial_number }}</b></td>
+                    <td>{{ $return->machine->tipe_model }}</td>
+                    <td style="text-align:center">{{ $return->machine->status }}</td>
+                </tr>
             @endforeach
         </tbody>
     </table>
@@ -78,4 +113,5 @@
     </table>
 
 </body>
+
 </html>

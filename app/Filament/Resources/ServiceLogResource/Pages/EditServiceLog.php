@@ -15,6 +15,25 @@ class EditServiceLog extends EditRecord
     {
         unset($data['bw_lalu'], $data['color_lalu']);
         return $data;
+
+       $lastLog = \App\Models\ServiceLog::where('machine_id', $data['machine_id'])
+        ->where('id', '!=', $this->record->id)
+        ->latest('id')
+        ->first();
+
+    $bwLalu = (int) ($lastLog?->counter_bw ?? 0);
+
+    if ((int) ($data['counter_bw'] ?? 0) < $bwLalu) {
+        \Filament\Notifications\Notification::make()
+            ->title('Counter BW tidak valid!')
+            ->body("Counter BW sekarang tidak boleh kurang dari counter lalu ({$bwLalu}).")
+            ->danger()
+            ->send();
+        $this->halt();
+    }
+
+    unset($data['bw_lalu'], $data['color_lalu']);
+    return $data;
     }
 
     protected function afterSave(): void
@@ -38,4 +57,5 @@ class EditServiceLog extends EditRecord
                 'usage_color' => max(0, (int)$record->counter_color - (int)$colorLalu),
             ]);
     }
+   
 }

@@ -1612,3 +1612,7 @@ Route::get('/lap-part-bdg', [App\Http\Controllers\LapPartBdgController::class, '
     ->name('lap-part-bdg');
 Route::get('/po-part/{id}/print', [App\Http\Controllers\PoPartController::class, 'print'])
     ->name('po-part.print');
+Route::get('/mrc/rekap', [App\Http\Controllers\MrcController::class, 'rekap'])
+    ->name('mrc.rekap');
+    Route::get('/mrc/tagihan', [App\Http\Controllers\MrcController::class, 'tagihan'])
+    ->name('mrc.tagihan');

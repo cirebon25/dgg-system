@@ -9,7 +9,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use App\Filament\Traits\HasRoleAccess;
-
+use Filament\Forms\Get;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -75,7 +75,8 @@ class ServiceLogResource extends Resource
                                 'RR' => 'RR (Ganti Mesin)',
                                 'JK' => 'JK (Jaringan komputer)',
                                 'L' => 'L (Lanjut)',
-                                'TN' => 'TN (Call Toner)'
+                                'TN' => 'TN (Call Toner)',
+                                'MRC' => 'MRC (Pencatatan Counter Bulanan)'
                             ])
                             ->required()
                             ->default('RM'),
@@ -98,12 +99,26 @@ class ServiceLogResource extends Resource
                             ->numeric()
                             ->readOnly(),
 
-                        Forms\Components\TextInput::make('counter_bw')
-                            ->label('BW Sekarang')
-                            ->numeric()
-                            ->required()
-                            ->afterStateUpdated(fn($state, $get, $set) => $set('usage_bw', (int) $state - (int) $get('bw_lalu'))),
+                       Forms\Components\TextInput::make('counter_bw')
+    ->label('BW Sekarang')
+    ->numeric()
+    ->minValue(0)
+    ->required()
+    ->live(onBlur: true)
+    ->afterStateUpdated(function ($state, $get, $set) {
+        $sekarang = (int) $state;
+        $lalu     = (int) $get('bw_lalu');
 
+        if ($sekarang < $lalu) {
+            \Filament\Notifications\Notification::make()
+                ->title('Counter BW tidak valid!')
+                ->body("Counter sekarang ({$sekarang}) tidak boleh kurang dari counter lalu ({$lalu}).")
+                ->danger()
+                ->send();
+        }
+
+        $set('usage_bw', max(0, $sekarang - $lalu));
+    }),
                         Forms\Components\TextInput::make('usage_bw')
                             ->label('Usage BW')
                             ->numeric()
@@ -301,11 +316,13 @@ class ServiceLogResource extends Resource
                         'RM' => 'info',
                         'TN' => 'warning',
                         'RR' => 'danger',
+                        'MRC' => 'indigo',
                         default => 'gray',
                     }),
 
                 Tables\Columns\TextColumn::make('technician.nama_technician')
-                    ->label('Teknisi'),
+                    ->label('Teknisi')
+                    ->searchable(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
