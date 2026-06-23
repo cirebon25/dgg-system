@@ -5,117 +5,123 @@
     <meta charset="UTF-8">
     <title>Tagihan MRC - {{ $bulan ?? '' }} {{ $tahun ?? '' }}</title>
     <style>
+        @page {
+            size: A4 landscape;
+            margin: 10mm;
+        }
+
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
 
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             font-size: 11px;
+            color: #334155;
         }
 
-        .page {
-            width: 210mm;
-            min-height: 297mm;
-            padding: 12mm 8mm;
-            margin: 0 auto;
+        .container {
+            width: 100%;
         }
 
-        .header {
-            margin-bottom: 14px;
+        /* Header Section */
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 10px;
         }
 
-        .header h2 {
-            font-size: 14px;
-            font-weight: bold;
+        .title h2 {
+            color: #2563eb;
+            font-size: 18px;
             text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .header p {
-            margin-top: 3px;
+        .info {
+            text-align: right;
+            font-size: 10px;
+            color: #64748b;
         }
 
-        hr {
-            border: none;
-            border-top: 1.5px solid #333;
-            margin: 8px 0 12px;
-        }
-
+        /* Table Styling */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 6px;
+            margin-top: 5px;
         }
 
         th {
-            border: 1px solid #333;
-            padding: 5px 6px;
-            background: #d0d0d0;
-            font-weight: bold;
-            text-align: left;
+            background: #2563eb;
+            color: #ffffff;
+            padding: 8px 4px;
+            font-size: 10px;
+            text-transform: uppercase;
+            text-align: center;
+            border: 1px solid #1d4ed8;
         }
 
         td {
-            border: 1px solid #333;
-            padding: 4px 6px;
+            padding: 6px 4px;
+            border: 1px solid #cbd5e1;
+            font-size: 11px;
+        }
+
+        .highlight-row {
+            background-color: #dbeafe !important;
+        }
+
+        /* Background Biru untuk kelebihan */
+
+        .text-left {
             text-align: left;
         }
 
-        td.center,
-        th.center {
+        .text-center {
             text-align: center;
         }
 
-        td.right,
-        th.right {
+        .text-right {
             text-align: right;
         }
 
-        tr:nth-child(even) {
-            background: #f5f5f5;
+        .font-bold {
+            font-weight: 700;
         }
 
-        tfoot td {
-            font-weight: bold;
-            background: #e0e0e0;
-        }
-
-        .footer {
-            margin-top: 30px;
+        /* Footer */
+        .footer-section {
+            margin-top: 25px;
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
+            gap: 60px;
         }
 
-        .ttd {
+        .signature {
             text-align: center;
-            width: 180px;
+            width: 150px;
         }
 
-        .ttd .line {
-            margin-top: 55px;
-            border-top: 1px solid #333;
+        .sig-line {
+            margin-top: 50px;
+            border-top: 1px solid #000;
         }
 
         .no-print {
-            width: 210mm;
-            margin: 10px auto;
-            padding: 10px 8mm;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f8fafc;
+            text-align: center;
         }
 
         @media print {
             .no-print {
                 display: none;
-            }
-
-            .page {
-                margin: 0;
-            }
-
-            @page {
-                size: A4 portrait;
-                margin: 0;
             }
         }
     </style>
@@ -124,39 +130,41 @@
 <body>
 
     <div class="no-print">
-        <button onclick="window.print()"
-            style="padding:7px 18px; background:#2563eb; color:#fff; border:none; border-radius:4px; cursor:pointer;">🖨️
-            Print</button>
-        <button onclick="window.close()"
-            style="padding:7px 18px; background:#6b7280; color:#fff; border:none; border-radius:4px; cursor:pointer; margin-left:8px;">✕
-            Tutup</button>
+        <button onclick="window.print()" style="padding:8px 20px; cursor:pointer;">🖨️ Print Laporan</button>
     </div>
 
-    <div class="page">
-        <div class="header">
-            <h2>Tagihan MRC — {{ $bulan ?? '' }} {{ $tahun ?? '' }}</h2>
-            <p>Periode &nbsp;&nbsp;: {{ $bulan ?? '' }} {{ $tahun ?? '' }}</p>
-            <p>Dicetak &nbsp;&nbsp;: {{ \Carbon\Carbon::now()->isoFormat('D MMMM YYYY, HH:mm') }} WIB</p>
+    <div class="container">
+        <div class="header-section">
+            <div class="title">
+                <h2>Laporan Tagihan MRC</h2>
+                <p>Periode: {{ $bulan ?? '' }} {{ $tahun ?? '' }}</p>
+            </div>
+            <div class="info">
+                Dicetak: {{ \Carbon\Carbon::now()->isoFormat('D MMMM YYYY, HH:mm') }} WIB
+            </div>
         </div>
-        <hr>
 
         <table>
             <thead>
                 <tr>
-                    <th class="center" style="width:28px;">No</th>
-                    <th>Customer</th>
-                    <th style="width:90px;">SN Mesin</th>
-                    <th style="width:75px;">Model</th>
-                    <th class="right" style="width:70px;">Harga Sewa</th>
-                    <th class="center" style="width:50px;">Usage BW</th>
-                    <th class="center" style="width:45px;">Free BW</th>
-                    <th class="center" style="width:50px;">Lebih BW</th>
-                    <th class="right" style="width:65px;">Biaya BW</th>
-                    <th class="center" style="width:50px;">Usage CL</th>
-                    <th class="center" style="width:45px;">Free CL</th>
-                    <th class="center" style="width:50px;">Lebih CL</th>
-                    <th class="right" style="width:65px;">Biaya CL</th>
-                    <th class="right" style="width:75px;">Total</th>
+                    <th rowspan="2">No</th>
+                    <th rowspan="2">Customer</th>
+                    <th rowspan="2">SN Mesin</th>
+                    <th rowspan="2">Model</th>
+                    <th rowspan="2">Harga Sewa</th>
+                    <th colspan="4">Black & White (BW)</th>
+                    <th colspan="4">Color (CL)</th>
+                    <th rowspan="2">Total Tagihan</th>
+                </tr>
+                <tr>
+                    <th>Usage</th>
+                    <th>Free</th>
+                    <th>Lebih</th>
+                    <th>Biaya</th>
+                    <th>Usage</th>
+                    <th>Free</th>
+                    <th>Lebih</th>
+                    <th>Biaya</th>
                 </tr>
             </thead>
             <tbody>
@@ -165,53 +173,53 @@
                     @php
                         $t = $item['tagihan'];
                         $grandTotal += $t['total'];
+                        $hasExcess = $t['kelebihan_bw'] > 0 || $t['kelebihan_color'] > 0;
                     @endphp
-                    <tr>
-                        <td class="center">{{ $i + 1 }}</td>
-                        <td>{{ $item['contract']->customer?->nama_customer ?? '-' }}</td>
-                        <td>{{ $item['contract']->machine?->serial_number ?? '-' }}</td>
-                        <td>{{ $item['contract']->machine?->tipe_model ?? '-' }}</td>
-                        <td class="right">{{ number_format($t['harga_sewa']) }}</td>
-                        <td class="center">{{ number_format($t['usage_bw']) }}</td>
-                        <td class="center">{{ number_format($t['free_bw']) }}</td>
-                        <td class="center">{{ $t['kelebihan_bw'] > 0 ? number_format($t['kelebihan_bw']) : '-' }}</td>
-                        <td class="right">{{ $t['biaya_bw'] > 0 ? number_format($t['biaya_bw']) : '-' }}</td>
-                        <td class="center">{{ number_format($t['usage_color']) }}</td>
-                        <td class="center">{{ number_format($t['free_color']) }}</td>
-                        <td class="center">{{ $t['kelebihan_color'] > 0 ? number_format($t['kelebihan_color']) : '-' }}
+                    <tr class="{{ $hasExcess ? 'highlight-row' : '' }}">
+                        <td class="text-center">{{ $i + 1 }}</td>
+                        <td class="text-left">{{ $item['contract']->customer?->nama_customer ?? '-' }}</td>
+                        <td class="text-center">{{ $item['contract']->machine?->serial_number ?? '-' }}</td>
+                        <td class="text-center">{{ $item['contract']->machine?->tipe_model ?? '-' }}</td>
+                        <td class="text-right">{{ number_format($t['harga_sewa']) }}</td>
+                        <td class="text-center">{{ number_format($t['usage_bw']) }}</td>
+                        <td class="text-center">{{ number_format($t['free_bw']) }}</td>
+                        <td class="text-center">{{ $t['kelebihan_bw'] > 0 ? number_format($t['kelebihan_bw']) : '-' }}
                         </td>
-                        <td class="right">{{ $t['biaya_color'] > 0 ? number_format($t['biaya_color']) : '-' }}</td>
-                        <td class="right" style="font-weight:bold;">Rp {{ number_format($t['total']) }}</td>
+                        <td class="text-right">{{ $t['biaya_bw'] > 0 ? number_format($t['biaya_bw']) : '-' }}</td>
+                        <td class="text-center">{{ number_format($t['usage_color']) }}</td>
+                        <td class="text-center">{{ number_format($t['free_color']) }}</td>
+                        <td class="text-center">
+                            {{ $t['kelebihan_color'] > 0 ? number_format($t['kelebihan_color']) : '-' }}</td>
+                        <td class="text-right">{{ $t['biaya_color'] > 0 ? number_format($t['biaya_color']) : '-' }}
+                        </td>
+                        <td class="text-right font-bold">Rp {{ number_format($t['total']) }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="14" class="center" style="padding:16px;">Tidak ada data tagihan.</td>
+                        <td colspan="14" class="text-center">Tidak ada data</td>
                     </tr>
                 @endforelse
             </tbody>
             <tfoot>
-                <tr>
-                    <td colspan="13" class="right">Grand Total</td>
-                    <td class="right">Rp {{ number_format($grandTotal) }}</td>
+                <tr style="background: #e2e8f0;">
+                    <td colspan="13" class="text-right font-bold" style="padding:10px;">GRAND TOTAL</td>
+                    <td class="text-right font-bold">Rp {{ number_format($grandTotal) }}</td>
                 </tr>
             </tfoot>
         </table>
 
-        <div class="footer">
-            <div class="ttd">
-                <p>Mengetahui,</p>
+        <div class="footer-section">
+            <div class="signature">
                 <p>Kepala Cabang</p>
-                <div class="line"></div>
-                <p>( ........................... )</p>
+                <div class="sig-line"></div>
             </div>
-            <div class="ttd">
-                <p>Bandung, {{ \Carbon\Carbon::now()->isoFormat('D MMMM YYYY') }}</p>
+            <div class="signature">
                 <p>Dibuat oleh,</p>
-                <div class="line"></div>
-                <p>( ........................... )</p>
+                <div class="sig-line"></div>
             </div>
         </div>
     </div>
+
 </body>
 
 </html>

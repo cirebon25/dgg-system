@@ -64,7 +64,7 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Resources\Widgets\LatestCustomers::class,
                 \App\Filament\Resources\Widgets\MachineLocationStats::class,
                 \App\Filament\Resources\Widgets\MachineRayonStats::class,
-                 \App\Filament\Resources\Widgets\LatestDeployments::class,
+                \App\Filament\Resources\Widgets\LatestDeployments::class,
             ])
             ->databaseNotifications()
             ->middleware([
@@ -92,11 +92,12 @@ class AdminPanelProvider extends PanelProvider
                 'Pemakaian sparepart',
                 'MRC & Billing',
                 'Keuangan',
+                'Marketing',
                 'Bantuan',
             ])
-       ->renderHook(
-       \Filament\View\PanelsRenderHook::SIDEBAR_FOOTER,
-       fn () => new \Illuminate\Support\HtmlString('
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::SIDEBAR_FOOTER,
+                fn() => new \Illuminate\Support\HtmlString('
        <div
            class="flex items-center justify-center gap-x-2 px-6 py-3 border-t border-gray-100 dark:border-white/5 select-none pointer-events-none">
            <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -105,9 +106,6 @@ class AdminPanelProvider extends PanelProvider
            </span>
        </div>
        ')
-       );
-    
-
-       }
-
+            );
+    }
 }

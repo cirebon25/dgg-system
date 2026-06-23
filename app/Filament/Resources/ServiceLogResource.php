@@ -31,6 +31,35 @@ class ServiceLogResource extends Resource
             ->schema([
                 Forms\Components\Section::make('Data Kunjungan')
                     ->schema([
+                        // Forms\Components\Select::make('machine_id')
+                        //     ->relationship('machine', 'serial_number')
+                        //     ->label('SN Mesin')
+                        //     ->required()
+                        //     ->searchable()
+                        //     ->reactive()
+                        //     ->afterStateUpdated(function ($state, Forms\Set $set) {
+                        //         $lastLog = ServiceLog::where('machine_id', $state)
+                        //             ->latest('id')
+                        //             ->first();
+
+                        //         if ($lastLog) {
+                        //             $set('bw_lalu', $lastLog->counter_bw);
+                        //             $set('color_lalu', $lastLog->counter_color);
+                        //         } else {
+                        //             $set('bw_lalu', 0);
+                        //             $set('color_lalu', 0);
+                        //         }
+
+                        //         $machine = Machine::find($state);
+                        //         if ($machine) {
+                        //             $set('customer_id', $machine->customer_id);
+
+                        //             if ($machine->customer?->technician_id) {
+                        //                 $set('technician_id', $machine->customer->technician_id);
+                        //             }
+                        //         }
+                        //     }),
+
                         Forms\Components\Select::make('machine_id')
                             ->relationship('machine', 'serial_number')
                             ->label('SN Mesin')
@@ -38,15 +67,30 @@ class ServiceLogResource extends Resource
                             ->searchable()
                             ->reactive()
                             ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                $bulanLalu = now()->subMonth();
+
+                                // Ambil log terakhir di bulan lalu
                                 $lastLog = ServiceLog::where('machine_id', $state)
-                                    ->latest('id')
+                                    ->whereYear('tanggal',  $bulanLalu->year)
+                                    ->whereMonth('tanggal', $bulanLalu->month)
+                                    ->orderBy('tanggal', 'desc')
+                                    ->orderBy('id', 'desc')
                                     ->first();
 
+                                // Kalau bulan lalu tidak ada, ambil log terakhir sebelum bulan ini
+                                if (!$lastLog) {
+                                    $lastLog = ServiceLog::where('machine_id', $state)
+                                        ->where('tanggal', '<', now()->startOfMonth())
+                                        ->orderBy('tanggal', 'desc')
+                                        ->orderBy('id', 'desc')
+                                        ->first();
+                                }
+
                                 if ($lastLog) {
-                                    $set('bw_lalu', $lastLog->counter_bw);
+                                    $set('bw_lalu',    $lastLog->counter_bw);
                                     $set('color_lalu', $lastLog->counter_color);
                                 } else {
-                                    $set('bw_lalu', 0);
+                                    $set('bw_lalu',    0);
                                     $set('color_lalu', 0);
                                 }
 
@@ -105,26 +149,26 @@ class ServiceLogResource extends Resource
                             ->numeric()
                             ->readOnly(),
 
-                       Forms\Components\TextInput::make('counter_bw')
-    ->label('BW Sekarang')
-    ->numeric()
-    ->minValue(0)
-    ->required()
-    ->live(onBlur: true)
-    ->afterStateUpdated(function ($state, $get, $set) {
-        $sekarang = (int) $state;
-        $lalu     = (int) $get('bw_lalu');
+                        Forms\Components\TextInput::make('counter_bw')
+                            ->label('BW Sekarang')
+                            ->numeric()
+                            ->minValue(0)
+                            ->required()
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(function ($state, $get, $set) {
+                                $sekarang = (int) $state;
+                                $lalu     = (int) $get('bw_lalu');
 
-        if ($sekarang < $lalu) {
-            \Filament\Notifications\Notification::make()
-                ->title('Counter BW tidak valid!')
-                ->body("Counter sekarang ({$sekarang}) tidak boleh kurang dari counter lalu ({$lalu}).")
-                ->danger()
-                ->send();
-        }
+                                if ($sekarang < $lalu) {
+                                    \Filament\Notifications\Notification::make()
+                                        ->title('Counter BW tidak valid!')
+                                        ->body("Counter sekarang ({$sekarang}) tidak boleh kurang dari counter lalu ({$lalu}).")
+                                        ->danger()
+                                        ->send();
+                                }
 
-        $set('usage_bw', max(0, $sekarang - $lalu));
-    }),
+                                $set('usage_bw', max(0, $sekarang - $lalu));
+                            }),
                         Forms\Components\TextInput::make('usage_bw')
                             ->label('Usage BW')
                             ->numeric()

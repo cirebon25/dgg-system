@@ -1614,5 +1614,7 @@ Route::get('/po-part/{id}/print', [App\Http\Controllers\PoPartController::class,
     ->name('po-part.print');
 Route::get('/mrc/rekap', [App\Http\Controllers\MrcController::class, 'rekap'])
     ->name('mrc.rekap');
-    Route::get('/mrc/tagihan', [App\Http\Controllers\MrcController::class, 'tagihan'])
+Route::get('/mrc/tagihan', [App\Http\Controllers\MrcController::class, 'tagihan'])
     ->name('mrc.tagihan');
+Route::get('/prospect/laporan', [App\Http\Controllers\ProspectController::class, 'laporan'])
+    ->name('prospect.laporan');
