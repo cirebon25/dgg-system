@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class LatestDeployments extends BaseWidget
 {
-    protected static ?string $heading = '📦 20 Penempatan Mesin Bulan Ini';
+    protected static ?string $heading = 'Pemasangan unit mesin fc bulan ini';
     protected static ?int $sort = 7;
     protected int|string|array $columnSpan = 'full';
 
@@ -43,6 +43,10 @@ class LatestDeployments extends BaseWidget
                     ->limit(20)
             )
             ->columns([
+                Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
+
                 Tables\Columns\TextColumn::make('customer.nama_customer')
                     ->label('Nama Customer')
                     ->icon('heroicon-m-user')

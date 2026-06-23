@@ -585,6 +585,7 @@ Route::get('/cetak-sj-rolling', function (Request $request) {
 })->name('cetak.sj-rolling');
 
 
+
 Route::get('/cetak-bukti-pinjam-multi/{id}', function ($id) {
 
     $header = DB::table('part_borrowing_headers')

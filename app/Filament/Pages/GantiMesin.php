@@ -148,6 +148,15 @@ class GantiMesin extends Page implements HasForms
                     TextInput::make('keterangan')
                         ->label('Alasan Rolling')
                         ->required(),
+
+                    TextInput::make('counter_bw_final')
+                        ->label('Counter BW')
+                        ->numeric()
+                        ->required(),
+
+                    TextInput::make('counter_color_final')
+                        ->label('Counter Color')
+                        ->numeric()
                 ])->columns(4),
 
             Section::make('3. Sparepart / Kelengkapan (Potong Stok Gudang)')
@@ -292,10 +301,10 @@ class GantiMesin extends Page implements HasForms
             ->toArray();
 
         $payload = base64_encode(json_encode([
-            'cust'   => $dep?->nama_customer ?? '-',
-            'alamat' => $dep?->alamat ?? '-',
-            'old_sn' => $rep?->old_sn ?? '-',
-            'new_sn' => $dep?->new_sn ?? '-',
+            'cust'   => $dep->nama_customer,
+            'alamat' => $dep->alamat,
+            'old_sn' => $rep->old_sn,
+            'new_sn' => $dep->new_sn,
             'bw'     => $data['counter_bw_final'],
             'cl'     => $data['counter_color_final'],
             'parts'  => $partsForSj,
