@@ -149,14 +149,17 @@ class GantiMesin extends Page implements HasForms
                         ->label('Alasan Rolling')
                         ->required(),
 
-                    TextInput::make('counter_bw_final')
-                        ->label('Counter BW')
+                    TextInput::make('counter_bw_awal')
+                        ->label('Counter BW Awal (Mesin Baru)')
                         ->numeric()
+                        ->default(0)
                         ->required(),
 
-                    TextInput::make('counter_color_final')
-                        ->label('Counter Color')
+                    TextInput::make('counter_color_awal')
+                        ->label('Counter Color Awal (Mesin Baru)')
                         ->numeric()
+                        ->default(0)
+                        ->required(),
                 ])->columns(4),
 
             Section::make('3. Sparepart / Kelengkapan (Potong Stok Gudang)')
@@ -209,17 +212,18 @@ class GantiMesin extends Page implements HasForms
     {
         $data = $this->form->getState();
 
-        // Simpan $newDeploymentId di luar transaction agar bisa diakses setelahnya
+        // Simpan id-id penting di luar transaction agar bisa diakses setelahnya
         $newDeploymentId = null;
+        $replacementId    = null;
 
-        DB::transaction(function () use ($data, &$newDeploymentId) {
+        DB::transaction(function () use ($data, &$newDeploymentId, &$replacementId) {
             $dep        = Deployment::with(['customer', 'machine'])->findOrFail($data['deployment_id']);
             $oldMachine = Machine::findOrFail($data['old_machine_id']);
             $newMachine = Machine::findOrFail($data['new_machine_id']);
             $customer   = $dep->customer;
 
-            // 1. Catat ke tabel machine_replacements
-            DB::table('machine_replacements')->insert([
+            // 1. Catat ke tabel machine_replacements (insertGetId supaya id-nya bisa dipakai untuk link cetak)
+            $replacementId = DB::table('machine_replacements')->insertGetId([
                 'customer_id'         => $customer->id,
                 'old_machine_id'      => $oldMachine->id,
                 'new_machine_id'      => $newMachine->id,
@@ -252,11 +256,16 @@ class GantiMesin extends Page implements HasForms
                 'customer_id'    => $customer->id,
                 'technician_id'  => $data['technician_id'],
                 'tanggal_instal' => $data['tanggal'],
-                'counter_bw'     => 0,
-                'counter_color'  => 0,
+                'counter_bw'     => $data['counter_bw_awal'] ?? 0,
+                'counter_color'  => $data['counter_color_awal'] ?? 0,
                 'created_at'     => now(),
                 'updated_at'     => now(),
             ]);
+
+            // 4b. Simpan deployment_id baru ke record machine_replacements, supaya sparepart yang dipakai bisa ditarik saat cetak Surat Jalan
+            DB::table('machine_replacements')
+                ->where('id', $replacementId)
+                ->update(['deployment_id' => $newDeploymentId]);
 
             // 5. Potong stok GUDANG & catat ke deployment_sparepart
             foreach (($data['spareparts'] ?? []) as $part) {
@@ -277,7 +286,7 @@ class GantiMesin extends Page implements HasForms
             }
         });
 
-        // 6. Ambil data untuk SJ fresh dari DB menggunakan $newDeploymentId
+        // 6. Ambil data ringkas untuk isi notifikasi (link cetak sekarang cukup pakai $replacementId)
         $dep = DB::table('deployments')
             ->where('deployments.id', $newDeploymentId)
             ->join('customers', 'deployments.customer_id', '=', 'customers.id')
@@ -285,32 +294,12 @@ class GantiMesin extends Page implements HasForms
             ->first(['customers.nama_customer', 'customers.alamat', 'machines.serial_number as new_sn']);
 
         $rep = DB::table('machine_replacements')
-            ->where('new_machine_id', $data['new_machine_id'])
+            ->where('machine_replacements.id', $replacementId)
             ->join('machines', 'machine_replacements.old_machine_id', '=', 'machines.id')
             ->first(['machines.serial_number as old_sn', 'machine_replacements.counter_bw_final as bw', 'machine_replacements.counter_color_final as cl']);
 
-        $partsForSj = DB::table('deployment_sparepart')
-            ->where('deployment_id', $newDeploymentId)
-            ->join('spareparts', 'deployment_sparepart.sparepart_id', '=', 'spareparts.id')
-            ->get(['spareparts.nama_sparepart', 'spareparts.nama_alias', 'deployment_sparepart.jumlah'])
-            ->map(fn($p) => [
-                'nama_part' => $p->nama_alias ?: $p->nama_sparepart,
-                'jumlah'    => $p->jumlah,
-                'ket_part'  => '',
-            ])
-            ->toArray();
-
-        $payload = base64_encode(json_encode([
-            'cust'   => $dep->nama_customer,
-            'alamat' => $dep->alamat,
-            'old_sn' => $rep->old_sn,
-            'new_sn' => $dep->new_sn,
-            'bw'     => $data['counter_bw_final'],
-            'cl'     => $data['counter_color_final'],
-            'parts'  => $partsForSj,
-        ]));
-
-        $urlSj = route('cetak.sj-rolling', ['payload' => $payload]);
+        // Link cetak sekarang cukup pakai id record MachineReplacement, data lengkap diambil live dari relasi saat dicetak
+        $urlSj = route('cetak.sj-rolling', $replacementId);
 
         // 7. Notifikasi sukses + tombol cetak SJ
         Notification::make()

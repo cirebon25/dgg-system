@@ -102,60 +102,64 @@
         </tr>
     </table>
 
+    {{-- DETAIL CUSTOMER: otomatis dari relasi MachineReplacement -> Customer --}}
     <div class="customer-info">
         Kepada Yth:<br>
-        <strong>{{ $d['cust'] }}</strong><br>
-        <span>{{ $d['alamat'] }}</span>
+        <strong>{{ $replacement->customer?->nama_customer ?? '-' }}</strong><br>
+        <span>{{ $replacement->customer?->alamat ?? '-' }}</span>
     </div>
 
     <table class="main-table">
         <thead>
             <tr class="bg-gray">
                 <th style="width: 5%;">No</th>
-                <th style="width: 45%;">Deskripsi Barang / Unit</th>
-                <th style="width: 25%;">No Seri</th>
-                <th style="width: 25%;">Qty / Counter</th>
+                <th style="width: 25%;">Deskripsi Barang / Unit</th>
+                <th style="width: 16%;">No Seri</th>
+                <th style="width: 16%;">Type Model</th>
+                <th style="width: 16%;">Qty / Counter</th>
+                <th style="width: 22%;">Keterangan</th>
             </tr>
         </thead>
         <tbody>
+            {{-- PENARIKAN UNIT LAMA: otomatis dari relasi machine_old --}}
             <tr>
                 <td>1</td>
                 <td class="text-left" style="font-weight: bold; font-style: italic;">PENARIKAN UNIT (LAMA)</td>
-                <td><strong>{{ $d['old_sn'] ?? '-' }}</strong></td>
+                <td><strong>{{ $replacement->machine_old?->serial_number ?? '-' }}</strong></td>
+                <td>{{ $replacement->machine_old?->tipe_model ?? '-' }}</td>
                 <td>
-                    BW: {{ number_format($d['bw'] ?? 0) }}<br>
-                    CL: {{ number_format($d['cl'] ?? 0) }}
+                    BW: {{ number_format($replacement->counter_bw_final ?? 0) }}<br>
+                    CL: {{ number_format($replacement->counter_color_final ?? 0) }}
                 </td>
+                <td class="text-left">{{ $replacement->keterangan ?? '-' }}</td>
             </tr>
+            {{-- PENGIRIMAN UNIT BARU: otomatis dari relasi machine_new --}}
             <tr>
                 <td>2</td>
                 <td class="text-left" style="font-weight: bold; font-style: italic;">PENGIRIMAN UNIT (BARU)</td>
-                <td><strong>{{ $d['new_sn'] ?? '-' }}</strong></td>
-                <td>1 Unit (Start 0)</td>
+                <td><strong>{{ $replacement->machine_new?->serial_number ?? '-' }}</strong></td>
+                <td>{{ $replacement->machine_new?->tipe_model ?? '-' }}</td>
+                <td>
+                    1 Unit<br>
+                    BW: {{ number_format($replacement->deployment?->counter_bw ?? 0) }} /
+                    CL: {{ number_format($replacement->deployment?->counter_color ?? 0) }}
+                </td>
+                <td class="text-left">-</td>
             </tr>
 
-            @php $no = 3; @endphp
-            @forelse(($d['parts'] ?? []) as $p)
+            {{-- SPAREPART TAMBAHAN: otomatis dari deployment baru hasil rolling, jika ada --}}
+            @php $noBaris = 3; @endphp
+            @forelse ($replacement->deployment?->deploymentSpareparts ?? [] as $ds)
                 <tr>
-                    <td>{{ $no++ }}</td>
-                    <td class="text-left">{{ $p['nama_part'] ?? 'Sparepart Tambahan' }}</td>
+                    <td>{{ $noBaris++ }}</td>
+                    <td class="text-left">
+                        {{ $ds->sparepart?->nama_alias ?: $ds->sparepart?->nama_sparepart ?? 'Sparepart' }}</td>
                     <td>-</td>
-                    <td>{{ $p['jumlah'] ?? 0 }} Pcs {{ !empty($p['ket_part']) ? '(' . $p['ket_part'] . ')' : '' }}
-                    </td>
+                    <td>-</td>
+                    <td>{{ $ds->jumlah }} Pcs</td>
+                    <td class="text-left">-</td>
                 </tr>
             @empty
-                <tr>
-                    <td>3</td>
-                    <td class="text-left" style="color: #ccc;">- Sparepart / Material Tambahan -</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
-                <tr>
-                    <td>4</td>
-                    <td class="text-left" style="color: #ccc;">-</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
             @endforelse
         </tbody>
     </table>
@@ -168,7 +172,7 @@
             </td>
             <td>
                 Teknisi Pelaksana,<br><br><br><br><br>
-                ( ___________________ )
+                ( {{ $replacement->technician?->nama_technician ?? '___________________' }} )
             </td>
             <td>
                 Penerima / Customer,<br><br><br><br><br>

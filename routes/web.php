@@ -558,30 +558,23 @@ Route::get('/cetak-bukti-pinjam/{id}', function ($id) {
 
 
 // ROUTE FIX MUTLAK: CETAK SJ ROLLING KUSTOM PAYLOAD (ANTI-SESSION NULL)
-Route::get('/cetak-sj-rolling', function (Request $request) {
+Route::get('/cetak-sj-rolling/{id}', function ($id) {
+    $replacement = \App\Models\MachineReplacement::with([
+        'customer',
+        'machine_old',
+        'machine_new',
+        'technician',
+    ])->find($id);
 
-    $payload = $request->query('payload');
-
-    if (!$payload) {
-        return 'Gagal memuat dokumen! Data Surat Jalan kosong. Silakan ulangi proses rolling dari menu Ganti Mesin, Boss Rudi.';
+    if (!$replacement) {
+        return 'Data Tukar Mesin tidak ditemukan. Silakan ulangi proses rolling dari menu Ganti Mesin, Boss Rudi.';
     }
 
-    try {
-        // Bongkar teks string Base64 kembali menjadi Array data riil ($d)
-        $dataDecoded = json_decode(base64_decode($payload), true);
-
-        if (!$dataDecoded) {
-            return 'Struktur data Surat Jalan rusak, silakan input kembali.';
-        }
-
-        return view('cetak.surat-jalan-rolling', [
-            'd'        => $dataDecoded,
-            'tanggal'  => date('d/m/Y'),
-            'nomor_sj' => 'SJ-RR/' . date('Ymd/Hi'),
-        ]);
-    } catch (\Exception $e) {
-        return 'Eror Membaca Payload Data: ' . $e->getMessage();
-    }
+    return view('cetak.surat-jalan-rolling', [
+        'replacement' => $replacement,
+        'tanggal'     => \Carbon\Carbon::parse($replacement->tanggal)->format('d/m/Y'),
+        'nomor_sj'    => 'SJ-RR/' . \Carbon\Carbon::parse($replacement->tanggal)->format('Ymd') . '/' . $replacement->id,
+    ]);
 })->name('cetak.sj-rolling');
 
 

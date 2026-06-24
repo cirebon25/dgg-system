@@ -59,20 +59,8 @@
                                 <td class="px-4 py-3">{{ $row->nama_technician ?? '-' }}</td>
                                 <td class="px-4 py-3 text-gray-500 text-xs">{{ $row->keterangan ?? '-' }}</td>
                                 <td class="px-4 py-3 text-center">
-                                    @php
-                                        $payload = base64_encode(
-                                            json_encode([
-                                                'cust' => $row->nama_customer ?? '-',
-                                                'alamat' => '-',
-                                                'old_sn' => $row->sn_lama ?? '-',
-                                                'new_sn' => $row->sn_baru ?? '-',
-                                                'bw' => $row->counter_bw_final ?? 0,
-                                                'cl' => $row->counter_color_final ?? 0,
-                                                'parts' => [],
-                                            ]),
-                                        );
-                                    @endphp
-                                    <a href="{{ route('cetak.sj-rolling', ['payload' => $payload]) }}" target="_blank"
+                                    {{-- Link cetak sekarang langsung pakai id MachineReplacement, data lengkap (customer, alamat, tipe model, dst) diambil live dari relasi saat dicetak --}}
+                                    <a href="{{ route('cetak.sj-rolling', $row->id) }}" target="_blank"
                                         class="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition">
                                         🖨️ Cetak SJ
                                     </a>

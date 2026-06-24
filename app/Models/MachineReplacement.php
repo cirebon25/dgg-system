@@ -14,6 +14,7 @@ class MachineReplacement extends Model
         'customer_id',
         'old_machine_id',
         'new_machine_id',
+        'deployment_id',
         'technician_id',
         'tanggal',
         'keterangan',
@@ -35,5 +36,17 @@ class MachineReplacement extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    // Relasi ke Teknisi
+    public function technician()
+    {
+        return $this->belongsTo(Technician::class);
+    }
+
+    // Relasi ke Deployment baru (untuk menarik sparepart yang dipakai saat rolling)
+    public function deployment()
+    {
+        return $this->belongsTo(Deployment::class);
     }
 }
