@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Laporan Pemasangan Baru - {{ $namaBulan }} {{ $tahun }}</title>
+    <title>Laporan Pemasangan Baru - <?php echo e($namaBulan); ?> <?php echo e($tahun); ?></title>
     <style>
         @page {
             size: landscape;
@@ -124,7 +124,7 @@
 
     <div class="header">
         <h2>Daftar Customer Pasang Baru DGG Cirebon</h2>
-        <h3>Periode: {{ $namaBulan }} {{ $tahun }}</h3>
+        <h3>Periode: <?php echo e($namaBulan); ?> <?php echo e($tahun); ?></h3>
     </div>
 
     <table>
@@ -143,50 +143,52 @@
             </tr>
         </thead>
         <tbody>
-            @forelse ($data as $index => $row)
+            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__empty_1 = true; $__currentLoopData = $data; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                 <tr>
-                    <td class="text-center">{{ $index + 1 }}</td>
+                    <td class="text-center"><?php echo e($index + 1); ?></td>
                     <td class="text-center">
-                        {{ \Carbon\Carbon::parse($row->created_at)->format('d-m-Y') }}
+                        <?php echo e(\Carbon\Carbon::parse($row->created_at)->format('d-m-Y')); ?>
+
                     </td>
-                    <td>{{ $row->customer?->nama_customer ?? '-' }}</td>
-                    <td>{{ $row->machine->tipe_model ?? '-' }}</td>
-                    <td class="text-center"><b>{{ $row->machine->serial_number ?? '-' }}</b></td>
-                    <td class="text-center">{{ $row->volt }} V</td>
+                    <td><?php echo e($row->customer?->nama_customer ?? '-'); ?></td>
+                    <td><?php echo e($row->machine->tipe_model ?? '-'); ?></td>
+                    <td class="text-center"><b><?php echo e($row->machine->serial_number ?? '-'); ?></b></td>
+                    <td class="text-center"><?php echo e($row->volt); ?> V</td>
                     <td class="text-center">
-                        BW: {{ number_format($row->counter_bw) }}<br>
-                        CL: {{ number_format($row->counter_color) }}
+                        BW: <?php echo e(number_format($row->counter_bw)); ?><br>
+                        CL: <?php echo e(number_format($row->counter_color)); ?>
+
                     </td>
-                    <td>{{ $row->technician->nama_technician ?? '-' }}</td>
+                    <td><?php echo e($row->technician->nama_technician ?? '-'); ?></td>
                     <td>
-                        @php
+                        <?php
                             $parts = $sparepartPerDeployment->get($row->id, collect());
-                        @endphp
-                        @if ($parts->isNotEmpty())
+                        ?>
+                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($parts->isNotEmpty()): ?>
                             <ul class="part-list">
-                                @foreach ($parts as $p)
-                                    <li><b>{{ strtoupper($p->nama_sparepart) }}</b> ({{ $p->jumlah }} Pcs)</li>
-                                @endforeach
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $parts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <li><b><?php echo e(strtoupper($p->nama_sparepart)); ?></b> (<?php echo e($p->jumlah); ?> Pcs)</li>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                             </ul>
-                        @else
+                        <?php else: ?>
                             -
-                        @endif
+                        <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                     </td>
-                    <td>{{ $row->keterangan ?? '-' }}</td>
+                    <td><?php echo e($row->keterangan ?? '-'); ?></td>
                 </tr>
-            @empty
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <tr class="empty-row">
                     <td colspan="10">
-                        Tidak ada data pemasangan baru pada periode {{ $namaBulan }} {{ $tahun }}.
+                        Tidak ada data pemasangan baru pada periode <?php echo e($namaBulan); ?> <?php echo e($tahun); ?>.
                     </td>
                 </tr>
-            @endforelse
+            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
         </tbody>
     </table>
 
     <div class="footer">
         <div class="ttd-box">
-            <p>Cirebon, {{ now()->translatedFormat('d F Y') }}</p>
+            <p>Cirebon, <?php echo e(now()->translatedFormat('d F Y')); ?></p>
             <p class="ttd-space">Admin Operasional,</p>
             <strong>( _________________________ )</strong>
         </div>
@@ -195,3 +197,4 @@
 </body>
 
 </html>
+<?php /**PATH C:\laragon\www\dgg-system\resources\views/cetak/pemasangan-baru.blade.php ENDPATH**/ ?>

@@ -102,7 +102,7 @@
             color: #f8f3f0 !important;
         }
 
-        .stat-blm { 
+        .stat-blm {
             background-color: #fff1f0 !important;
             color: #cf1322 !important;
         }
@@ -196,8 +196,8 @@
         }
 
         .bg-l {
-            background-color: #f9f0ff !important;
-            color: #531dab !important;
+            background-color: #e481e4 !important;
+            color: #121312 !important;
             font-weight: bold;
         }
 

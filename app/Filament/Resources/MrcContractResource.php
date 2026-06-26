@@ -17,7 +17,7 @@ class MrcContractResource extends Resource
 {
     protected static ?string $model          = MrcContract::class;
     protected static ?string $navigationIcon  = 'heroicon-o-document-currency-dollar';
-    protected static ?string $navigationLabel = 'Kontrak MRC';
+    protected static ?string $navigationLabel = 'Pemakaian MRC';
     protected static ?string $navigationGroup = 'MRC & Billing';
     protected static ?int    $navigationSort  = 3;
 
@@ -160,10 +160,18 @@ class MrcContractResource extends Resource
                         Forms\Components\Select::make('month')
                             ->label('Bulan')
                             ->options([
-                                '01' => 'Januari',  '02' => 'Februari', '03' => 'Maret',
-                                '04' => 'April',    '05' => 'Mei',       '06' => 'Juni',
-                                '07' => 'Juli',     '08' => 'Agustus',   '09' => 'September',
-                                '10' => 'Oktober',  '11' => 'November',  '12' => 'Desember',
+                                '01' => 'Januari',
+                                '02' => 'Februari',
+                                '03' => 'Maret',
+                                '04' => 'April',
+                                '05' => 'Mei',
+                                '06' => 'Juni',
+                                '07' => 'Juli',
+                                '08' => 'Agustus',
+                                '09' => 'September',
+                                '10' => 'Oktober',
+                                '11' => 'November',
+                                '12' => 'Desember',
                             ])
                             ->required()
                             ->default(date('m')),

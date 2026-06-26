@@ -166,13 +166,14 @@
     <div class="main-title">LAPORAN BULANAN KINERJA TEKNIK</div>
     <div class="sub-title">PT. DINAMIKA GLOBAL GEMILANG - CIREBON</div>
     <div class="periode">
-        PERIODE : {{ strtoupper(\Carbon\Carbon::create($year, $month)->translatedFormat('F Y')) }}
+        PERIODE : <?php echo e(strtoupper(\Carbon\Carbon::create($year, $month)->translatedFormat('F Y'))); ?>
+
     </div>
 
-    @php $groupNum = 1; @endphp
+    <?php $groupNum = 1; ?>
 
-    @foreach ($reportData as $namaRayon => $techs)
-        @php
+    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $reportData; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $namaRayon => $techs): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+        <?php
             $allLogs = $techs->flatMap(fn($t) => $t->serviceLogs);
 
             // Ambil kota dari relasi customer
@@ -239,64 +240,65 @@
                             : '0%';
                 }
             }
-        @endphp
+        ?>
 
         <div class="rayon-block">
             <div class="rayon-wrapper">
 
-                {{-- TABEL KIRI --}}
+                
                 <table class="tbl-left">
                     <thead>
                         <tr>
                             <th class="th-group" style="width:120px">
-                                GROUP-{{ $groupNum }}<br>{{ strtoupper($namaRayon) }}
+                                GROUP-<?php echo e($groupNum); ?><br><?php echo e(strtoupper($namaRayon)); ?>
+
                             </th>
-                            @foreach ($tipeKolom as $tipe)
-                                <th class="th-group">TOTAL<br>{{ strtoupper($tipe) }}</th>
-                            @endforeach
+                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $tipeKolom; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tipe): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <th class="th-group">TOTAL<br><?php echo e(strtoupper($tipe)); ?></th>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>
-                        {{-- Baris per kota --}}
-                        @forelse($kotaList as $kota)
+                        
+                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__empty_1 = true; $__currentLoopData = $kotaList; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $kota): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                             <tr>
-                                <td class="td-kota">{{ strtoupper($kota) }}</td>
-                                @foreach ($tipeKolom as $tipe)
-                                    <td>{{ $dataTable[$kota][$tipe] ?? 0 }}</td>
-                                @endforeach
+                                <td class="td-kota"><?php echo e(strtoupper($kota)); ?></td>
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $tipeKolom; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tipe): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <td><?php echo e($dataTable[$kota][$tipe] ?? 0); ?></td>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                             </tr>
-                        @empty
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                             <tr>
-                                <td class="td-kota" colspan="{{ count($tipeKolom) + 1 }}">-</td>
+                                <td class="td-kota" colspan="<?php echo e(count($tipeKolom) + 1); ?>">-</td>
                             </tr>
-                        @endforelse
+                        <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
 
-                        {{-- Jumlah --}}
+                        
                         <tr class="tr-jumlah">
                             <td class="td-kota">JUMLAH</td>
-                            @foreach ($tipeKolom as $tipe)
-                                <td>{{ $totalPerTipe[$tipe] }}</td>
-                            @endforeach
+                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $tipeKolom; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tipe): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <td><?php echo e($totalPerTipe[$tipe]); ?></td>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                         </tr>
 
-                        {{-- Persentase --}}
+                        
                         <tr class="tr-persen">
                             <td class="td-kota">PERSENTASE</td>
-                            @foreach ($tipeKolom as $tipe)
-                                <td>{{ $persenPerTipe[$tipe] }}</td>
-                            @endforeach
+                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $tipeKolom; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tipe): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <td><?php echo e($persenPerTipe[$tipe]); ?></td>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                         </tr>
                     </tbody>
                 </table>
 
-                {{-- PANEL KANAN --}}
+                
                 <div class="panel-right">
                     <div class="panel-right-header">
                         <div class="panel-rata">RATA - RATA<br>KUNJUNGAN / HARI</div>
                         <div class="panel-ket">KETERANGAN</div>
                     </div>
                     <div class="panel-right-body">
-                        <div class="panel-rata">{{ $rataRata }}</div>
+                        <div class="panel-rata"><?php echo e($rataRata); ?></div>
                         <div class="panel-ket">
 
                         </div>
@@ -307,8 +309,8 @@
         </div>
         <br>
 
-        @php $groupNum++; @endphp
-    @endforeach
+        <?php $groupNum++; ?>
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
     <script>
         window.onload = function() {
             window.print();
@@ -317,3 +319,4 @@
 </body>
 
 </html>
+<?php /**PATH C:\laragon\www\dgg-system\resources\views/print/performance-rayon.blade.php ENDPATH**/ ?>

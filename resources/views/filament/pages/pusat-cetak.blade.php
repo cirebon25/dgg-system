@@ -68,9 +68,9 @@
             </x-filament::button>
         </div>
 
-        {{-- SISIPAN BARU: Laporan Rekap Seri Mesin Per Customer (tidak perlu bulan) --}}
+        {{-- SISIPAN BARU: Laporan Rekap tipe model Mesin Per Customer (tidak perlu bulan) --}}
         <div class="p-6 bg-white border rounded-xl shadow-sm dark:bg-gray-800">
-            <h3 class="text-lg font-bold mb-2">🏢 Laporan Rekap Seri Mesin Per Customer</h3>
+            <h3 class="text-lg font-bold mb-2">🏢 Laporan Rekap tipe model Mesin Per Customer</h3>
             <p class="text-sm text-gray-500 mb-4">Matriks jumlah total unit aktif dari seri XX, YY, ZZ di setiap lokasi
                 customer.</p>
             <x-filament::button tag="a" href="{{ route('report.rekap-mesin') }}" target="_blank"

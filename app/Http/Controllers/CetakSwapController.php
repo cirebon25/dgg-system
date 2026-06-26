@@ -67,4 +67,29 @@ class CetakSwapController extends Controller
 
         return view('cetak.tukar-guling', compact('data', 'bulan', 'tahun', 'namaBulan'));
     }
+
+    public function sjRolling(Request $request)
+    {
+        $payload = $request->query('payload');
+
+        if (!$payload) {
+            return 'Gagal memuat dokumen! Data Surat Jalan kosong. Silakan ulangi proses rolling dari menu Ganti Mesin, Boss Rudi.';
+        }
+
+        try {
+            $dataDecoded = json_decode(base64_decode($payload), true);
+
+            if (!$dataDecoded) {
+                return 'Struktur data Surat Jalan rusak, silakan input kembali.';
+            }
+
+            return view('cetak.surat-jalan-rolling', [
+                'd'        => $dataDecoded,
+                'tanggal'  => date('d/m/Y'),
+                'nomor_sj' => 'SJ-RR/' . date('Ymd/Hi'),
+            ]);
+        } catch (\Exception $e) {
+            return 'Eror Membaca Payload Data: ' . $e->getMessage();
+        }
+    }
 }
