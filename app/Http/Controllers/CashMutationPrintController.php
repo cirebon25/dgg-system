@@ -20,10 +20,11 @@ class CashMutationPrintController extends Controller
                     ? $data->tanggal
                     : Carbon::parse($data->tanggal);
             }
-        } catch (\Exception $e) {}
+        } catch (\Exception $e) {
+        }
 
         // ── No Voucher ──
-        $bulanRomawi = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+        $bulanRomawi = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
         if ($tgl) {
             $seq       = $data->no_urut ?? (explode('/', $data->no_voucher ?? '')[0] ?? '');
             $noVoucher = 'NO. ' . trim($seq) . ' / ' . $bulanRomawi[$tgl->month - 1] . ' / ' . $tgl->format('y');
@@ -47,11 +48,21 @@ class CashMutationPrintController extends Controller
         if (!$terbilang) $terbilang = '-';
 
         // ── Items & empty rows ──
+        // CATATAN: emptyRows diperkecil ke 2 karena detail kendaraan (Plat No,
+        // KM Awal, KM Akhir) sekarang dipecah jadi 3 baris terpisah per item,
+        // sehingga tabel jadi lebih tinggi. Mengurangi baris kosong menjaga
+        // dokumen tetap pas 1 halaman A5 landscape.
         $items     = $data->items ?? collect();
-        $emptyRows = max(0, 6 - count($items));
+        $emptyRows = max(0, 10 - count($items));
 
         return view('print.cash-mutation', compact(
-            'data', 'noVoucher', 'tanggalStr', 'total', 'terbilang', 'items', 'emptyRows'
+            'data',
+            'noVoucher',
+            'tanggalStr',
+            'total',
+            'terbilang',
+            'items',
+            'emptyRows'
         ));
     }
 }
