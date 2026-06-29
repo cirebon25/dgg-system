@@ -8,17 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('print_forms', function (Blueprint $table) {
+        Schema::create('print_forms', function (Blueprint $table) {
+            $table->id();
             $table->string('judul');
             $table->string('deskripsi')->nullable();
             $table->string('file_path');
+            $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::table('print_forms', function (Blueprint $table) {
-            $table->dropColumn(['judul', 'deskripsi', 'file_path']);
-        });
+        Schema::dropIfExists('print_forms');
     }
 };
