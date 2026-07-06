@@ -1,17 +1,26 @@
 <x-filament-panels::page>
 
     {{-- Filter Bulan & Tahun --}}
-    <div class="flex flex-wrap items-end gap-4 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+    <div
+        class="flex flex-wrap items-end gap-4 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
         <div>
             <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Bulan</label>
             <select wire:model.live="month"
                 class="text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white shadow-sm focus:ring-amber-500 focus:border-amber-500">
                 @foreach ([
-                    '01' => 'Januari',  '02' => 'Februari', '03' => 'Maret',
-                    '04' => 'April',    '05' => 'Mei',       '06' => 'Juni',
-                    '07' => 'Juli',     '08' => 'Agustus',   '09' => 'September',
-                    '10' => 'Oktober',  '11' => 'November',  '12' => 'Desember',
-                ] as $val => $label)
+        '01' => 'Januari',
+        '02' => 'Februari',
+        '03' => 'Maret',
+        '04' => 'April',
+        '05' => 'Mei',
+        '06' => 'Juni',
+        '07' => 'Juli',
+        '08' => 'Agustus',
+        '09' => 'September',
+        '10' => 'Oktober',
+        '11' => 'November',
+        '12' => 'Desember',
+    ] as $val => $label)
                     <option value="{{ $val }}" @selected($month == $val)>{{ $label }}</option>
                 @endforeach
             </select>
@@ -33,7 +42,91 @@
         </div>
     </div>
 
-    {{-- Area Cetak --}}
+    {{-- TOP 3 BW & Color Summary Cards --}}
+    @php $data = $this->getUsageData(); @endphp
+    @if ($data->count() > 0)
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {{-- TOP 3 BW --}}
+            <div
+                class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
+                    🏆 Top 3 Pemakaian BW Terbanyak
+                </h3>
+                @foreach ($data->sortByDesc('total_bw')->take(3) as $rank => $row)
+                    @php
+                        $medal = match ($rank) {
+                            0 => '🥇',
+                            1 => '🥈',
+                            2 => '🥉',
+                            default => '',
+                        };
+                        $bg = match ($rank) {
+                            0 => 'bg-amber-50 border-amber-300 dark:bg-amber-950/20 dark:border-amber-700',
+                            1 => 'bg-gray-50 border-gray-300 dark:bg-gray-900 dark:border-gray-600',
+                            2 => 'bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-700',
+                            default => '',
+                        };
+                    @endphp
+                    <div class="flex items-center justify-between p-2.5 rounded-xl border {{ $bg }} mb-2">
+                        <div>
+                            <span class="text-sm">{{ $medal }}</span>
+                            <span
+                                class="text-xs font-bold text-gray-800 dark:text-gray-200 ml-1">{{ $row->nama_customer }}</span>
+                            <div class="text-[10px] text-gray-500 ml-5">{{ $row->serial_number }} ·
+                                {{ $row->tipe_model }}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-black text-gray-900 dark:text-white">
+                                {{ number_format($row->total_bw) }}</div>
+                            <div class="text-[10px] text-gray-400">lembar BW</div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            {{-- TOP 3 Color --}}
+            <div
+                class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
+                    🎨 Top 3 Pemakaian Color Terbanyak
+                </h3>
+                @foreach ($data->sortByDesc('total_color')->take(3) as $rank => $row)
+                    @php
+                        $medal = match ($rank) {
+                            0 => '🥇',
+                            1 => '🥈',
+                            2 => '🥉',
+                            default => '',
+                        };
+                        $bg = match ($rank) {
+                            0 => 'bg-blue-50 border-blue-300 dark:bg-blue-950/20 dark:border-blue-700',
+                            1 => 'bg-gray-50 border-gray-300 dark:bg-gray-900 dark:border-gray-600',
+                            2 => 'bg-indigo-50 border-indigo-200 dark:bg-indigo-950/20 dark:border-indigo-700',
+                            default => '',
+                        };
+                    @endphp
+                    <div class="flex items-center justify-between p-2.5 rounded-xl border {{ $bg }} mb-2">
+                        <div>
+                            <span class="text-sm">{{ $medal }}</span>
+                            <span
+                                class="text-xs font-bold text-gray-800 dark:text-gray-200 ml-1">{{ $row->nama_customer }}</span>
+                            <div class="text-[10px] text-gray-500 ml-5">{{ $row->serial_number }} ·
+                                {{ $row->tipe_model }}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-black text-blue-600 dark:text-blue-400">
+                                {{ number_format($row->total_color) }}</div>
+                            <div class="text-[10px] text-gray-400">lembar Color</div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+        </div>
+    @endif
+
+    {{-- Tabel Lengkap --}}
     <div id="print-area"
         class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
 
@@ -54,48 +147,78 @@
 
         {{-- Tabel --}}
         <div class="overflow-x-auto">
-            @php $data = $this->getUsageData(); @endphp
-
             <table class="w-full text-xs border-collapse">
                 <thead>
                     <tr class="bg-gray-900 dark:bg-gray-950 text-white">
-                        <th class="px-3 py-2.5 text-center font-bold border border-gray-700">No.</th>
-                        <th class="px-3 py-2.5 text-left font-bold border border-gray-700">Customer</th>
-                        <th class="px-3 py-2.5 text-left font-bold border border-gray-700">Rayon</th>
-                        <th class="px-3 py-2.5 text-left font-bold border border-gray-700">Teknisi</th>
-                        <th class="px-3 py-2.5 text-left font-bold border border-gray-700">Serial Number</th>
-                        <th class="px-3 py-2.5 text-left font-bold border border-gray-700">Tipe</th>
-                        <th class="px-3 py-2.5 text-center font-bold border border-gray-700">Tgl Instal</th>
-                        <th class="px-3 py-2.5 text-center font-bold border border-gray-700">Lama (Bln)</th>
-                        <th class="px-3 py-2.5 text-right font-bold border border-gray-700">BW</th>
-                        <th class="px-3 py-2.5 text-right font-bold border border-gray-700">Color</th>
-                        <th class="px-3 py-2.5 text-right font-bold border border-gray-700">Total Bulan</th>
-                        <th class="px-3 py-2.5 text-right font-bold border border-gray-700">Lifetime</th>
-                        <th class="px-3 py-2.5 text-right font-bold border border-gray-700">Rata-rata/Bln</th>
-                        <th class="px-3 py-2.5 text-center font-bold border border-gray-700">Kunjungan</th>
+                        <th class="px-3 py-2.5 text-center font-bold border border-gray-700" rowspan="2">No.</th>
+                        <th class="px-3 py-2.5 text-left font-bold border border-gray-700" rowspan="2">Customer</th>
+                        <th class="px-3 py-2.5 text-left font-bold border border-gray-700" rowspan="2">Rayon</th>
+                        <th class="px-3 py-2.5 text-left font-bold border border-gray-700" rowspan="2">Teknisi</th>
+                        <th class="px-3 py-2.5 text-left font-bold border border-gray-700" rowspan="2">Serial Number
+                        </th>
+                        <th class="px-3 py-2.5 text-left font-bold border border-gray-700" rowspan="2">Tipe</th>
+                        <th class="px-3 py-2.5 text-center font-bold border border-gray-700" rowspan="2">Tgl Instal
+                        </th>
+                        <th class="px-3 py-2.5 text-center font-bold border border-gray-700" rowspan="2">Lama (Bln)
+                        </th>
+                        {{-- Pemakaian Bulan Ini --}}
+                        <th class="px-3 py-2.5 text-center font-bold border border-gray-700 bg-gray-700" colspan="3">
+                            Pemakaian Bulan Ini</th>
+                        {{-- Lifetime --}}
+                        <th class="px-3 py-2.5 text-center font-bold border border-gray-700 bg-gray-600" colspan="3">
+                            Lifetime</th>
+                        <th class="px-3 py-2.5 text-center font-bold border border-gray-700" rowspan="2">Kunjungan
+                        </th>
+                    </tr>
+                    <tr class="bg-gray-800 dark:bg-gray-900 text-white">
+                        <th class="px-3 py-2 text-right font-bold border border-gray-700 text-gray-200">BW</th>
+                        <th class="px-3 py-2 text-right font-bold border border-gray-700 text-blue-300">Color</th>
+                        <th class="px-3 py-2 text-right font-bold border border-gray-700 text-amber-300">Total</th>
+                        <th class="px-3 py-2 text-right font-bold border border-gray-700 text-gray-300">BW</th>
+                        <th class="px-3 py-2 text-right font-bold border border-gray-700 text-blue-200">Color</th>
+                        <th class="px-3 py-2 text-right font-bold border border-gray-700 text-amber-200">Rata-rata/Bln
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($data as $index => $row)
-                        <tr class="{{ $index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-900' }} hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors">
+                        @php
+                            $rankBg = match ($index) {
+                                0 => 'bg-amber-50 dark:bg-amber-950/30',
+                                1 => 'bg-gray-50 dark:bg-gray-900',
+                                2 => 'bg-orange-50 dark:bg-orange-950/20',
+                                default => $index % 2 === 0
+                                    ? 'bg-white dark:bg-gray-800'
+                                    : 'bg-gray-50 dark:bg-gray-900',
+                            };
+                            $rankBadge = match ($index) {
+                                0 => '🥇',
+                                1 => '🥈',
+                                2 => '🥉',
+                                default => $index + 1,
+                            };
+                        @endphp
+                        <tr class="{{ $rankBg }} hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors">
 
-                            <td class="px-3 py-2 text-center border border-gray-100 dark:border-gray-700 font-semibold text-gray-400">
-                                {{ $index + 1 }}
+                            <td
+                                class="px-3 py-2 text-center border border-gray-100 dark:border-gray-700 font-bold text-sm">
+                                {{ $rankBadge }}
                             </td>
 
-                            <td class="px-3 py-2 border border-gray-100 dark:border-gray-700 font-semibold text-gray-800 dark:text-gray-200">
+                            <td
+                                class="px-3 py-2 border border-gray-100 dark:border-gray-700 font-semibold text-gray-800 dark:text-gray-200">
                                 {{ $row->nama_customer }}
                             </td>
 
                             <td class="px-3 py-2 border border-gray-100 dark:border-gray-700">
                                 @php
                                     $rayon = strtoupper($row->nama_rayon);
-                                    $rayonClass = match(true) {
-                                        str_contains($rayon, 'UTARA')     => 'bg-green-100 text-green-700',
-                                        str_contains($rayon, 'SELATAN')   => 'bg-red-100 text-red-700',
-                                        str_contains($rayon, 'BARAT DAYA')=> 'bg-yellow-100 text-yellow-700',
-                                        str_contains($rayon, 'BARAT')     => 'bg-blue-100 text-blue-700',
-                                        default                            => 'bg-gray-100 text-gray-600',
+                                    $rayonClass = match (true) {
+                                        str_contains($rayon, 'UTARA') => 'bg-green-100 text-green-700',
+                                        str_contains($rayon, 'SELATAN') => 'bg-red-100 text-red-700',
+                                        str_contains($rayon, 'BARAT DAYA') => 'bg-yellow-100 text-yellow-700',
+                                        str_contains($rayon, 'BARAT') => 'bg-blue-100 text-blue-700',
+                                        default => 'bg-gray-100 text-gray-600',
                                     };
                                 @endphp
                                 <span class="px-1.5 py-0.5 rounded text-[10px] font-bold {{ $rayonClass }}">
@@ -103,85 +226,111 @@
                                 </span>
                             </td>
 
-                            <td class="px-3 py-2 border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400">
+                            <td
+                                class="px-3 py-2 border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400">
                                 {{ $row->nama_technician ?? '-' }}
                             </td>
 
-                            <td class="px-3 py-2 border border-gray-100 dark:border-gray-700 font-mono text-gray-700 dark:text-gray-300">
+                            <td
+                                class="px-3 py-2 border border-gray-100 dark:border-gray-700 font-mono text-gray-700 dark:text-gray-300">
                                 {{ $row->serial_number }}
                             </td>
 
-                            <td class="px-3 py-2 border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400">
+                            <td
+                                class="px-3 py-2 border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400">
                                 {{ $row->tipe_model }}
                             </td>
 
-                            <td class="px-3 py-2 text-center border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400">
+                            <td
+                                class="px-3 py-2 text-center border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400">
                                 {{ \Carbon\Carbon::parse($row->tanggal_instal)->format('d/m/Y') }}
                             </td>
 
-                            <td class="px-3 py-2 text-center border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400">
+                            <td
+                                class="px-3 py-2 text-center border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400">
                                 {{ $row->lama_pasang }}
                             </td>
 
-                            <td class="px-3 py-2 text-right border border-gray-100 dark:border-gray-700 font-mono font-semibold text-gray-800 dark:text-gray-200">
+                            {{-- Pemakaian Bulan Ini --}}
+                            <td
+                                class="px-3 py-2 text-right border border-gray-100 dark:border-gray-700 font-mono font-semibold text-gray-800 dark:text-gray-200">
                                 {{ number_format($row->total_bw) }}
                             </td>
 
-                            <td class="px-3 py-2 text-right border border-gray-100 dark:border-gray-700 font-mono font-semibold text-blue-600 dark:text-blue-400">
+                            <td
+                                class="px-3 py-2 text-right border border-gray-100 dark:border-gray-700 font-mono font-semibold text-blue-600 dark:text-blue-400">
                                 {{ number_format($row->total_color) }}
                             </td>
 
-                            {{-- Total Bulan: highlight jika tertinggi --}}
-                            <td class="px-3 py-2 text-right border border-gray-100 dark:border-gray-700 font-mono font-bold
+                            <td
+                                class="px-3 py-2 text-right border border-gray-100 dark:border-gray-700 font-mono font-bold
                                 {{ $index === 0 ? 'text-white bg-amber-500' : 'text-amber-600' }}">
                                 {{ number_format($row->total_bulan) }}
                             </td>
 
-                            <td class="px-3 py-2 text-right border border-gray-100 dark:border-gray-700 font-mono text-gray-600 dark:text-gray-400">
-                                {{ number_format($row->total_hidup) }}
+                            {{-- Lifetime --}}
+                            <td
+                                class="px-3 py-2 text-right border border-gray-100 dark:border-gray-700 font-mono text-gray-500 dark:text-gray-400 text-[10px]">
+                                {{ number_format($row->total_bw_life ?? $row->total_hidup) }}
                             </td>
 
-                            <td class="px-3 py-2 text-right border border-gray-100 dark:border-gray-700 font-mono text-gray-600 dark:text-gray-400">
+                            <td
+                                class="px-3 py-2 text-right border border-gray-100 dark:border-gray-700 font-mono text-blue-400 dark:text-blue-300 text-[10px]">
+                                {{ number_format($row->total_color_life ?? 0) }}
+                            </td>
+
+                            <td
+                                class="px-3 py-2 text-right border border-gray-100 dark:border-gray-700 font-mono text-gray-500 dark:text-gray-400 text-[10px]">
                                 {{ number_format($row->rata_rata) }}
                             </td>
 
-                            <td class="px-3 py-2 text-center border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400">
+                            <td
+                                class="px-3 py-2 text-center border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400">
                                 {{ $row->total_kunjungan }}x
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="14" class="px-6 py-10 text-center text-gray-400 text-sm">
+                            <td colspan="15" class="px-6 py-10 text-center text-gray-400 text-sm">
                                 Tidak ada data untuk periode ini.
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
 
-                {{-- Baris Total --}}
                 @if ($data->count() > 0)
                     <tfoot>
                         <tr class="bg-amber-50 dark:bg-amber-950/30 font-bold border-t-2 border-amber-300">
                             <td colspan="8"
-                                class="px-3 py-2.5 text-right text-xs border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400">
+                                class="px-3 py-2.5 text-right text-xs border border-gray-200 dark:border-gray-700 text-gray-600">
                                 TOTAL KESELURUHAN
                             </td>
-                            <td class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200">
+                            <td
+                                class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200">
                                 {{ number_format($data->sum('total_bw')) }}
                             </td>
-                            <td class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-blue-600">
+                            <td
+                                class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-blue-600">
                                 {{ number_format($data->sum('total_color')) }}
                             </td>
-                            <td class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-amber-600">
+                            <td
+                                class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-amber-600">
                                 {{ number_format($data->sum('total_bulan')) }}
                             </td>
-                            <td class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-gray-600">
+                            <td
+                                class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-gray-500">
                                 {{ number_format($data->sum('total_hidup')) }}
                             </td>
-                            <td class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-gray-600">
+                            <td
+                                class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-blue-400">
                                 -
                             </td>
-                            <td class="px-3 py-2.5 text-center text-xs border border-gray-200 dark:border-gray-700 text-gray-600">
+                            <td
+                                class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-gray-500">
+                                -
+                            </td>
+                            <td
+                                class="px-3 py-2.5 text-center text-xs border border-gray-200 dark:border-gray-700 text-gray-600">
                                 {{ number_format($data->sum('total_kunjungan')) }}x
                             </td>
                         </tr>
@@ -190,32 +339,45 @@
             </table>
         </div>
 
-        {{-- Footer Laporan --}}
+        {{-- Footer --}}
         <div class="px-6 py-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
             <p class="text-[10px] text-gray-400">Dicetak pada: {{ now()->format('d/m/Y H:i') }} WIB</p>
             <p class="text-[10px] text-gray-400">DGG System v3.0 — PT Dinamika Global Gemilang</p>
         </div>
     </div>
 
-    {{-- CSS Cetak --}}
     <style>
         @media print {
-            body * { visibility: hidden; }
+            body * {
+                visibility: hidden;
+            }
+
             #print-area,
-            #print-area * { visibility: visible; }
+            #print-area * {
+                visibility: visible;
+            }
+
             #print-area {
                 position: absolute;
                 left: 0;
                 top: 0;
                 width: 100%;
             }
-            .print-header { display: block !important; }
-            thead { display: table-header-group; }
-            tfoot { display: table-footer-group; }
+
+            .print-header {
+                display: block !important;
+            }
+
+            thead {
+                display: table-header-group;
+            }
+
+            tfoot {
+                display: table-footer-group;
+            }
         }
     </style>
 
-    {{-- Script Cetak --}}
     <script>
         document.addEventListener('livewire:initialized', () => {
             Livewire.on('printPage', () => {

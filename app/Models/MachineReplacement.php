@@ -21,13 +21,13 @@ class MachineReplacement extends Model
     ];
 
     // Relasi ke Mesin Baru (Penting untuk Observer ambil SN)
-    public function machine_new()
+    public function newMachine()
     {
         return $this->belongsTo(Machine::class, 'new_machine_id');
     }
 
     // Relasi ke Mesin Lama
-    public function machine_old()
+    public function oldMachine()
     {
         return $this->belongsTo(Machine::class, 'old_machine_id');
     }

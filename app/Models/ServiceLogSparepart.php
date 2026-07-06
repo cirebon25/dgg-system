@@ -56,6 +56,41 @@ class ServiceLogSparepart extends Model
                 'keterangan'    => "Service: {$cust} (SN: {$sn})",
             ]);
         });
+
+        // PENTING (perbaikan 30 Juni 2026): saat baris pivot ini dihapus -- baik
+        // karena admin edit Service Log (Filament Repeater menghapus item lama
+        // sebelum membuat item baru), maupun karena dihapus manual -- saldo yang
+        // SUDAH TERLANJUR DIPOTONG harus dikembalikan ke kartu stok teknisi.
+        // Tanpa ini, edit Service Log akan membuat saldo hilang permanen karena
+        // potongan lama tidak pernah dikembalikan.
+        static::deleting(function ($item) {
+            $serviceLog = \App\Models\ServiceLog::find($item->service_log_id);
+            if (!$serviceLog) return;
+
+            $techId = $serviceLog->technician_id;
+            if (!$techId) return;
+
+            $techStock = \App\Models\TechnicianStock::firstOrCreate(
+                ['technician_id' => $techId, 'sparepart_id' => $item->sparepart_id],
+                ['jumlah' => 0]
+            );
+
+            // Kembalikan saldo sebesar jumlah yang dulu dipotong oleh baris ini
+            $techStock->increment('jumlah', $item->jumlah);
+
+            $machine = \App\Models\Machine::find($serviceLog->machine_id);
+            $cust    = $machine?->customer?->nama_customer ?? 'Unknown';
+            $sn      = $machine?->serial_number ?? '-';
+
+            \App\Models\TechnicianStockHistory::create([
+                'technician_id' => $techId,
+                'sparepart_id'  => $item->sparepart_id,
+                'masuk'         => $item->jumlah,
+                'keluar'        => 0,
+                'saldo_akhir'   => $techStock->fresh()->jumlah,
+                'keterangan'    => "Koreksi/Edit Service: {$cust} (SN: {$sn}) — saldo dikembalikan",
+            ]);
+        });
     }
 
     public function serviceLog(): BelongsTo

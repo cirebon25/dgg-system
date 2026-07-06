@@ -150,9 +150,23 @@ class MrcController extends Controller
             $usageBw    = 0;
             $usageColor = 0;
 
-            if ($logSekarang) {
-                $bwLalu    = $logSebelumnya?->counter_bw    ?? 0;
-                $colorLalu = $logSebelumnya?->counter_color ?? 0;
+            // is_mrc_tercatat: apakah bulan ini ADA pencatatan MRC sama sekali.
+            // Kalau false, blade tampilkan "Belum dicatat MRC bulan ini".
+            $isMrcTercatat = $logSekarang !== null;
+
+            // adaBaseline: apakah ada log MRC SEBELUM bulan ini untuk dibandingkan.
+            // PENTING: usage HANYA dihitung jika ada baseline. Kalau ini
+            // pencatatan MRC PERTAMA KALI untuk mesin ini (tidak ada histori
+            // bulan lalu), usage dianggap 0 -- BUKAN dihitung dari 0 ke counter
+            // sekarang, karena itu menghasilkan usage yang sangat besar dan
+            // tidak mencerminkan pemakaian aktual bulan ini (counter mesin bisa
+            // sudah berjalan lama sebelum sistem MRC mulai mencatatnya). Counter
+            // bulan ini otomatis jadi baseline yang valid untuk bulan berikutnya.
+            $adaBaseline = $logSebelumnya !== null;
+
+            if ($isMrcTercatat && $adaBaseline) {
+                $bwLalu    = $logSebelumnya->counter_bw    ?? 0;
+                $colorLalu = $logSebelumnya->counter_color ?? 0;
 
                 $usageBw    = max(0, (int) $logSekarang->counter_bw    - (int) $bwLalu);
                 $usageColor = max(0, (int) $logSekarang->counter_color - (int) $colorLalu);
@@ -161,9 +175,15 @@ class MrcController extends Controller
             $tagihan = $contract->hitungTagihan($usageBw, $usageColor);
 
             return [
-                'contract' => $contract,
-                'log'      => $logSekarang,
-                'tagihan'  => $tagihan,
+                'contract'             => $contract,
+                'log'                  => $logSekarang,
+                'tagihan'              => $tagihan,
+                'is_mrc_tercatat'      => $isMrcTercatat,
+                'is_baseline_pertama'  => $isMrcTercatat && !$adaBaseline,
+                'counter_bw_lalu'      => $isMrcTercatat ? (int) ($logSebelumnya->counter_bw ?? 0) : null,
+                'counter_bw_akhir'     => $isMrcTercatat ? (int) $logSekarang->counter_bw : null,
+                'counter_color_lalu'   => $isMrcTercatat ? (int) ($logSebelumnya->counter_color ?? 0) : null,
+                'counter_color_akhir'  => $isMrcTercatat ? (int) $logSekarang->counter_color : null,
             ];
         });
 

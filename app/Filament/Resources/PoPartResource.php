@@ -52,46 +52,36 @@ class PoPartResource extends Resource
                         Forms\Components\Repeater::make('items')
                             ->relationship('items')
                             ->schema([
-                                // Toggle: dari dropdown atau manual
                                 Forms\Components\Toggle::make('dari_dropdown')
                                     ->label('Pilih dari data sparepart')
                                     ->default(true)
                                     ->live()
                                     ->columnSpanFull(),
 
-                                // Dropdown sparepart
                                 Forms\Components\Select::make('sparepart_id')
-                                    ->label('Nama Part (dari data)')
-                                    ->options(Sparepart::orderBy('nama_sparepart')
-                                        ->pluck('nama_sparepart', 'id'))
+                                    ->label('Pilih Sparepart')
+                                    ->options(Sparepart::orderBy('nama_sparepart')->pluck('nama_sparepart', 'id'))
                                     ->searchable()
                                     ->live()
                                     ->afterStateUpdated(function (Get $get, Set $set, $state) {
                                         if ($state) {
                                             $sp = Sparepart::find($state);
                                             if ($sp) {
-                                                $set('nama_part',  $sp->nama_sparepart);
-                                                $set('kode_part',  $sp->code_part ?? '');
-                                                $set('merk_type',  '');
+                                                $set('nama_part', $sp->nama_sparepart);
+                                                $set('kode_part', $sp->code_part ?? '');
+                                                $set('merk_type', '');
                                             }
                                         }
                                     })
                                     ->visible(fn(Get $get) => $get('dari_dropdown'))
                                     ->columnSpan(2),
 
-                                // Input manual
+                                // Satu field nama_part saja -- diisi otomatis dari dropdown
+                                // atau diketik manual. Selalu visible, selalu tersimpan ke DB.
                                 Forms\Components\TextInput::make('nama_part')
                                     ->label('Nama Part')
                                     ->required()
-                                    ->visible(fn(Get $get) => ! $get('dari_dropdown'))
-                                    ->columnSpan(2),
-
-                                // Nama part (readonly jika dari dropdown)
-                                Forms\Components\TextInput::make('nama_part')
-                                    ->label('Nama Part')
-                                    ->disabled()
-                                    ->dehydrated()
-                                    ->visible(fn(Get $get) => $get('dari_dropdown'))
+                                    ->live()
                                     ->columnSpan(2),
 
                                 Forms\Components\TextInput::make('merk_type')

@@ -29,7 +29,6 @@
             line-height: 1.4;
         }
 
-        /* ── HEADER MODEREN DGG ── */
         header {
             text-align: center;
             padding-bottom: 15px;
@@ -51,7 +50,6 @@
             text-transform: uppercase;
             margin: 4px 0;
             color: #475569;
-            letter-spacing: 0.5px;
         }
 
         header p {
@@ -60,26 +58,22 @@
             margin-top: 2px;
         }
 
-        /* ── TABEL ELEGAN & SINKRON ── */
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
             table-layout: fixed;
-            box-shadow: 0 0 0 1px #cbd5e1;
-            border-radius: 4px;
-            overflow: hidden;
+            border: 1px solid #cbd5e1;
         }
 
         th,
         td {
-            padding: 10px 8px;
+            padding: 9px 8px;
             vertical-align: middle;
             text-align: center;
             border: 1px solid #cbd5e1;
         }
 
-        /* Header Utama Charcoal Premium */
         th {
             background: #1e293b;
             color: #ffffff;
@@ -89,23 +83,23 @@
             letter-spacing: 0.5px;
         }
 
-        /* WARNA KHAS TOTAL UNIT (Kuning Terang DGG Standar) */
         th.bg-total-header {
             background: #ffea31 !important;
             color: #000000 !important;
             font-weight: 700;
         }
 
-        /* Baris Selang-Seling */
-        tbody tr:nth-child(even) {
-            background: #f8fafc;
+        /* Baris dengan tipe_model sama tapi baris ke-2 dst (status berbeda) */
+        .row-same-type td.col-tipe {
+            color: #94a3b8;
+            /* abu-abu, tanda ini baris lanjutan */
+            font-style: italic;
         }
 
         tbody tr:hover {
             background: #f1f5f9;
         }
 
-        /* Highlight Data Total Unit (Soft Yellow di Data Body) */
         .bg-total-data {
             background: #fffde7 !important;
             color: #b45309;
@@ -121,34 +115,47 @@
             font-weight: 600;
         }
 
-        /* Badge Status Ready Hijau Bulat Clean */
         .badge-status {
-            background: #dcfce7;
-            color: #15803d;
-            padding: 4px 10px;
+            padding: 3px 10px;
             border-radius: 20px;
             font-weight: 600;
             font-size: 9.5px;
             display: inline-block;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
         }
 
-        /* Teks Serial Number */
+        .badge-ready {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .badge-perbaikan {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-rented {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-other {
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        /* Garis pemisah antar tipe mesin */
+        .row-new-type td {
+            border-top: 2px solid #94a3b8;
+        }
+
         .sn-text {
             font-family: 'Courier New', monospace;
-            font-size: 11px;
+            font-size: 10.5px;
             font-weight: 600;
             color: #0f172a;
         }
 
-        .ket-text {
-            font-size: 9px;
-            color: #64748b;
-            margin-top: 2px;
-            display: block;
-        }
-
-        /* ── GRAND TOTAL AREA ── */
         .total-container {
             display: flex;
             justify-content: flex-end;
@@ -191,28 +198,9 @@
                 print-color-adjust: exact;
             }
 
-            tbody tr:nth-child(even) {
-                background: #f8fafc !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-
             .bg-total-data {
                 background: #fffde7 !important;
                 color: #b45309 !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-
-            .badge-status {
-                background: #dcfce7 !important;
-                color: #15803d !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-
-            .total-box {
-                background: #f1f5f9 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -234,14 +222,14 @@
 
     <table>
         <colgroup>
-            <col style="width: 40px;">
-            <col style="width: 170px;">
-            <col style="width: 65px;">
-            <col style="width: 100px;">
-            <col style="width: 65px;">
-            <col style="width: 65px;">
-            <col style="width: 65px;">
-            <col style="width: 90px;">
+            <col style="width: 35px;">
+            <col style="width: 160px;">
+            <col style="width: 60px;">
+            <col style="width: 95px;">
+            <col style="width: 55px;">
+            <col style="width: 60px;">
+            <col style="width: 60px;">
+            <col style="width: 95px;">
             <col>
         </colgroup>
         <thead>
@@ -254,34 +242,65 @@
                 <th>FINISHER</th>
                 <th>D. SCAN</th>
                 <th>STATUS</th>
-                <th class="text-left">LIST SN / KETERANGAN</th>
+                <th class="text-left">LIST SN</th>
             </tr>
         </thead>
         <tbody>
-            @foreach ($stocks as $index => $s)
-                <tr>
-                    <td>{{ $index + 1 }}</td>
-                    <td class="text-left font-bold" style="color: #0f172a;">{{ $s->tipe_model }}</td>
+            @php
+                $no = 1;
+                $prevTipe = null;
+                $rowNum = 0;
+            @endphp
+
+            @foreach ($stocks as $s)
+                @php
+                    $isNewType = $s->tipe_model !== $prevTipe;
+                    $statusLower = strtolower($s->status);
+                    $badgeClass = match ($statusLower) {
+                        'ready' => 'badge-ready',
+                        'perbaikan' => 'badge-perbaikan',
+                        'rented' => 'badge-rented',
+                        default => 'badge-other',
+                    };
+                    $rowNum++;
+                @endphp
+
+                <tr class="{{ $isNewType && $rowNum > 1 ? 'row-new-type' : '' }}">
+                    <td>{{ $isNewType ? $no++ : '' }}</td>
+
+                    {{-- Kolom tipe: tampilkan nama kalau baris pertama tipe ini,
+                         kalau baris lanjutan (status berbeda) tampilkan └ saja --}}
+                    <td class="text-left font-bold col-tipe" style="color: {{ $isNewType ? '#0f172a' : '#94a3b8' }};">
+                        @if ($isNewType)
+                            {{ $s->tipe_model }}
+                        @else
+                            &nbsp;&nbsp;└ {{ $s->tipe_model }}
+                        @endif
+                    </td>
+
                     <td><span class="font-bold">{{ $s->volt ?: '-' }}V</span></td>
                     <td class="bg-total-data">{{ $s->total_unit }} UNIT</td>
                     <td>{{ $s->kaset ?: 0 }}</td>
                     <td>{{ $s->finisher ?: 0 }}</td>
                     <td>{{ $s->double_scan ?: 0 }}</td>
-                    <td><span class="badge-status">READY</span></td>
-                    <td class="text-left" style="line-height: 1.4;">
-                        <span class="sn-text">SN: {{ $s->list_sn }}</span>
-                        @if ($s->info)
-                            <span class="ket-text">Ket: {{ $s->info }}</span>
-                        @endif
+                    <td>
+                        <span class="badge-status {{ $badgeClass }}">
+                            {{ strtoupper($s->status) }}
+                        </span>
+                    </td>
+                    <td class="text-left">
+                        <span class="sn-text">{{ $s->list_sn }}</span>
                     </td>
                 </tr>
+
+                @php $prevTipe = $s->tipe_model; @endphp
             @endforeach
         </tbody>
     </table>
 
     <div class="total-container">
         <div class="total-box">
-            GRAND TOTAL STOK READY: <strong>{{ $stocks->sum('total_unit') }} UNIT</strong>
+            GRAND TOTAL SEMUA UNIT: <strong>{{ $stocks->sum('total_unit') }} UNIT</strong>
         </div>
     </div>
 

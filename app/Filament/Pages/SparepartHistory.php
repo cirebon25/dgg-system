@@ -51,7 +51,8 @@ class SparepartHistory extends Page
                 'jumlah'  => $item->jumlah,
                 'detail'  => 'DARI: ' . ($item->supplier ?? 'Supplier Tidak Diketahui'),
                 'part'    => $item->sparepart->nama_sparepart ?? '-',
-            ]);
+            ])
+            ->toBase(); // <-- FIX: ubah dari Eloquent Collection ke base Collection
 
         // =============================================
         // 2. PINJAM — Gudang → Teknisi (masuk > 0)
@@ -67,7 +68,8 @@ class SparepartHistory extends Page
                 'jumlah'  => $item->masuk,
                 'detail'  => 'KE TEKNISI: ' . ($item->technician->nama_technician ?? '-'),
                 'part'    => $item->sparepart->nama_sparepart ?? '-',
-            ]);
+            ])
+            ->toBase(); // <-- FIX
 
         // =============================================
         // 3. PAKAI SERVIS — Teknisi → Customer (keluar > 0)
@@ -83,7 +85,8 @@ class SparepartHistory extends Page
                 'jumlah'  => $item->keluar,
                 'detail'  => $item->keterangan ?? 'SERVIS',
                 'part'    => $item->sparepart->nama_sparepart ?? '-',
-            ]);
+            ])
+            ->toBase(); // <-- FIX
 
         // =============================================
         // 4. DEPLOY — Keluar via pemasangan mesin

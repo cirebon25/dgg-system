@@ -52,8 +52,8 @@ class PrintSparepartTransController extends Controller
     {
         $replacement = MachineReplacement::with([
             'customer',
-            'machine_old',
-            'machine_new',
+            'oldMachine',
+            'newMachine',
             'technician',
             'deployment.deploymentSpareparts.sparepart',
         ])->find($replacementId);

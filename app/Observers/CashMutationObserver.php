@@ -71,18 +71,30 @@ class CashMutationObserver
     public function created(CashMutation $cashMutation): void
     {
         DB::transaction(function () use ($cashMutation) {
+            // Guard presisi: 1 CashMutation hanya boleh punya 1 CashLedger.
+            // Cek berdasarkan cash_mutation_id (bukan no_surat) supaya tidak
+            // memblokir voucher lain yang kebetulan punya nomor urut sama.
+            if (CashLedger::where('cash_mutation_id', $cashMutation->id)->exists()) {
+                \Illuminate\Support\Facades\Log::warning('CashMutationObserver: skip double insert', [
+                    'cash_mutation_id' => $cashMutation->id,
+                    'no_surat'         => $this->formatNoSurat($cashMutation),
+                ]);
+                return;
+            }
+
             $jenis   = $this->resolveJenis($cashMutation);
             $tanggal = $cashMutation->tanggal
                 ? Carbon::parse($cashMutation->tanggal)->format('Y-m-d')
                 : now()->format('Y-m-d');
 
             CashLedger::create([
-                'tanggal'     => $tanggal,
-                'no_surat'    => $this->formatNoSurat($cashMutation),
-                'keterangan'  => $this->buildKeterangan($cashMutation, $jenis['tipe']),
-                'uang_masuk'  => $jenis['uang_masuk'],
-                'uang_keluar' => $jenis['uang_keluar'],
-                'dibuat_oleh' => $cashMutation->pembuat ?? auth()->user()?->name ?? 'SYSTEM',
+                'cash_mutation_id' => $cashMutation->id,
+                'tanggal'          => $tanggal,
+                'no_surat'         => $this->formatNoSurat($cashMutation),
+                'keterangan'       => $this->buildKeterangan($cashMutation, $jenis['tipe']),
+                'uang_masuk'       => $jenis['uang_masuk'],
+                'uang_keluar'      => $jenis['uang_keluar'],
+                'dibuat_oleh'      => $cashMutation->pembuat ?? auth()->user()?->name ?? 'SYSTEM',
             ]);
         });
     }

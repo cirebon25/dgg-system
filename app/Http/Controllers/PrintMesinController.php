@@ -239,25 +239,25 @@ class PrintMesinController extends Controller
     // dipindah dari: Route::get('/cetak-stok-gudang', ...)->name('cetak.stok-gudang')
     public function stokGudang()
     {
-        $stocks = Machine::where('status', 'Ready')
-            ->select(
-                'tipe_model',
-                'volt',
-                'kaset',
-                'finisher',
-                'double_scan',
-                DB::raw('count(*) as total_unit'),
-                DB::raw('GROUP_CONCAT(serial_number SEPARATOR ", ") as list_sn'),
-                DB::raw('GROUP_CONCAT(CONCAT(serial_number, "(K:", COALESCE(kaset, 0), "/F:", COALESCE(finisher, 0), ")") SEPARATOR " |
-    ") as detail_unit')
-            )
-            ->groupBy('tipe_model', 'volt')
+        $stocks = Machine::select(
+            'tipe_model',
+            'status',
+            'volt',
+            'kaset',
+            'finisher',
+            'double_scan',
+            DB::raw('count(*) as total_unit'),
+            DB::raw('GROUP_CONCAT(serial_number ORDER BY serial_number SEPARATOR ", ") as list_sn'),
+            DB::raw('NULL as info')
+        )
+            ->whereIn('status', ['Ready', 'Perbaikan'])
+            ->groupBy('tipe_model', 'status', 'volt', 'kaset', 'finisher', 'double_scan')
             ->orderBy('tipe_model', 'asc')
+            ->orderByRaw("FIELD(status, 'Ready', 'Perbaikan') asc")
             ->get();
 
         return view('print.stok-gudang', compact('stocks'));
     }
-
     // dipindah dari: Route::get('/cetak-alokasi-mesin', ...)->name('cetak.alokasi')
     // PERBAIKAN (24 Juni 2026) -- bagian 2:
     // Query ini pakai DB::table() (query builder polos), BUKAN Eloquent Model --
@@ -606,7 +606,7 @@ class PrintMesinController extends Controller
                     <div style='display:flex; justify-content:space-between; border-bottom:2px solid #000; padding-bottom:5px;'>
                         <div>
                             <h2 style='margin:0 0 5px 0; font-size:16px;'>PT. DINAMIKA GLOBAL GEMILANG</h2>
-                            <p style='margin:0; font-weight:bold; letter-spacing:1px;'>SURAT JALAN KIRIM MESIN BARU</p>
+                            <p style='margin:0; font-weight:bold; letter-spacing:1px;'>Part Replacements</p>
                         </div>
                         <div style='text-align:right;'>
                             <p style='margin:0 0 5px 0;'><b>Nomor: SJ/FC/CRB/" . date('dmy', strtotime($d->created_at)) . "/" . str_pad($d->id, 3, '0', STR_PAD_LEFT) . "</b></p>

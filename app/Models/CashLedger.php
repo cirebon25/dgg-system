@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 class CashLedger extends Model
 {
     protected $fillable = [
+        'cash_mutation_id',
         'no_urut',
         'no_surat',
         'tanggal',

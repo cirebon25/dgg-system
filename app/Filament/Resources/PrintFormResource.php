@@ -14,7 +14,7 @@ class PrintFormResource extends Resource
 {
     protected static ?string $model = PrintForm::class;
     protected static ?string $navigationIcon = 'heroicon-o-printer';
-    protected static ?string $navigationLabel = 'Form Cetak';
+    protected static ?string $navigationLabel = 'Upload Form Cetak baru';
     protected static ?string $navigationGroup = 'Pusat Cetak';
     protected static ?int $navigationSort = 1;
 

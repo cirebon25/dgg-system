@@ -50,9 +50,9 @@ class CashMutationResource extends Resource
                                 ->label('Nominal (Rp)')
                                 ->numeric()
                                 ->required()
-                                ->live(debounce: 500)
+                                ->live(onBlur: true)
                                 ->afterStateUpdated(function (callable $set, callable $get) {
-                                self::recalculateTotal($set, $get);
+                                    self::recalculateTotal($set, $get);
                                 }),
 
                             Forms\Components\TextInput::make('plat_nomor')
@@ -73,7 +73,6 @@ class CashMutationResource extends Resource
                         ->columns(4)
                         ->addActionLabel('Tambah Baris Uraian')
                         ->defaultItems(1)
-                        ->live()
                         ->afterStateUpdated(function (callable $set, callable $get) {
                             self::recalculateTotal($set, $get);
                         }),

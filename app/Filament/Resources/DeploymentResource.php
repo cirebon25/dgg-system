@@ -188,6 +188,7 @@ class DeploymentResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('updated_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('no_kontrak')
                     ->label('No. Kontrak')

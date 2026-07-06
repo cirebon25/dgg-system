@@ -18,7 +18,7 @@
 
         body {
             font-family: 'Segoe UI', sans-serif;
-            font-size: 11px;
+            font-size: 10px;
             color: #334155;
         }
 
@@ -59,24 +59,33 @@
         th {
             background: #2563eb;
             color: #ffffff;
-            padding: 8px 4px;
-            font-size: 10px;
+            padding: 6px 3px;
+            font-size: 9px;
             text-transform: uppercase;
             text-align: center;
             border: 1px solid #1d4ed8;
         }
 
         td {
-            padding: 6px 4px;
+            padding: 5px 3px;
             border: 1px solid #cbd5e1;
-            font-size: 11px;
+            font-size: 10px;
         }
 
         .highlight-row {
-            background-color: #dbeafe !important;
+            background-color: #0509f34d !important;
         }
 
-        /* Background Biru untuk kelebihan */
+        .belum-tercatat {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        .baseline-info {
+            color: #2564eb50;
+            font-style: italic;
+            font-size: 9px;
+        }
 
         .text-left {
             text-align: left;
@@ -152,15 +161,19 @@
                     <th rowspan="2">SN Mesin</th>
                     <th rowspan="2">Model</th>
                     <th rowspan="2">Harga Sewa</th>
-                    <th colspan="4">Black & White (BW)</th>
-                    <th colspan="4">Color (CL)</th>
+                    <th colspan="6">Black & White (BW)</th>
+                    <th colspan="6">Color (CL)</th>
                     <th rowspan="2">Total Tagihan</th>
                 </tr>
                 <tr>
+                    <th>Ctr Lalu</th>
+                    <th>Ctr Akhir</th>
                     <th>Usage</th>
                     <th>Free</th>
                     <th>Lebih</th>
                     <th>Biaya</th>
+                    <th>Ctr Lalu</th>
+                    <th>Ctr Akhir</th>
                     <th>Usage</th>
                     <th>Free</th>
                     <th>Lebih</th>
@@ -174,35 +187,64 @@
                         $t = $item['tagihan'];
                         $grandTotal += $t['total'];
                         $hasExcess = $t['kelebihan_bw'] > 0 || $t['kelebihan_color'] > 0;
+                        $tercatat = $item['is_mrc_tercatat'] ?? false;
+                        $isBaseline = $item['is_baseline_pertama'] ?? false;
                     @endphp
-                    <tr class="{{ $hasExcess ? 'highlight-row' : '' }}">
+                    <tr class="{{ $hasExcess && $tercatat ? 'highlight-row' : '' }}">
                         <td class="text-center">{{ $i + 1 }}</td>
                         <td class="text-left">{{ $item['contract']->customer?->nama_customer ?? '-' }}</td>
                         <td class="text-center">{{ $item['contract']->machine?->serial_number ?? '-' }}</td>
                         <td class="text-center">{{ $item['contract']->machine?->tipe_model ?? '-' }}</td>
                         <td class="text-right">{{ number_format($t['harga_sewa']) }}</td>
-                        <td class="text-center">{{ number_format($t['usage_bw']) }}</td>
-                        <td class="text-center">{{ number_format($t['free_bw']) }}</td>
-                        <td class="text-center">{{ $t['kelebihan_bw'] > 0 ? number_format($t['kelebihan_bw']) : '-' }}
-                        </td>
-                        <td class="text-right">{{ $t['biaya_bw'] > 0 ? number_format($t['biaya_bw']) : '-' }}</td>
-                        <td class="text-center">{{ number_format($t['usage_color']) }}</td>
-                        <td class="text-center">{{ number_format($t['free_color']) }}</td>
-                        <td class="text-center">
-                            {{ $t['kelebihan_color'] > 0 ? number_format($t['kelebihan_color']) : '-' }}</td>
-                        <td class="text-right">{{ $t['biaya_color'] > 0 ? number_format($t['biaya_color']) : '-' }}
-                        </td>
+
+                        {{-- Black & White --}}
+                        @if ($tercatat)
+                            <td class="text-center">{{ number_format($item['counter_bw_lalu']) }}</td>
+                            <td class="text-center">{{ number_format($item['counter_bw_akhir']) }}</td>
+                            <td class="text-center">
+                                {{ number_format($t['usage_bw']) }}
+                                @if ($isBaseline)
+                                    <br><span class="baseline-info">(Baseline)</span>
+                                @endif
+                            </td>
+                            <td class="text-center">{{ number_format($t['free_bw']) }}</td>
+                            <td class="text-center">
+                                {{ $t['kelebihan_bw'] > 0 ? number_format($t['kelebihan_bw']) : '-' }}</td>
+                            <td class="text-right">{{ $t['biaya_bw'] > 0 ? number_format($t['biaya_bw']) : '-' }}</td>
+                        @else
+                            <td class="text-center belum-tercatat" colspan="6">Belum dicatat MRC bulan ini</td>
+                        @endif
+
+                        {{-- Color --}}
+                        @if ($tercatat)
+                            <td class="text-center">{{ number_format($item['counter_color_lalu']) }}</td>
+                            <td class="text-center">{{ number_format($item['counter_color_akhir']) }}</td>
+                            <td class="text-center">
+                                {{ number_format($t['usage_color']) }}
+                                @if ($isBaseline)
+                                    <br><span class="baseline-info">(Baseline)</span>
+                                @endif
+                            </td>
+                            <td class="text-center">{{ number_format($t['free_color']) }}</td>
+                            <td class="text-center">
+                                {{ $t['kelebihan_color'] > 0 ? number_format($t['kelebihan_color']) : '-' }}</td>
+                            <td class="text-right">{{ $t['biaya_color'] > 0 ? number_format($t['biaya_color']) : '-' }}
+                            </td>
+                        @else
+                            <td class="text-center belum-tercatat" colspan="6">-</td>
+                        @endif
+
                         <td class="text-right font-bold">Rp {{ number_format($t['total']) }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="14" class="text-center">Tidak ada data</td>
+                        <td colspan="18" class="text-center">Tidak ada data</td>
                     </tr>
                 @endforelse
             </tbody>
             <tfoot>
                 <tr style="background: #e2e8f0;">
-                    <td colspan="13" class="text-right font-bold" style="padding:10px;">GRAND TOTAL</td>
+                    <td colspan="17" class="text-right font-bold" style="padding:10px;">GRAND TOTAL</td>
                     <td class="text-right font-bold">Rp {{ number_format($grandTotal) }}</td>
                 </tr>
             </tfoot>

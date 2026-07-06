@@ -99,6 +99,8 @@ class RekapUsage extends Page
                 DB::raw('COALESCE(monthly.monthly_bw, 0) as total_bw'),
                 DB::raw('COALESCE(monthly.monthly_color, 0) as total_color'),
                 DB::raw('COALESCE(monthly.monthly_bw, 0) + COALESCE(monthly.monthly_color, 0) as total_bulan'),
+                DB::raw('COALESCE(lifetime.life_bw, 0) as total_bw_life'),
+                DB::raw('COALESCE(lifetime.life_color, 0) as total_color_life'),
                 DB::raw('COALESCE(lifetime.life_bw, 0) + COALESCE(lifetime.life_color, 0) as total_hidup'),
                 DB::raw('COALESCE(lifetime.total_kunjungan, 0) as total_kunjungan'),
                 DB::raw('TIMESTAMPDIFF(MONTH, deployments.tanggal_instal, NOW()) + 1 as lama_pasang')
@@ -127,7 +129,7 @@ class RekapUsage extends Page
             '11' => 'November',
             '12' => 'Desember',
         ];
-        
+
         return $bulan[$month] ?? $month;
     }
 

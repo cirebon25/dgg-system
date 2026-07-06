@@ -21,8 +21,8 @@ class PartReplacementResource extends Resource
 
     protected static ?string $model          = PartReplacement::class;
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path';
-    protected static ?string $navigationLabel = 'Riwayat Ganti Part';
-    protected static ?string $navigationGroup = 'Pemakaian sparepart';
+    protected static ?string $navigationLabel = 'Riwayat Ganti Part Setiap Mesin';
+    protected static ?string $navigationGroup = 'Gudang & Stok';
 
     public static function form(Form $form): Form
     {

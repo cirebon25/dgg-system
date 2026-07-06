@@ -11,23 +11,28 @@ class DeploymentChart extends ChartWidget
 {
     protected static ?string $heading = '📈 Tren Penempatan Mesin Bulanan';
 
-    // Urutan posisi widget di dashboard (Baris ke-2 setelah Stats Overview)
     protected static ?int $sort = 2;
 
-    // Memaksa widget menggunakan seluruh lebar grid (Full Kiri Kanan)
     protected int|string|array $columnSpan = 'full';
 
     protected function getData(): array
     {
         $currentYear = date('Y');
 
-        // Ambil data penempatan setahun sekaligus (lebih hemat memori)
+        // Hanya hitung deployment yang BUKAN hasil Rolling.
+        // Deployment hasil rolling akan punya id yang tercatat sebagai
+        // 'deployment_id' di tabel machine_replacements (lihat GantiMesin::submit()).
         $deployments = Deployment::select(
-            DB::raw('MONTH(tanggal_instal) as month'),
+            DB::raw('MONTH(created_at) as month'),
             DB::raw('count(*) as count')
         )
-            ->whereYear('tanggal_instal', $currentYear)
-            ->groupBy(DB::raw('MONTH(tanggal_instal)'))
+            ->whereYear('created_at', $currentYear)
+            ->whereNotIn('id', function ($query) {
+                $query->select('deployment_id')
+                    ->from('machine_replacements')
+                    ->whereNotNull('deployment_id');
+            })
+            ->groupBy(DB::raw('MONTH(created_at)'))
             ->pluck('count', 'month')
             ->toArray();
 
@@ -42,7 +47,7 @@ class DeploymentChart extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Total Unit Terpasang ' . $currentYear,
+                    'label' => 'Total Pemasangan Baru (Deploy Murni) ' . $currentYear,
                     'data' => $data,
                     'backgroundColor' => 'rgba(251, 191, 36, 0.1)',
                     'borderColor' => '#fbbf24',

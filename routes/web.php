@@ -204,3 +204,10 @@ Route::get('/sparepart/pemakaian-bulanan', [PrintRekapSparepartController::class
 
 Route::get('/sparepart/pemakaian-matrix', [PrintRekapSparepartController::class, 'pemakaianMatrix'])
     ->name('sparepart.pemakaian-matrix');
+
+
+
+Route::get('/cetak-surat-retur/{id}', function ($id) {
+    $retur = \App\Models\MachineReturn::with(['machine'])->findOrFail($id);
+    return view('print.surat-retur', compact('retur'));
+})->name('cetak.surat-retur')->middleware('auth');
