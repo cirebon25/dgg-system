@@ -16,7 +16,7 @@ class PartReturnResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin', 'manager'];
+    protected static array $allowedRoles = ['admin', 'admin_teknik'];
 
     protected static ?string $model = PartReturn::class;
 
@@ -43,33 +43,33 @@ class PartReturnResource extends Resource
                             ->label('Pilih Sparepart')
                             ->required()
                             ->searchable(),
-// Cari bagian TextInput::make('jumlah') lalu ubah jadi seperti ini:
+                        // Cari bagian TextInput::make('jumlah') lalu ubah jadi seperti ini:
 
-Forms\Components\TextInput::make('jumlah')
-    ->label('Jumlah Retur')
-    ->numeric()
-    ->required()
-    ->minValue(1)
-    ->reactive()
-    ->rules([
-        fn (Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
-            $techId = $get('technician_id');
-            $partId = $get('sparepart_id');
+                        Forms\Components\TextInput::make('jumlah')
+                            ->label('Jumlah Retur')
+                            ->numeric()
+                            ->required()
+                            ->minValue(1)
+                            ->reactive()
+                            ->rules([
+                                fn(Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
+                                    $techId = $get('technician_id');
+                                    $partId = $get('sparepart_id');
 
-            if (!$techId || !$partId) return;
+                                    if (!$techId || !$partId) return;
 
-            $stock = \App\Models\TechnicianStock::where('technician_id', $techId)
-                ->where('sparepart_id', $partId)
-                ->first();
+                                    $stock = \App\Models\TechnicianStock::where('technician_id', $techId)
+                                        ->where('sparepart_id', $partId)
+                                        ->first();
 
-            // MENGGUNAKAN 'jumlah' sesuai hasil data Tinker Anda
-            $currentStock = $stock ? $stock->jumlah : 0;
+                                    // MENGGUNAKAN 'jumlah' sesuai hasil data Tinker Anda
+                                    $currentStock = $stock ? $stock->jumlah : 0;
 
-            if ($value > $currentStock) {
-                $fail("Gagal! Stok di tas Teknisi tidak mencukupi. Sisa saat ini: {$currentStock}");
-            }
-        },
-    ]),
+                                    if ($value > $currentStock) {
+                                        $fail("Gagal! Stok di tas Teknisi tidak mencukupi. Sisa saat ini: {$currentStock}");
+                                    }
+                                },
+                            ]),
                     ])->columns(3),
             ]);
     }

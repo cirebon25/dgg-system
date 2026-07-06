@@ -16,7 +16,7 @@ class TypeModelResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin'];
+    protected static array $allowedRoles = ['admin', 'admin_teknik'];
 
     protected static ?string $model = TypeModel::class;
 

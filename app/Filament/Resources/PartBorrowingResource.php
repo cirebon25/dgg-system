@@ -17,7 +17,7 @@ class PartBorrowingResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin', 'manager'];
+    protected static array $allowedRoles = ['admin', 'admin_teknik'];
 
     protected static ?string $model = PartBorrowing::class;
 

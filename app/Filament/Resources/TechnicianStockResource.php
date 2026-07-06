@@ -19,7 +19,7 @@ class TechnicianStockResource extends Resource
     use HasRoleAccess;
 
     // Hak akses diberikan kepada admin dan teknisi
-    protected static array $allowedRoles = ['admin', 'teknisi'];
+    protected static array $allowedRoles = ['admin', 'teknisi', 'admin_teknik'];
 
     protected static ?string $model = TechnicianStock::class;
     protected static ?string $navigationLabel = 'Kartu Stok Teknisi';
@@ -36,7 +36,7 @@ class TechnicianStockResource extends Resource
                     ->searchable()
                     ->sortable()
                     // Kolom disembunyikan jika yang login adalah teknisi
-                    ->hidden(fn () => auth()->user()?->hasRole('teknisi')),
+                    ->hidden(fn() => auth()->user()?->hasRole('teknisi')),
 
                 Tables\Columns\TextColumn::make('sparepart.nama_sparepart')
                     ->label('Nama Sparepart')
@@ -69,7 +69,7 @@ class TechnicianStockResource extends Resource
                 Tables\Filters\SelectFilter::make('technician_id')
                     ->relationship('technician', 'nama_technician')
                     ->label('Filter Teknisi')
-                    ->hidden(fn () => auth()->user()?->hasRole('teknisi')),
+                    ->hidden(fn() => auth()->user()?->hasRole('teknisi')),
             ])
             ->headerActions([
                 // TOMBOL 1: Cetak Semua (Hanya muncul untuk Admin)
@@ -79,19 +79,20 @@ class TechnicianStockResource extends Resource
                     ->color('warning')
                     ->url(fn() => route('cetak.kartu-stok-semua'))
                     ->openUrlInNewTab()
-                    ->hidden(fn () => auth()->user()?->hasRole('teknisi')),
+                    ->hidden(fn() => auth()->user()?->hasRole('teknisi')),
 
                 // TOMBOL 2: Cetak Milik Saya (Hanya muncul untuk Teknisi - Aman dari error parameter)
                 Tables\Actions\Action::make('cetak_milik_saya')
                     ->label('Cetak Kartu Stok Saya')
                     ->icon('heroicon-o-printer')
                     ->color('warning')
-                    ->url(fn() => auth()->user()?->technician_id 
-                        ? route('cetak.kartu-stok', auth()->user()->technician_id) 
-                        : '#'
+                    ->url(
+                        fn() => auth()->user()?->technician_id
+                            ? route('cetak.kartu-stok', auth()->user()->technician_id)
+                            : '#'
                     )
                     ->openUrlInNewTab()
-                    ->visible(fn () => auth()->user()?->hasRole('teknisi')),
+                    ->visible(fn() => auth()->user()?->hasRole('teknisi')),
             ])
             ->actions([
                 Tables\Actions\Action::make('cetak')
@@ -100,13 +101,13 @@ class TechnicianStockResource extends Resource
                     ->color('gray')
                     ->url(fn(TechnicianStock $record) => route('cetak.kartu-stok', $record->technician_id))
                     ->openUrlInNewTab()
-                    ->hidden(fn () => auth()->user()?->hasRole('teknisi')),
+                    ->hidden(fn() => auth()->user()?->hasRole('teknisi')),
             ])
             ->bulkActions([])
             // Matikan fitur grouping jika yang login adalah teknisi
             ->defaultGroup(
-                auth()->user()?->hasRole('teknisi') ? null : 
-                Group::make('technician.nama_technician')
+                auth()->user()?->hasRole('teknisi') ? null :
+                    Group::make('technician.nama_technician')
                     ->label('Tas Milik Teknisi')
                     ->collapsible()
                     ->titlePrefixedWithLabel(false)

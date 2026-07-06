@@ -93,6 +93,7 @@ class AdminPanelProvider extends PanelProvider
                 'MRC & Billing',
                 'Keuangan',
                 'Marketing',
+                'pengaturan',
                 'Bantuan',
             ])
             ->renderHook(

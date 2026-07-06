@@ -19,7 +19,7 @@ class MachineReturnResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin', 'manager'];
+    protected static array $allowedRoles = ['admin', 'admin_teknik'];
 
     protected static ?string $model            = MachineReturn::class;
     protected static ?string $navigationLabel  = 'Retur ke Bandung';
@@ -218,8 +218,10 @@ class MachineReturnResource extends Resource
                     ->label('Cetak Tanggal Ini')
                     ->icon('heroicon-o-printer')
                     ->color('info')
-                    ->url(fn(MachineReturn $record): string =>
-                        route('cetak.surat-retur-tanggal',
+                    ->url(
+                        fn(MachineReturn $record): string =>
+                        route(
+                            'cetak.surat-retur-tanggal',
                             \Carbon\Carbon::parse($record->tanggal_retur)->toDateString()
                         )
                     )

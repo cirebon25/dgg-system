@@ -15,7 +15,7 @@ class MarketingResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin'];
+    protected static array $allowedRoles = ['admin', 'manager',];
 
     protected static ?string $model = Marketing::class;
     protected static ?string $navigationIcon  = 'heroicon-o-user-group';

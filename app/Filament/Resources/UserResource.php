@@ -47,6 +47,7 @@ class UserResource extends Resource
                             'admin'    => 'Admin',
                             'manager'  => 'Manager',
                             'teknisi'  => 'Teknisi',
+                            'admin_teknik' => 'Admin Teknik',
                             'keuangan' => 'Keuangan',
                         ])
                         ->required()
@@ -83,6 +84,7 @@ class UserResource extends Resource
                         'danger'  => 'admin',
                         'warning' => 'manager',
                         'success' => 'teknisi',
+                        'admin_teknik' => 'primary',
                         'info'    => 'keuangan',
                     ]),
 

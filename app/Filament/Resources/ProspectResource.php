@@ -18,7 +18,7 @@ class ProspectResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin'];
+    protected static array $allowedRoles = ['admin', 'manager'];
     protected static ?string $model = Prospect::class;
     protected static ?string $navigationIcon  = 'heroicon-o-building-storefront';
     protected static ?string $navigationLabel = 'Kunjungan Sales';

@@ -20,7 +20,7 @@ class MachineWithdrawalResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin', 'manager'];
+    protected static array $allowedRoles = ['admin', 'admin_teknik'];
 
     protected static ?string $model = MachineWithdrawal::class;
     protected static ?string $navigationLabel = 'Penarikan Mesin';

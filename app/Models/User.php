@@ -35,6 +35,7 @@ class User extends Authenticatable implements FilamentUser
     const ROLE_TEKNISI  = 'teknisi';
     const ROLE_KEUANGAN = 'keuangan';
     const ROLE_MANAGER  = 'manager';
+    const ROLE_ADMIN_TEKNIK = 'admin_teknik';
 
     // ── Helper Methods ────────────────────────────────────────
     public function isAdmin(): bool
@@ -66,5 +67,9 @@ class User extends Authenticatable implements FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         return true; // semua user bisa masuk panel
+    }
+    public function isAdminTeknik(): bool
+    {
+        return $this->role === self::ROLE_ADMIN_TEKNIK;
     }
 }

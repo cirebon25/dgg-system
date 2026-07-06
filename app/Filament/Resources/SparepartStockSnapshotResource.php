@@ -16,12 +16,13 @@ class SparepartStockSnapshotResource extends Resource
 
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin', 'manager'];
+    protected static array $allowedRoles = ['admin'];
     protected static ?string $model          = SparepartStockSnapshot::class;
     protected static ?string $navigationIcon  = 'heroicon-o-camera';
     protected static ?string $navigationLabel = 'Snapshot Stok Bulanan';
     protected static ?string $navigationGroup = 'Gudang & Stok';
     protected static ?bool   $canCreate       = false; // hanya via command/scheduler
+    protected static ?int $navigationSort = 11;
 
     public static function table(Table $table): Table
     {

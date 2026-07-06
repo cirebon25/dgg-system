@@ -16,17 +16,17 @@ class TechnicianStockHistoryResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin'];
+    protected static array $allowedRoles = ['admin', 'admin_teknik'];
 
     protected static ?string $model = TechnicianStockHistory::class;
 
     // Nama Menu di Sidebar
     protected static ?string $navigationLabel = 'Histori Stok Teknisi';
     protected static ?string $pluralModelLabel = 'Histori Stok Teknisi';
-    
+
     // Icon buku catatan
     protected static ?string $navigationIcon = 'heroicon-o-book-open';
-    
+
     // Kita kumpulkan di grup Gudang
     protected static ?string $navigationGroup = 'Gudang & Stok';
 
@@ -38,31 +38,31 @@ class TechnicianStockHistoryResource extends Resource
                     ->label('Tanggal & Waktu')
                     ->dateTime('d M Y H:i')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('technician.nama_technician')
                     ->label('Nama Teknisi')
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('sparepart.nama_sparepart')
                     ->label('Nama Part')
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('masuk')
                     ->label('Masuk (+)')
                     ->badge()
                     ->color('success'),
-                    
+
                 Tables\Columns\TextColumn::make('keluar')
                     ->label('Keluar (-)')
                     ->badge()
                     ->color('danger'),
-                    
+
                 Tables\Columns\TextColumn::make('saldo_akhir')
                     ->label('Sisa Di Tas')
                     ->weight('bold'),
-                    
+
                 Tables\Columns\TextColumn::make('keterangan')
                     ->label('Keterangan'),
             ])

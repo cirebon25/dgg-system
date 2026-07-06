@@ -13,9 +13,12 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use App\Filament\Traits\HasRoleAccess;
 
 class PoPartResource extends Resource
 {
+    use HasRoleAccess;
+    protected static array $allowedRoles = ['admin', 'admin_teknik'];
     protected static ?string $model = PoPart::class;
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static ?string $navigationGroup = 'Master Data';

@@ -17,7 +17,7 @@ class MachineResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin'];
+    protected static array $allowedRoles = ['admin', 'admin_teknik'];
 
     protected static ?string $model = Machine::class;
     protected static ?string $navigationIcon = 'heroicon-o-cpu-chip';
@@ -89,7 +89,7 @@ class MachineResource extends Resource
                                 'Ready' => 'Ready (Siap Pakai)',
                                 'Rented' => 'Rented (Sedang Disewa)',
                                 'Refurbish' => 'Refurbish (Dalam Perbaikan)',
-                                 'Returned'  => 'Returned (Dikirim ke Bandung)',
+                                'Returned'  => 'Returned (Dikirim ke Bandung)',
                             ])
                             ->default('Ready')
                             ->required(),
@@ -156,7 +156,7 @@ class MachineResource extends Resource
                         'Ready' => 'success',
                         'Rented' => 'warning',
                         'Refurbish' => 'danger',
-                         'Returned'  => 'lime',
+                        'Returned'  => 'lime',
                         default => 'gray',
                     }),
 

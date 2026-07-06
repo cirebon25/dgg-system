@@ -19,7 +19,7 @@ class AccommodationClaimResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin', 'keuangan', 'manager', 'teknisi'];
+    protected static array $allowedRoles = ['admin', 'keuangan', 'manager', 'teknisi', 'admin_teknik'];
 
     protected static ?string $model          = AccommodationClaim::class;
     protected static ?string $navigationLabel  = 'Klaim Akomodasi Luar Kota';
@@ -33,7 +33,7 @@ class AccommodationClaimResource extends Resource
     {
         return $form->schema([
 
-            Forms\Components\Section::make('?? Data Klaim Akomodasi Luar Kota')
+            Forms\Components\Section::make(' Data Klaim Akomodasi Luar Kota')
                 ->schema([
 
                     Forms\Components\Select::make('technician_id')
@@ -59,7 +59,7 @@ class AccommodationClaimResource extends Resource
 
                 ])->columns(2),
 
-            Forms\Components\Section::make('?? Rincian Biaya Pengeluaran')
+            Forms\Components\Section::make(' Rincian Biaya Pengeluaran')
                 ->schema([
 
                     Forms\Components\TextInput::make('biaya_transportasi')
@@ -112,40 +112,67 @@ class AccommodationClaimResource extends Resource
                             Forms\Components\TextInput::make('no_urut')
                                 ->label('No')
                                 ->numeric()
-                                ->default(fn($state, $context) => 1)
+                                ->default(1)
                                 ->columnSpan(1),
+
+                            Forms\Components\Toggle::make('manual')
+                                ->label('')
+                                ->default(false)
+                                ->live()
+                                ->columnSpan(1),
+
+                            // Mode dropdown
                             Forms\Components\Select::make('nama_customer')
                                 ->label('Nama Customer')
                                 ->options(fn() => \App\Models\Customer::orderBy('nama_customer')->pluck('nama_customer', 'nama_customer'))
                                 ->searchable()
                                 ->required()
-                                ->reactive()
+                                ->live()
                                 ->afterStateUpdated(function ($state, Forms\Set $set) {
                                     if ($state) {
                                         $customer = \App\Models\Customer::where('nama_customer', $state)->first();
                                         $set('alamat', $customer?->alamat ?? '');
                                     }
                                 })
+                                ->visible(fn(Forms\Get $get) => ! $get('manual'))
                                 ->columnSpan(4),
 
                             Forms\Components\TextInput::make('alamat')
                                 ->label('Alamat / Kota')
                                 ->required()
+                                ->visible(fn(Forms\Get $get) => ! $get('manual'))
+                                ->columnSpan(3),
+
+                            // Mode manual
+                            Forms\Components\TextInput::make('nama_customer')
+                                ->label('Nama Tempat / Kanvas')
+                                ->placeholder('Ketik nama tempat...')
+                                ->required()
+                                ->visible(fn(Forms\Get $get) => $get('manual'))
+                                ->columnSpan(4),
+
+                            Forms\Components\TextInput::make('alamat')
+                                ->label('Alamat / Kota')
+                                ->placeholder('Ketik alamat...')
+                                ->required()
+                                ->visible(fn(Forms\Get $get) => $get('manual'))
                                 ->columnSpan(3),
 
                             Forms\Components\Select::make('keterangan')
                                 ->label('Keterangan')
                                 ->options([
-                                    'RM'         => 'RM',
-                                    'RN'         => 'RN',
-                                    'CM'         => 'CM',
-                                    'RR'         => 'RR',
-                                    'PENAWARAN'  => 'PENAWARAN',
-                                    'PENARIKAN'  => 'PENARIKAN',
-                                    'LAINNYA'    => 'LAINNYA',
+                                    'RM'        => 'RM',
+                                    'RN'        => 'RN',
+                                    'CM'        => 'CM',
+                                    'RR'        => 'RR',
+                                    'PENAWARAN' => 'PENAWARAN',
+                                    'PENARIKAN' => 'PENARIKAN',
+                                    'KONTRAK'   => 'BUKU KONTRAK',
+                                    'KANVAS'    => 'KANVAS',
+                                    'LAINNYA'   => 'LAINNYA',
                                 ])
                                 ->required()
-                                ->columnSpan(3),
+                                ->columnSpan(2),
                         ])
                         ->columns(11)
                         ->addActionLabel('+ Tambah Kunjungan')

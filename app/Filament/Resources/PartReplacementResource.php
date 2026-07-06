@@ -17,12 +17,13 @@ class PartReplacementResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin', 'manager'];
+    protected static array $allowedRoles = ['admin', 'admin_teknik'];
 
     protected static ?string $model          = PartReplacement::class;
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path';
     protected static ?string $navigationLabel = 'Riwayat Ganti Part Setiap Mesin';
     protected static ?string $navigationGroup = 'Gudang & Stok';
+    protected static ?int $navigationSort = 9;
 
     public static function form(Form $form): Form
     {

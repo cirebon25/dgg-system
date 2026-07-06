@@ -16,6 +16,7 @@ class SparepartHistory extends Page
     protected static ?string $navigationLabel = 'History Sparepart';
     protected static ?string $title = 'Riwayat Mutasi Sparepart';
     protected static ?string $navigationGroup = 'Gudang & Stok';
+    protected static ?int $navigationSort = 8;
 
     public $month;
     public $year;

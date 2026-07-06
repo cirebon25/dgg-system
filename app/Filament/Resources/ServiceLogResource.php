@@ -18,7 +18,7 @@ class ServiceLogResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin', 'manager'];
+    protected static array $allowedRoles = ['admin', 'admin_teknik'];
 
     protected static ?string $model = ServiceLog::class;
     protected static ?string $navigationLabel = 'Input Servis Teknisi';
@@ -190,7 +190,6 @@ class ServiceLogResource extends Resource
                             ->numeric()
                             ->readOnly(),
                     ])->columns(3),
-
                 Forms\Components\Section::make('Sparepart yang Diganti')
                     ->schema([
                         Forms\Components\Repeater::make('serviceLogSpareparts')
@@ -201,13 +200,15 @@ class ServiceLogResource extends Resource
                                     ->label('Pilih Sparepart')
                                     ->searchable()
                                     ->preload()
-                                    ->required(),
+                                    ->required()
+                                    ->disabled(fn(string $operation) => $operation === 'edit'),
 
                                 Forms\Components\TextInput::make('jumlah')
                                     ->label('Jumlah Pakai')
                                     ->numeric()
                                     ->required()
                                     ->reactive()
+                                    ->disabled(fn(string $operation) => $operation === 'edit')
                                     ->rules([
                                         fn(Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
                                             $technicianId = $get('../../technician_id');
@@ -233,7 +234,10 @@ class ServiceLogResource extends Resource
                             ])
                             ->columns(2)
                             ->defaultItems(0)
-                            ->addActionLabel('Tambah Sparepart'),
+                            ->addActionLabel('Tambah Sparepart')
+                            ->addable(fn(string $operation) => $operation === 'create')
+                            ->deletable(fn(string $operation) => $operation === 'create')
+                            ->reorderable(false),
                     ]),
 
                 Forms\Components\Section::make('Detail Teknisi & Perbaikan')

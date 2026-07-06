@@ -19,6 +19,7 @@ class PemakaianSparepartBulanan extends Page implements HasForms
     protected static ?string $navigationGroup = 'Gudang & Stok';
     protected static string  $view            = 'filament.pages.pemakaian-sparepart-bulanan';
     protected static ?string $title           = 'Pemakaian Sparepart per Bulan';
+    protected static ?int $navigationSort = 10;
 
     public ?array $data = [];
     public array $matrix = [];
