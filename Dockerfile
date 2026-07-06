@@ -65,11 +65,24 @@ RUN php artisan route:cache || true
 
 RUN php artisan view:cache || true
 
-# Apache
-RUN a2enmod rewrite
+# ==== FIX APACHE MPM ERROR ====
+# php:8.3-apache image bisa memuat lebih dari satu MPM module (event & prefork)
+# yang menyebabkan "More than one MPM loaded". PHP module (mod_php) butuh
+# mpm_prefork (non-threaded), jadi disable module MPM lain dan enable prefork saja.
+RUN a2dismod mpm_event || true \
+    && a2dismod mpm_worker || true \
+    && a2enmod mpm_prefork \
+    && a2enmod rewrite
 
 COPY .docker/vhost.conf /etc/apache2/sites-available/000-default.conf
 
+# ==== FIX PORT UNTUK RAILWAY ====
+# Railway inject env var PORT secara dinamis, Apache default listen di 80.
+# Ubah ports.conf & vhost config agar mengikuti $PORT saat container start.
+RUN sed -i 's/80/${PORT}/g' /etc/apache2/ports.conf \
+    && sed -i 's/80/${PORT}/g' /etc/apache2/sites-available/000-default.conf
+
+ENV PORT=80
 EXPOSE 80
 
-CMD ["apache2-foreground"]
+CMD ["sh", "-c", "apache2-foreground"]
