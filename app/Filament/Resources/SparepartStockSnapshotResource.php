@@ -9,9 +9,14 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Artisan;
+use App\Filament\Traits\HasRoleAccess;
 
 class SparepartStockSnapshotResource extends Resource
 {
+
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin', 'manager'];
     protected static ?string $model          = SparepartStockSnapshot::class;
     protected static ?string $navigationIcon  = 'heroicon-o-camera';
     protected static ?string $navigationLabel = 'Snapshot Stok Bulanan';

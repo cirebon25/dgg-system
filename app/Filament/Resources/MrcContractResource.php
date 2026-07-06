@@ -12,9 +12,14 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Support\RawJs;
+use App\Filament\Traits\HasRoleAccess;
 
 class MrcContractResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin'];
+
     protected static ?string $model          = MrcContract::class;
     protected static ?string $navigationIcon  = 'heroicon-o-document-currency-dollar';
     protected static ?string $navigationLabel = 'Pemakaian MRC';

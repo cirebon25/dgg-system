@@ -11,9 +11,14 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Notifications\Notification;
+use App\Filament\Traits\HasRoleAccess;
+
 
 class ProspectResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin'];
     protected static ?string $model = Prospect::class;
     protected static ?string $navigationIcon  = 'heroicon-o-building-storefront';
     protected static ?string $navigationLabel = 'Kunjungan Sales';

@@ -9,9 +9,14 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use App\Filament\Traits\HasRoleAccess;
 
 class MarketingResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin'];
+
     protected static ?string $model = Marketing::class;
     protected static ?string $navigationIcon  = 'heroicon-o-user-group';
     protected static ?string $navigationLabel = 'Data Marketing';

@@ -9,9 +9,13 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Traits\HasRoleAccess;
 
 class MrcLogResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin'];
     protected static ?string $model = ServiceLog::class;
     protected static ?string $navigationIcon  = 'heroicon-o-document-chart-bar';
     protected static ?string $navigationLabel = 'Rekap MRC';
@@ -19,12 +23,12 @@ class MrcLogResource extends Resource
     protected static ?string $slug            = 'mrc-log';
     protected static ?int    $navigationSort  = 2;
 
-  public static function getEloquentQuery(): Builder
-{
-    return parent::getEloquentQuery()
-        ->where('is_mrc', true)   
-        ->with(['machine', 'customer', 'technician']);
-}
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('is_mrc', true)
+            ->with(['machine', 'customer', 'technician']);
+    }
 
     public static function table(Table $table): Table
     {
@@ -82,10 +86,18 @@ class MrcLogResource extends Resource
                         Forms\Components\Select::make('month')
                             ->label('Bulan')
                             ->options([
-                                '01' => 'Januari',  '02' => 'Februari', '03' => 'Maret',
-                                '04' => 'April',    '05' => 'Mei',      '06' => 'Juni',
-                                '07' => 'Juli',     '08' => 'Agustus',  '09' => 'September',
-                                '10' => 'Oktober',  '11' => 'November', '12' => 'Desember',
+                                '01' => 'Januari',
+                                '02' => 'Februari',
+                                '03' => 'Maret',
+                                '04' => 'April',
+                                '05' => 'Mei',
+                                '06' => 'Juni',
+                                '07' => 'Juli',
+                                '08' => 'Agustus',
+                                '09' => 'September',
+                                '10' => 'Oktober',
+                                '11' => 'November',
+                                '12' => 'Desember',
                             ])
                             ->required()
                             ->default(date('m')),
@@ -103,10 +115,18 @@ class MrcLogResource extends Resource
                         Forms\Components\Select::make('month')
                             ->label('Bulan')
                             ->options([
-                                '01' => 'Januari',  '02' => 'Februari', '03' => 'Maret',
-                                '04' => 'April',    '05' => 'Mei',      '06' => 'Juni',
-                                '07' => 'Juli',     '08' => 'Agustus',  '09' => 'September',
-                                '10' => 'Oktober',  '11' => 'November', '12' => 'Desember',
+                                '01' => 'Januari',
+                                '02' => 'Februari',
+                                '03' => 'Maret',
+                                '04' => 'April',
+                                '05' => 'Mei',
+                                '06' => 'Juni',
+                                '07' => 'Juli',
+                                '08' => 'Agustus',
+                                '09' => 'September',
+                                '10' => 'Oktober',
+                                '11' => 'November',
+                                '12' => 'Desember',
                             ])
                             ->default(date('m')),
                         Forms\Components\Select::make('year')
