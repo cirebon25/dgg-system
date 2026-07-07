@@ -77,12 +77,13 @@ RUN a2dismod mpm_event || true \
 COPY .docker/vhost.conf /etc/apache2/sites-available/000-default.conf
 
 # ==== FIX PORT UNTUK RAILWAY ====
-# Railway inject env var PORT secara dinamis, Apache default listen di 80.
-# Ubah ports.conf & vhost config agar mengikuti $PORT saat container start.
-RUN sed -i 's/80/${PORT}/g' /etc/apache2/ports.conf \
-    && sed -i 's/80/${PORT}/g' /etc/apache2/sites-available/000-default.conf
+# Railway inject env var PORT secara dinamis saat container start (bukan saat build).
+# Jadi kita set port lewat entrypoint script yang jalan di runtime, bukan sed di build time.
+COPY .docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ENV PORT=80
 EXPOSE 80
 
-CMD ["sh", "-c", "apache2-foreground"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["apache2-foreground"]
