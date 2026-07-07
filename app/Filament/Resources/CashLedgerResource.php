@@ -97,7 +97,13 @@ class CashLedgerResource extends Resource
                             : '-'
                     )
                     ->color(fn($state) => $state > 0 ? 'success' : 'gray')
-                    ->summarize(Sum::make()->money('IDR')->label('Total Masuk')),
+                    // ->summarize(Sum::make()->money('IDR')->label('Total Masuk')),
+                    ->summarize([
+                        Sum::make()
+                            ->label('Total Masuk')
+                            ->using(fn($query) => $query->sum('uang_masuk'))
+                            ->formatStateUsing(fn($state) => 'Rp ' . number_format($state, 0, ',', '.')),
+                    ]),
 
                 Tables\Columns\TextColumn::make('uang_keluar')
                     ->label('Pengeluaran Kas')
@@ -118,17 +124,53 @@ class CashLedgerResource extends Resource
                         );
                         $totalMasuk = CashLedger::whereYear('tanggal', $record->tanggal->year)
                             ->whereMonth('tanggal', $record->tanggal->month)
-                            ->where('id', '<=', $record->id)
+                            ->where(function ($q) use ($record) {
+                                $q->where('tanggal', '<', $record->tanggal)
+                                    ->orWhere(function ($q) use ($record) {
+                                        $q->whereDate('tanggal', $record->tanggal)
+                                            ->where('id', '<=', $record->id);
+                                    });
+                            })
                             ->sum('uang_masuk');
+
                         $totalKeluar = CashLedger::whereYear('tanggal', $record->tanggal->year)
                             ->whereMonth('tanggal', $record->tanggal->month)
-                            ->where('id', '<=', $record->id)
+                            ->where(function ($q) use ($record) {
+                                $q->where('tanggal', '<', $record->tanggal)
+                                    ->orWhere(function ($q) use ($record) {
+                                        $q->whereDate('tanggal', $record->tanggal)
+                                            ->where('id', '<=', $record->id);
+                                    });
+                            })
                             ->sum('uang_keluar');
                         return $saldoAwal + $totalMasuk - $totalKeluar;
                     })
                     ->formatStateUsing(fn($state) => 'Rp ' . number_format($state, 0, ',', '.'))
                     ->color(fn($state) => $state >= 0 ? 'success' : 'danger')
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->summarize(
+                        Tables\Columns\Summarizers\Summarizer::make()
+                            ->label('Saldo Akhir')
+                            ->using(function ($query) {
+                                $first = $query->first();
+
+                                if (! $first) {
+                                    return 0;
+                                }
+
+                                $tanggal = \Carbon\Carbon::parse($first->tanggal);
+
+                                $saldoAwal = CashLedger::saldoAwalBulan(
+                                    $tanggal->year,
+                                    $tanggal->month
+                                );
+
+                                return $saldoAwal
+                                    + $query->sum('uang_masuk')
+                                    - $query->sum('uang_keluar');
+                            })
+                            ->formatStateUsing(fn($state) => 'Rp ' . number_format($state, 0, ',', '.'))
+                    ),
 
                 Tables\Columns\TextColumn::make('dibuat_oleh')
                     ->label('Nama Pembuat')
@@ -141,10 +183,18 @@ class CashLedgerResource extends Resource
                         Forms\Components\Select::make('bulan')
                             ->label('Bulan')
                             ->options([
-                                1 => 'Januari',  2 => 'Februari', 3 => 'Maret',
-                                4 => 'April',    5 => 'Mei',      6 => 'Juni',
-                                7 => 'Juli',     8 => 'Agustus',  9 => 'September',
-                                10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+                                1 => 'Januari',
+                                2 => 'Februari',
+                                3 => 'Maret',
+                                4 => 'April',
+                                5 => 'Mei',
+                                6 => 'Juni',
+                                7 => 'Juli',
+                                8 => 'Agustus',
+                                9 => 'September',
+                                10 => 'Oktober',
+                                11 => 'November',
+                                12 => 'Desember',
                             ])
                             ->default(now()->month),
                         Forms\Components\Select::make('tahun')
@@ -158,16 +208,24 @@ class CashLedgerResource extends Resource
                     ->query(function ($query, array $data) {
                         if (filled($data['bulan']) && filled($data['tahun'])) {
                             $query->whereYear('tanggal', $data['tahun'])
-                                  ->whereMonth('tanggal', $data['bulan']);
+                                ->whereMonth('tanggal', $data['bulan']);
                         }
                     })
                     ->indicateUsing(function (array $data): ?string {
                         if (filled($data['bulan']) && filled($data['tahun'])) {
                             $namaBulan = [
-                                1 => 'Januari',  2 => 'Februari', 3 => 'Maret',
-                                4 => 'April',    5 => 'Mei',      6 => 'Juni',
-                                7 => 'Juli',     8 => 'Agustus',  9 => 'September',
-                                10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+                                1 => 'Januari',
+                                2 => 'Februari',
+                                3 => 'Maret',
+                                4 => 'April',
+                                5 => 'Mei',
+                                6 => 'Juni',
+                                7 => 'Juli',
+                                8 => 'Agustus',
+                                9 => 'September',
+                                10 => 'Oktober',
+                                11 => 'November',
+                                12 => 'Desember',
                             ];
                             return 'Periode: ' . $namaBulan[$data['bulan']] . ' ' . $data['tahun'];
                         }
@@ -175,6 +233,10 @@ class CashLedgerResource extends Resource
                     }),
             ])
             ->actions([
+                Tables\Actions\EditAction::make()
+                    ->label('Edit')
+                    ->icon('heroicon-o-pencil-square')
+                    ->color('warning'),
                 Tables\Actions\Action::make('cetak')
                     ->label('Cetak Laporan')
                     ->icon('heroicon-o-printer')
@@ -203,6 +265,7 @@ class CashLedgerResource extends Resource
     {
         return [
             'index' => Pages\ListCashLedgers::route('/'),
+            'edit'  => Pages\EditCashLedger::route('/{record}/edit'),
         ];
     }
 }

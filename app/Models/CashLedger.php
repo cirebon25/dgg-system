@@ -10,6 +10,7 @@ class CashLedger extends Model
 {
     protected $fillable = [
         'cash_mutation_id',
+        'cash_receipt_id',
         'no_urut',
         'no_surat',
         'tanggal',

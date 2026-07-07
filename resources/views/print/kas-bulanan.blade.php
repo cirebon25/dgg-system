@@ -14,68 +14,68 @@
         body {
             font-family: Arial, sans-serif;
             font-size: 11px;
-            color: #000;
+            color: #1a1a1a;
+            line-height: 1.4;
         }
 
         .page {
             width: 100%;
-            padding: 20px 30px;
+            padding: 0;
         }
 
+        /* ===== HEADER / KOP SURAT ===== */
         .header {
             text-align: center;
-            margin-bottom: 16px;
+            border-bottom: 3px double #000;
+            padding-bottom: 8px;
+            margin-bottom: 14px;
         }
 
-        .header h2 {
-            font-size: 14px;
+        .header .company {
+            font-size: 16px;
             font-weight: bold;
+            letter-spacing: 1px;
             text-transform: uppercase;
         }
 
-        .header h3 {
-            font-size: 12px;
+        .header .doc-title {
+            font-size: 13px;
             font-weight: bold;
-            margin-top: 2px;
+            text-transform: uppercase;
+            margin-top: 6px;
+            letter-spacing: 0.5px;
         }
 
-        .header p {
+        .header .periode {
             font-size: 11px;
-            margin-top: 2px;
+            margin-top: 3px;
+            font-style: italic;
         }
 
-        .divider {
-            border-top: 2px solid #000;
-            margin: 8px 0 4px;
-        }
-
-        .divider-thin {
-            border-top: 1px solid #000;
-            margin: 4px 0;
-        }
-
+        /* ===== TABEL ===== */
         table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
             margin-top: 10px;
+            border: 1px solid #000;
         }
 
         th,
         td {
             border: 1px solid #000;
-            padding: 5px 7px;
-            vertical-align: middle;
+            padding: 5px 6px;
+            font-size: 10px;
+            vertical-align: top;
         }
 
         th {
-            background-color: #f0f0f0;
+            background-color: #e9e9e9;
             text-align: center;
-            font-size: 11px;
             font-weight: bold;
-        }
-
-        td {
-            font-size: 11px;
+            text-transform: uppercase;
+            font-size: 10px;
+            vertical-align: middle;
         }
 
         .text-right {
@@ -87,36 +87,73 @@
         }
 
         .saldo-awal td {
-            background: #fffbe6;
+            background: #fdf6e3;
             font-style: italic;
         }
 
         .total-row td {
-            background: #f0f0f0;
+            background: #e9e9e9;
             font-weight: bold;
         }
 
         .saldo-akhir td {
-            background: #e6f4ea;
+            background: #dcece1;
             font-weight: bold;
         }
 
+        /* ===== FOOTER / TANDA TANGAN ===== */
         .footer {
-            margin-top: 30px;
+            margin-top: 40px;
+            width: 100%;
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
+            page-break-inside: avoid;
         }
 
-        .ttd {
+        .footer .keterangan-footer {
+            font-size: 10px;
+            width: 45%;
+        }
+
+        .footer .keterangan-footer p {
+            margin-bottom: 4px;
+        }
+
+        .footer .ttd-block {
+            width: 45%;
             text-align: center;
-            width: 200px;
+            font-size: 11px;
         }
 
-        .ttd .ttd-name {
-            margin-top: 60px;
+        .footer .ttd-block .tanggal {
+            margin-bottom: 4px;
+        }
+
+        .footer .ttd-block .jabatan {
+            margin-bottom: 55px;
+        }
+
+        .footer .ttd-block .ttd-name {
+            display: inline-block;
+            min-width: 180px;
             border-top: 1px solid #000;
             padding-top: 4px;
             font-weight: bold;
+            text-decoration: underline;
+        }
+
+        .page-footer-note {
+            margin-top: 25px;
+            font-size: 9px;
+            text-align: center;
+            color: #555;
+            border-top: 1px solid #ccc;
+            padding-top: 4px;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 18mm 14mm;
         }
 
         @media print {
@@ -136,24 +173,22 @@
     <div class="page">
         {{-- HEADER --}}
         <div class="header">
-            <h2>DGG System</h2>
-            <h3>Buku Kas Umum</h3>
-            <p>Periode: {{ $namaBulan }} {{ $tahun }}</p>
-            <div class="divider"></div>
-            <div class="divider-thin"></div>
+            <div class="company">PT Dinamika Global Gemilang</div>
+            <div class="doc-title">Buku Kas Depo Cirebon</div>
+            <div class="periode">Periode: {{ $namaBulan }} {{ $tahun }}</div>
         </div>
 
         {{-- TABEL --}}
         <table>
             <thead>
                 <tr>
-                    <th style="width:40px">No.</th>
-                    <th style="width:80px">Tanggal</th>
-                    <th style="width:90px">No. Surat</th>
+                    <th style="width:25px">No.</th>
+                    <th style="width:55px">Tanggal</th>
+                    <th style="width:65px">No. Surat</th>
                     <th>Keterangan</th>
-                    <th style="width:110px">Uang Masuk</th>
-                    <th style="width:110px">Uang Keluar</th>
-                    <th style="width:120px">Sisa Saldo</th>
+                    <th style="width:80px">Uang Masuk</th>
+                    <th style="width:80px">Uang Keluar</th>
+                    <th style="width:85px">Sisa Saldo</th>
                 </tr>
             </thead>
             <tbody>
@@ -219,14 +254,23 @@
             </tbody>
         </table>
 
-        {{-- FOOTER TTD --}}
+        {{-- FOOTER --}}
         <div class="footer">
-            <div class="ttd">
-                <p>Bandung, {{ \Carbon\Carbon::create($tahun, $bulan)->endOfMonth()->isoFormat('D MMMM Y') }}</p>
-                <div class="ttd-name">
-                    Bendahara
-                </div>
+            <div class="keterangan-footer">
+                <p><strong>Keterangan:</strong></p>
+                <p>Dokumen ini dicetak otomatis oleh DGG System</p>
+                <p>dan merupakan catatan resmi kas umum periode berjalan.</p>
             </div>
+            <div class="ttd-block">
+                <p class="tanggal">Cirebon,
+                    {{ \Carbon\Carbon::now()->isoFormat('D MMMM Y') }}</p>
+                <p class="jabatan">Admin,</p>
+                <p class="ttd-name">&nbsp;</p>
+            </div>
+        </div>
+
+        <div class="page-footer-note">
+            Dicetak melalui DGG System &mdash; {{ \Carbon\Carbon::now()->isoFormat('D MMMM Y') }}
         </div>
 
         {{-- TOMBOL CETAK --}}
