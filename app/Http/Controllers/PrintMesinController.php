@@ -250,8 +250,6 @@ class PrintMesinController extends Controller
             DB::raw('count(*) as total_unit'),
             DB::raw('GROUP_CONCAT(serial_number ORDER BY serial_number SEPARATOR ", ") as list_sn')
         )
-            // Stok gudang = fisik masih di gudang: Ready & Refurbish.
-            // Rented (di customer) & Returned (dikirim ke Bandung) TIDAK masuk.
             ->whereIn('status', ['Ready', 'Refurbish'])
             ->groupBy('tipe_model', 'status', 'asal_mesin', 'volt', 'kaset', 'finisher', 'double_scan')
             ->orderBy('tipe_model', 'asc')
@@ -262,7 +260,7 @@ class PrintMesinController extends Controller
             'stocks'        => $stocks,
             'depo'          => 'Cirebon',
             'tanggal'       => now(),
-            'dibuatOleh'    => null,
+            'dibuatOleh'    => auth()->user()?->name,
             'diketahuiOleh' => null,
         ]);
     }
