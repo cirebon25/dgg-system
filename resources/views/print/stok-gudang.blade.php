@@ -104,9 +104,18 @@
         }
 
         tr.row-highlight td {
-            background: #ffff00 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
             font-weight: 700;
-            font-style: italic;
+        }
+
+        tr.row-highlight td {
+            font-weight: 700;
+        }
+
+        tr.row-inventaris td {
+            background: #fef9c3 !important;
+            font-weight: 700;
         }
 
         tr.row-total td {
@@ -187,8 +196,8 @@
         }
 
         .badge-inventaris {
-            background: #fef9c3;
-            color: #854d0e;
+            background: #fde047;
+            color: #713f12;
         }
 
         .badge-ex-luar {
@@ -222,7 +231,7 @@
                 print-color-adjust: exact;
             }
 
-            tr.row-highlight td {
+            tr.row-inventaris td {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -281,12 +290,9 @@
 
                 @foreach ($stocks as $s)
                     @php
-                        $statusRaw = strtolower($s->status);
-                        $statusUpper = strtoupper($s->status); // dipakai untuk logika highlight (tetap status asli)
-                        $statusDisplay = strtoupper($statusLabelMap[$statusRaw] ?? $s->status); // dipakai untuk teks yang tercetak
+                        $statusDisplay = strtoupper($s->asal_mesin ?: $s->status);
 
-                        // Highlight kuning tetap berdasarkan status ASLI, bukan label tampilan
-                        $isHighlight = in_array($statusUpper, ['INVENTARIS', 'EX LUAR']);
+                        $isHighlight = strtolower($s->asal_mesin) === 'kanibal';
                         $totalUnitP1 += $s->total_unit;
                     @endphp
 

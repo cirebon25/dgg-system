@@ -26,6 +26,7 @@ class Machine extends Model
         'counter_bw',
         'counter_color',
         'last_rolled_at',
+        'asal_mesin',
     ];
 
     // ✅ EXCLUDE fields dari uppercase (hanya di model, bukan di trait)

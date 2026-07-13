@@ -94,6 +94,18 @@ class MachineResource extends Resource
                             ->default('Ready')
                             ->required(),
 
+                        Forms\Components\Select::make('asal_mesin')
+                            ->label('Asal / Kondisi Mesin')
+                            ->options([
+                                'BARU'       => 'Baru',
+                                'EX LUAR'    => 'Ex Luar',
+                                'EX RENTAL'  => 'Ex Rental (Tarikan dari Customer)',
+                                'KANIBAL'    => 'Kanibal',
+                                'INVENTARIS' => 'Inventaris',
+                            ])
+                            ->default('EX LUAR')
+                            ->required(),
+
                         Forms\Components\Textarea::make('keterangan_awal')
                             ->label('Keterangan Mesin')
                             ->placeholder('Misal: EX LUAR / EX RENTAL')

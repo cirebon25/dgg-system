@@ -242,26 +242,27 @@ class PrintMesinController extends Controller
         $stocks = Machine::select(
             'tipe_model',
             'status',
+            'asal_mesin',
             'volt',
             'kaset',
             'finisher',
             'double_scan',
             DB::raw('count(*) as total_unit'),
-            DB::raw('GROUP_CONCAT(serial_number ORDER BY serial_number SEPARATOR ", ") as list_sn'),
-            DB::raw('NULL as info')
+            DB::raw('GROUP_CONCAT(serial_number ORDER BY serial_number SEPARATOR ", ") as list_sn')
         )
-            // Ditambahkan: Inventaris & Ex Luar, sesuai instruksi
-            ->whereIn('status', ['Ready', 'Perbaikan', 'Inventaris', 'Ex Luar'])
-            ->groupBy('tipe_model', 'status', 'volt', 'kaset', 'finisher', 'double_scan')
+            // Stok gudang = fisik masih di gudang: Ready & Refurbish.
+            // Rented (di customer) & Returned (dikirim ke Bandung) TIDAK masuk.
+            ->whereIn('status', ['Ready', 'Refurbish'])
+            ->groupBy('tipe_model', 'status', 'asal_mesin', 'volt', 'kaset', 'finisher', 'double_scan')
             ->orderBy('tipe_model', 'asc')
-            ->orderByRaw("FIELD(status, 'Ready', 'Perbaikan', 'Inventaris', 'Ex Luar') asc")
+            ->orderByRaw("FIELD(status, 'Ready', 'Refurbish') asc")
             ->get();
 
         return view('print.stok-gudang', [
             'stocks'        => $stocks,
             'depo'          => 'Cirebon',
             'tanggal'       => now(),
-            'dibuatOleh'    => null,   // tampil sebagai titik-titik, isi manual saat cetak jika perlu
+            'dibuatOleh'    => null,
             'diketahuiOleh' => null,
         ]);
     }
