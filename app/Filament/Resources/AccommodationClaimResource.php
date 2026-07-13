@@ -109,19 +109,13 @@ class AccommodationClaimResource extends Resource
                     Forms\Components\Repeater::make('visits')
                         ->relationship('visits')
                         ->schema([
+
                             Forms\Components\TextInput::make('no_urut')
                                 ->label('No')
                                 ->numeric()
                                 ->default(1)
                                 ->columnSpan(1),
 
-                            Forms\Components\Toggle::make('manual')
-                                ->label('')
-                                ->default(false)
-                                ->live()
-                                ->columnSpan(1),
-
-                            // Mode dropdown
                             Forms\Components\Select::make('nama_customer')
                                 ->label('Nama Customer')
                                 ->options(fn() => \App\Models\Customer::orderBy('nama_customer')->pluck('nama_customer', 'nama_customer'))
@@ -129,33 +123,15 @@ class AccommodationClaimResource extends Resource
                                 ->required()
                                 ->live()
                                 ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                    if ($state) {
-                                        $customer = \App\Models\Customer::where('nama_customer', $state)->first();
-                                        $set('alamat', $customer?->alamat ?? '');
-                                    }
+                                    $customer = \App\Models\Customer::where('nama_customer', $state)->first();
+
+                                    $set('alamat', $customer?->alamat);
                                 })
-                                ->visible(fn(Forms\Get $get) => ! $get('manual'))
-                                ->columnSpan(4),
+                                ->columnSpan(5),
 
                             Forms\Components\TextInput::make('alamat')
-                                ->label('Alamat / Kota')
-                                ->required()
-                                ->visible(fn(Forms\Get $get) => ! $get('manual'))
-                                ->columnSpan(3),
-
-                            // Mode manual
-                            Forms\Components\TextInput::make('nama_customer')
-                                ->label('Nama Tempat / Kanvas')
-                                ->placeholder('Ketik nama tempat...')
-                                ->required()
-                                ->visible(fn(Forms\Get $get) => $get('manual'))
-                                ->columnSpan(4),
-
-                            Forms\Components\TextInput::make('alamat')
-                                ->label('Alamat / Kota')
-                                ->placeholder('Ketik alamat...')
-                                ->required()
-                                ->visible(fn(Forms\Get $get) => $get('manual'))
+                                ->label('Alamat')
+                                ->readOnly()
                                 ->columnSpan(3),
 
                             Forms\Components\Select::make('keterangan')
@@ -173,8 +149,10 @@ class AccommodationClaimResource extends Resource
                                 ])
                                 ->required()
                                 ->columnSpan(2),
+
                         ])
                         ->columns(11)
+                        ->defaultItems(1)
                         ->addActionLabel('+ Tambah Kunjungan')
                         ->defaultItems(1)
                         ->reorderable()

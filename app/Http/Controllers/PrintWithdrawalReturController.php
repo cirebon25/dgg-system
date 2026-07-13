@@ -58,9 +58,23 @@ class PrintWithdrawalReturController extends Controller
     }
 
     // dipindah dari: Route::get('/cetak-klaim-akomodasi/{id}', ...)->name('cetak.klaim-akomodasi')
+    // public function klaimAkomodasi($id)
+    // {
+    //     $claim = AccommodationClaim::with([
+    //         'technician',
+    //         'visits',
+    //     ])->findOrFail($id);
+
+    //     return view('print.klaim-akomodasi', compact('claim'));
+    // }
+
     public function klaimAkomodasi($id)
     {
-        $claim = AccommodationClaim::with(['technician', 'visits'])->findOrFail($id);
+        $claim = AccommodationClaim::with([
+            'technician',
+            'visits',
+        ])->findOrFail($id);
+
         return view('print.klaim-akomodasi', compact('claim'));
     }
 }

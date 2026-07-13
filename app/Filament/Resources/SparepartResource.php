@@ -171,6 +171,8 @@ class SparepartResource extends Resource
                 //                 ->send();
                 //         }),
 
+
+
                 Tables\Actions\Action::make('rekapKeluar')
                     ->label('Cetak Rekap Part Terpakai   Keluar')
                     ->color('danger')
@@ -245,6 +247,14 @@ class SparepartResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+
+                Tables\Actions\Action::make('kartuStok')
+                    ->label('Kartu Stok')
+                    ->icon('heroicon-o-document-chart-bar')
+                    ->color('info')
+                    ->url(fn($record) => route('cetak.kartu-stok-sparepart', $record->id))
+                    ->openUrlInNewTab(),
+
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

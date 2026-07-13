@@ -32,10 +32,10 @@ class AccommodationClaim extends Model
     protected $casts = [
         'dari_tanggal'      => 'date',
         'sampai_tanggal'    => 'date',
-        'biaya_transportasi'=> 'decimal:2',
+        'biaya_transportasi' => 'decimal:2',
         'konsumsi_karyawan' => 'decimal:2',
-        'pengeluaran_lain_1'=> 'decimal:2',
-        'pengeluaran_lain_2'=> 'decimal:2',
+        'pengeluaran_lain_1' => 'decimal:2',
+        'pengeluaran_lain_2' => 'decimal:2',
         'total_biaya'       => 'decimal:2',
     ];
 
@@ -46,7 +46,11 @@ class AccommodationClaim extends Model
 
     public function visits(): HasMany
     {
-        return $this->hasMany(AccommodationClaimVisit::class)->orderBy('no_urut');
+        return $this->hasMany(
+            AccommodationClaimVisit::class,
+            'accommodation_claim_id',
+            'id'
+        )->orderBy('no_urut');
     }
 
     // Auto hitung total sebelum save

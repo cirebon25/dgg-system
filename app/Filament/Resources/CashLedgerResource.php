@@ -37,8 +37,8 @@ class CashLedgerResource extends Resource
                 ->columns(2)
                 ->schema([
                     Forms\Components\TextInput::make('tanggal')
-                        ->label('Tanggal Transaksi')
-                        ->disabled(),
+                        ->label('Tanggal Transaksi'),
+                    // ->disabled(),
 
                     Forms\Components\TextInput::make('no_surat')
                         ->label('No. Bukti / Referensi')
@@ -51,13 +51,13 @@ class CashLedgerResource extends Resource
 
                     Forms\Components\TextInput::make('uang_masuk')
                         ->label('Pemasukan Kas (Rp)')
-                        ->prefix('Rp')
-                        ->disabled(),
+                        ->prefix('Rp'),
+                    // ->disabled(),
 
                     Forms\Components\TextInput::make('uang_keluar')
                         ->label('Pengeluaran Kas (Rp)')
-                        ->prefix('Rp')
-                        ->disabled(),
+                        ->prefix('Rp'),
+                    // ->disabled(),
 
                     Forms\Components\TextInput::make('dibuat_oleh')
                         ->label('Nama Pembuat')

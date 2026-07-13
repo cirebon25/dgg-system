@@ -135,4 +135,69 @@ class PrintSparepartTransController extends Controller
 
         return view('print.kartu-stok-semua', compact('data'));
     }
+
+    // Kartu stok per sparepart (tracking masuk/keluar + saldo berjalan)
+    public function kartuStokSparepart($sparepart_id)
+    {
+        $sparepart = \App\Models\Sparepart::findOrFail($sparepart_id);
+
+        $transaksi = collect();
+
+        // 1. MASUK — dari supplier (sparepart_entries)
+        $masuk = DB::table('sparepart_entries')
+            ->where('sparepart_id', $sparepart_id)
+            ->orderBy('created_at')
+            ->get(['jumlah', 'created_at', 'supplier']);
+
+        foreach ($masuk as $m) {
+            $transaksi->push([
+                'tanggal'    => $m->created_at,
+                'keterangan' => 'Masuk dari Supplier: ' . ($m->supplier ?? '-'),
+                'masuk'      => $m->jumlah,
+                'keluar'     => 0,
+                'tipe'       => 'MASUK',
+            ]);
+        }
+
+        // 2. KELUAR — drop ke teknisi (technician_stock_histories keluar > 0)
+        $keluar = DB::table('technician_stock_histories as h')
+            ->join('technicians as t', 't.id', '=', 'h.technician_id')
+            ->where('h.sparepart_id', $sparepart_id)
+            ->orderBy('h.created_at')
+            ->get(['h.masuk', 'h.keluar', 'h.keterangan', 'h.created_at', 't.nama_technician']);
+
+        foreach ($keluar as $k) {
+            if ($k->keluar > 0) {
+                $transaksi->push([
+                    'tanggal'    => $k->created_at,
+                    'keterangan' => 'Keluar ke Teknisi: ' . $k->nama_technician . ($k->keterangan ? ' — ' . $k->keterangan : ''),
+                    'masuk'      => 0,
+                    'keluar'     => $k->keluar,
+                    'tipe'       => 'KELUAR',
+                ]);
+            }
+            if ($k->masuk > 0) {
+                $transaksi->push([
+                    'tanggal'    => $k->created_at,
+                    'keterangan' => 'Kembali dari Teknisi: ' . $k->nama_technician . ($k->keterangan ? ' — ' . $k->keterangan : ''),
+                    'masuk'      => $k->masuk,
+                    'keluar'     => 0,
+                    'tipe'       => 'RETUR',
+                ]);
+            }
+        }
+
+        // Urutkan berdasarkan tanggal
+        $transaksi = $transaksi->sortBy('tanggal')->values();
+
+        // Hitung saldo berjalan
+        $saldo = 0;
+        $transaksi = $transaksi->map(function ($t) use (&$saldo) {
+            $saldo += $t['masuk'] - $t['keluar'];
+            $t['saldo'] = $saldo;
+            return $t;
+        });
+
+        return view('print.kartu-stok-sparepart', compact('sparepart', 'transaksi'));
+    }
 }

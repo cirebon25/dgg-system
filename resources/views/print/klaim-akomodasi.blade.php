@@ -464,6 +464,7 @@
             <div class="sub-title">Daftar Kunjungan</div>
 
             {{-- TABEL KUNJUNGAN PAS 7 BARIS UTK JAGA LAYOUT --}}
+
             <table class="visit-table">
                 <thead>
                     <tr>
@@ -474,15 +475,14 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($claim->visits as $visit)
+                    @foreach ($claim->visits as $visit)
                         <tr>
-                            <td class="center">{{ $visit->no_urut }}</td>
-                            <td>{{ $visit->customer?->nama_customer ?? $visit->nama_customer }}</td>
-                            <td>{{ $visit->customer?->alamat ?? $visit->alamat }}</td>
-                            <td class="center">{{ $visit->keterangan }}</td>
+                            <td>{{ $visit->no_urut }}</td>
+                            <td>{{ $visit->nama_customer }}</td>
+                            <td>{{ $visit->alamat }}</td>
+                            <td>{{ $visit->keterangan }}</td>
                         </tr>
-                    @empty
-                    @endforelse
+                    @endforeach
 
                     @for ($i = $claim->visits->count(); $i < 7; $i++)
                         <tr>
@@ -566,7 +566,7 @@
                         </tr>
                         <tr>
                             <td class="lbl">NOMINAL</td>
-                              <td>:</td>
+                            <td>:</td>
                         </tr>
                     </table>
                     <div class="disetujui">DISETUJUI</div>

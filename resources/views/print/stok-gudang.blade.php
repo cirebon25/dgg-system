@@ -3,9 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Rekapitulasi Stok Unit Gudang — PT. DGG</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Stock Mesin - PT. DGG</title>
     <style>
         *,
         *::before,
@@ -16,112 +14,166 @@
         }
 
         @page {
-            size: A4 landscape;
-            margin: 12mm;
+            size: A4 portrait;
+            margin: 8mm;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            font-size: 11px;
-            color: #1e293b;
+            font-family: Calibri, Arial, sans-serif;
+            font-size: 13px;
+            color: #000;
             background: #fff;
-            padding: 5px;
-            line-height: 1.4;
         }
 
+        .page {
+            page-break-after: always;
+        }
+
+        .page:last-child {
+            page-break-after: auto;
+        }
+
+        /* ===== HEADER (dipakai di 2 halaman, teks atas selalu bold) ===== */
         header {
             text-align: center;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
-            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 8px;
+        }
+
+        header h1,
+        header h2,
+        header h3,
+        header p {
+            font-weight: 700;
+            text-transform: uppercase;
         }
 
         header h1 {
-            font-size: 20px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: #0f172a;
+            font-size: 15px;
         }
 
         header h2 {
-            font-size: 13px;
-            font-weight: 500;
-            text-transform: uppercase;
-            margin: 4px 0;
-            color: #475569;
+            font-size: 15px;
         }
 
-        header p {
-            font-size: 10.5px;
-            color: #94a3b8;
+        header h3 {
+            font-size: 13px;
             margin-top: 2px;
         }
 
+        header p {
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        /* ===== TABEL UMUM ===== */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
-            table-layout: fixed;
-            border: 1px solid #cbd5e1;
         }
 
         th,
         td {
-            padding: 9px 8px;
-            vertical-align: middle;
+            border: 1px solid #000;
+            padding: 4px 5px;
             text-align: center;
-            border: 1px solid #cbd5e1;
+            vertical-align: middle;
         }
 
         th {
-            background: #1e293b;
-            color: #ffffff;
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
             font-size: 9.5px;
-            letter-spacing: 0.5px;
+        }
+
+        td.text-left,
+        th.text-left {
+            text-align: left;
+        }
+
+        /* ===== HALAMAN 1: GAYA EXCEL ===== */
+        col.h1-no {
+            width: 26px;
+        }
+
+        col.h1-tipe {
+            width: 34%;
+        }
+
+        col.h1-jumlah {
+            width: 50px;
+        }
+
+        tr.row-highlight td {
+            background: #ffff00 !important;
+            font-weight: 700;
+            font-style: italic;
+        }
+
+        tr.row-total td {
+            font-weight: 700;
+            font-style: italic;
+            font-size: 13px;
+        }
+
+        /* ===== HALAMAN 2: DETAIL + SERIAL NUMBER ===== */
+        col.h2-no {
+            width: 24px;
+        }
+
+        col.h2-tipe {
+            width: 20%;
+        }
+
+        col.h2-volt {
+            width: 34px;
+        }
+
+        col.h2-total {
+            width: 55px;
+        }
+
+        col.h2-kaset {
+            width: 34px;
+        }
+
+        col.h2-finish {
+            width: 34px;
+        }
+
+        col.h2-dscan {
+            width: 34px;
+        }
+
+        col.h2-status {
+            width: 70px;
         }
 
         th.bg-total-header {
             background: #ffea31 !important;
-            color: #000000 !important;
-            font-weight: 700;
-        }
-
-        /* Baris dengan tipe_model sama tapi baris ke-2 dst (status berbeda) */
-        .row-same-type td.col-tipe {
-            color: #94a3b8;
-            /* abu-abu, tanda ini baris lanjutan */
-            font-style: italic;
-        }
-
-        tbody tr:hover {
-            background: #f1f5f9;
+            color: #000;
         }
 
         .bg-total-data {
             background: #fffde7 !important;
             color: #b45309;
             font-weight: 700;
-            font-size: 12px;
         }
 
-        .text-left {
-            text-align: left;
+        .col-tipe-continued {
+            color: #94a3b8;
+            font-style: italic;
         }
 
-        .font-bold {
-            font-weight: 600;
+        .row-new-type td {
+            border-top: 2px solid #94a3b8;
         }
 
         .badge-status {
-            padding: 3px 10px;
+            padding: 2px 7px;
             border-radius: 20px;
             font-weight: 600;
-            font-size: 9.5px;
+            font-size: 8.5px;
             display: inline-block;
-            letter-spacing: 0.3px;
         }
 
         .badge-ready {
@@ -134,9 +186,14 @@
             color: #92400e;
         }
 
-        .badge-rented {
-            background: #dbeafe;
-            color: #1e40af;
+        .badge-inventaris {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .badge-ex-luar {
+            background: #e0e7ff;
+            color: #3730a3;
         }
 
         .badge-other {
@@ -144,164 +201,233 @@
             color: #334155;
         }
 
-        /* Garis pemisah antar tipe mesin */
-        .row-new-type td {
-            border-top: 2px solid #94a3b8;
-        }
-
         .sn-text {
             font-family: 'Courier New', monospace;
-            font-size: 10.5px;
+            font-size: 9px;
             font-weight: 600;
-            color: #0f172a;
-        }
-
-        .total-container {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 15px;
-        }
-
-        .total-box {
-            font-size: 12px;
-            font-weight: 600;
-            color: #334155;
-            background: #f1f5f9;
-            padding: 8px 16px;
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-        }
-
-        .total-box strong {
-            font-size: 14px;
-            color: #0f172a;
-            margin-left: 5px;
         }
 
         @media print {
-            body {
-                background: #fff;
-                padding: 0;
-            }
-
-            th {
-                background: #1e293b !important;
-                color: #fff !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+            tr {
+                page-break-inside: avoid;
             }
 
             th.bg-total-header {
-                background: #ffea31 !important;
-                color: #000 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
 
             .bg-total-data {
-                background: #fffde7 !important;
-                color: #b45309 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
 
-            tr {
-                page-break-inside: avoid;
+            tr.row-highlight td {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
         }
     </style>
 </head>
+@php
+    // Mapping label tampilan: status di DB tetap "Ready",
+    // tapi yang tercetak di kertas jadi "EX LUAR".
+    // Highlight/badge warna TETAP mengikuti status asli, bukan label tampilan.
+    $statusLabelMap = [
+        'ready' => 'EX LUAR',
+    ];
+@endphp
 
-<body onload="window.print()">
+<body>
 
-    <header>
-        <h1>PT. DINAMIKA GLOBAL GEMILANG</h1>
-        <h2>REKAPITULASI STOK UNIT GUDANG</h2>
-        <p>Posisi Stok: {{ date('d-m-Y H:i') }} WIB</p>
-    </header>
+    {{-- ============================== --}}
+    {{-- HALAMAN 1 — RINGKASAN GAYA EXCEL --}}
+    {{-- ============================== --}}
+    <div class="page">
 
-    <table>
-        <colgroup>
-            <col style="width: 35px;">
-            <col style="width: 160px;">
-            <col style="width: 60px;">
-            <col style="width: 95px;">
-            <col style="width: 55px;">
-            <col style="width: 60px;">
-            <col style="width: 60px;">
-            <col style="width: 95px;">
-            <col>
-        </colgroup>
-        <thead>
+        <header>
+            <h1>STOCK MESIN MESIN PHOTO COPY</h1>
+            <h2>PT. DINAMIKA GLOBAL GEMILANG</h2>
+            <h3>DEPO {{ strtoupper($depo ?? 'CIREBON') }}</h3>
+            <p>PERTANGGAL {{ strtoupper(\Carbon\Carbon::parse($tanggal ?? now())->translatedFormat('d F Y')) }}</p>
+        </header>
+
+        <table>
+            <colgroup>
+                <col class="h1-no">
+                <col class="h1-tipe">
+                <col class="h1-jumlah">
+                <col>
+                <col>
+                <col>
+                <col>
+            </colgroup>
+            <thead>
+                <tr>
+                    <th rowspan="2">NO</th>
+                    <th rowspan="2" class="text-left">TYPE MESIN</th>
+                    <th rowspan="2">JUMLAH<br>MESIN</th>
+                    <th colspan="4">KETERANGAN</th>
+                </tr>
+                <tr>
+                    <th>4 KASET</th>
+                    <th>FINISHER</th>
+                    <th>DOUBLE SCAN</th>
+                    <th>STATUS</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php $totalUnitP1 = 0; @endphp
+
+                @foreach ($stocks as $s)
+                    @php
+                        $statusRaw = strtolower($s->status);
+                        $statusUpper = strtoupper($s->status); // dipakai untuk logika highlight (tetap status asli)
+                        $statusDisplay = strtoupper($statusLabelMap[$statusRaw] ?? $s->status); // dipakai untuk teks yang tercetak
+
+                        // Highlight kuning tetap berdasarkan status ASLI, bukan label tampilan
+                        $isHighlight = in_array($statusUpper, ['INVENTARIS', 'EX LUAR']);
+                        $totalUnitP1 += $s->total_unit;
+                    @endphp
+
+                    <tr class="{{ $isHighlight ? 'row-highlight' : '' }}">
+                        <td>{{ $loop->iteration }}</td>
+                        <td class="text-left">{{ $s->tipe_model }} - {{ $s->volt }}V</td>
+                        <td>{{ $s->total_unit }}</td>
+                        <td>{{ $s->kaset ?: '' }}</td>
+                        <td>{{ $s->finisher ?: '' }}</td>
+                        <td>{{ $s->double_scan ?: '' }}</td>
+                        <td>{{ $statusDisplay }}</td>
+                    </tr>
+                @endforeach
+
+                <tr class="row-total">
+                    <td colspan="2">TOTAL</td>
+                    <td>{{ $totalUnitP1 }}</td>
+                    <td colspan="4"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="margin-top: 24px;">
+            {{ $depo ?? 'Cirebon' }}, {{ \Carbon\Carbon::parse($tanggal ?? now())->translatedFormat('d F Y') }}
+        </div>
+
+        <table style="width:100%; border:none; margin-top:16px;">
             <tr>
-                <th>NO</th>
-                <th class="text-left">TIPE MESIN</th>
-                <th>VOLT</th>
-                <th class="bg-total-header">TOTAL UNIT</th>
-                <th>KASET</th>
-                <th>FINISHER</th>
-                <th>D. SCAN</th>
-                <th>STATUS</th>
-                <th class="text-left">LIST SN</th>
+                <td style="border:none; text-align:center; font-weight:700; width:50%;">Dibuat Oleh,</td>
+                <td style="border:none; text-align:center; font-weight:700; width:50%;">Diketahui Oleh,</td>
             </tr>
-        </thead>
-        <tbody>
-            @php
-                $no = 1;
-                $prevTipe = null;
-                $rowNum = 0;
-            @endphp
+            <tr>
+                <td style="border:none; height:55px;"></td>
+                <td style="border:none; height:55px;"></td>
+            </tr>
+            <tr>
+                <td
+                    style="border:none; text-align:center; font-weight:700; font-style:italic; text-decoration:underline;">
+                    ( {{ $dibuatOleh ?? '................' }} )
+                </td>
+                <td
+                    style="border:none; text-align:center; font-weight:700; font-style:italic; text-decoration:underline;">
+                    ( {{ $diketahuiOleh ?? '................' }} )
+                </td>
+            </tr>
+        </table>
 
-            @foreach ($stocks as $s)
+    </div>
+
+    {{-- ============================== --}}
+    {{-- HALAMAN 2 — DETAIL + SERIAL NUMBER --}}
+    {{-- ============================== --}}
+    <div class="page">
+
+        <header>
+            <h1>PT. DINAMIKA GLOBAL GEMILANG</h1>
+            <h2>REKAPITULASI STOK UNIT GUDANG</h2>
+            <p>Posisi Stok: {{ \Carbon\Carbon::parse($tanggal ?? now())->translatedFormat('d F Y H:i') }} WIB</p>
+        </header>
+
+        <table>
+            <colgroup>
+                <col class="h2-no">
+                <col class="h2-tipe">
+                <col class="h2-volt">
+                <col class="h2-total">
+                <col class="h2-kaset">
+                <col class="h2-finish">
+                <col class="h2-dscan">
+                <col class="h2-status">
+                <col>
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>NO</th>
+                    <th class="text-left">TIPE MESIN</th>
+                    <th>VOLT</th>
+                    <th class="bg-total-header">TOTAL UNIT</th>
+                    <th>KASET</th>
+                    <th>FINISHER</th>
+                    <th>D. SCAN</th>
+                    <th>STATUS</th>
+                    <th class="text-left">LIST SN</th>
+                </tr>
+            </thead>
+            <tbody>
                 @php
-                    $isNewType = $s->tipe_model !== $prevTipe;
-                    $statusLower = strtolower($s->status);
-                    $badgeClass = match ($statusLower) {
-                        'ready' => 'badge-ready',
-                        'perbaikan' => 'badge-perbaikan',
-                        'rented' => 'badge-rented',
-                        default => 'badge-other',
-                    };
-                    $rowNum++;
+                    $no = 1;
+                    $prevTipe = null;
+                    $rowNum = 0;
                 @endphp
 
-                <tr class="{{ $isNewType && $rowNum > 1 ? 'row-new-type' : '' }}">
-                    <td>{{ $isNewType ? $no++ : '' }}</td>
+                @foreach ($stocks as $s)
+                    @php
+                        $isNewType = $s->tipe_model !== $prevTipe;
+                        $statusLowerP2 = strtolower($s->status);
+                        $badgeClass = match ($statusLowerP2) {
+                            'ready' => 'badge-ready',
+                            'perbaikan' => 'badge-perbaikan',
+                            'inventaris' => 'badge-inventaris',
+                            'ex luar' => 'badge-ex-luar',
+                            default => 'badge-other',
+                        };
+                        $rowNum++;
+                    @endphp
 
-                    {{-- Kolom tipe: tampilkan nama kalau baris pertama tipe ini,
-                         kalau baris lanjutan (status berbeda) tampilkan └ saja --}}
-                    <td class="text-left font-bold col-tipe" style="color: {{ $isNewType ? '#0f172a' : '#94a3b8' }};">
-                        @if ($isNewType)
-                            {{ $s->tipe_model }}
-                        @else
-                            &nbsp;&nbsp;└ {{ $s->tipe_model }}
-                        @endif
-                    </td>
+                    <tr class="{{ $isNewType && $rowNum > 1 ? 'row-new-type' : '' }}">
+                        <td>{{ $isNewType ? $no++ : '' }}</td>
 
-                    <td><span class="font-bold">{{ $s->volt ?: '-' }}V</span></td>
-                    <td class="bg-total-data">{{ $s->total_unit }} UNIT</td>
-                    <td>{{ $s->kaset ?: 0 }}</td>
-                    <td>{{ $s->finisher ?: 0 }}</td>
-                    <td>{{ $s->double_scan ?: 0 }}</td>
-                    <td>
-                        <span class="badge-status {{ $badgeClass }}">
-                            {{ strtoupper($s->status) }}
-                        </span>
-                    </td>
-                    <td class="text-left">
-                        <span class="sn-text">{{ $s->list_sn }}</span>
-                    </td>
-                </tr>
+                        <td class="text-left {{ $isNewType ? '' : 'col-tipe-continued' }}">
+                            @if ($isNewType)
+                                {{ $s->tipe_model }}
+                            @else
+                                &nbsp;&nbsp;&#8627; {{ $s->tipe_model }}
+                            @endif
+                        </td>
 
-                @php $prevTipe = $s->tipe_model; @endphp
-            @endforeach
-        </tbody>
-    </table>
+                        <td>{{ $s->volt ?: '-' }}V</td>
+                        <td class="bg-total-data">{{ $s->total_unit }} UNIT</td>
+                        <td>{{ $s->kaset ?: 0 }}</td>
+                        <td>{{ $s->finisher ?: 0 }}</td>
+                        <td>{{ $s->double_scan ?: 0 }}</td>
+                        <td>
+                            <span class="badge-status {{ $badgeClass }}">
+                                {{ strtoupper($s->status) }}
+                            </span>
+                        </td>
+                        <td class="text-left">
+                            <span class="sn-text">{{ $s->list_sn }}</span>
+                        </td>
+                    </tr>
 
-    <div class="total-container">
-        <div class="total-box">
-            GRAND TOTAL SEMUA UNIT: <strong>{{ $stocks->sum('total_unit') }} UNIT</strong>
+                    @php $prevTipe = $s->tipe_model; @endphp
+                @endforeach
+            </tbody>
+        </table>
+
+        <div style="text-align:right; margin-top:14px; font-weight:700;">
+            GRAND TOTAL SEMUA UNIT: {{ $stocks->sum('total_unit') }} UNIT
         </div>
+
     </div>
 
 </body>

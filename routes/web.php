@@ -214,3 +214,9 @@ Route::get('/cetak-surat-retur/{id}', function ($id) {
 
 Route::get('/cetak/part-per-mesin/{machine_id}', [PrintServiceController::class, 'partPerMesin'])
     ->name('cetak.part-per-mesin');
+
+Route::get('/mesin/{id}/tracking', [PrintMesinController::class, 'trackingMesin'])
+    ->name('mesin.tracking');
+
+Route::get('/cetak-kartu-stok-sparepart/{sparepart_id}', [PrintSparepartTransController::class, 'kartuStokSparepart'])
+    ->name('cetak.kartu-stok-sparepart');

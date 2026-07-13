@@ -250,13 +250,20 @@ class PrintMesinController extends Controller
             DB::raw('GROUP_CONCAT(serial_number ORDER BY serial_number SEPARATOR ", ") as list_sn'),
             DB::raw('NULL as info')
         )
-            ->whereIn('status', ['Ready', 'Perbaikan'])
+            // Ditambahkan: Inventaris & Ex Luar, sesuai instruksi
+            ->whereIn('status', ['Ready', 'Perbaikan', 'Inventaris', 'Ex Luar'])
             ->groupBy('tipe_model', 'status', 'volt', 'kaset', 'finisher', 'double_scan')
             ->orderBy('tipe_model', 'asc')
-            ->orderByRaw("FIELD(status, 'Ready', 'Perbaikan') asc")
+            ->orderByRaw("FIELD(status, 'Ready', 'Perbaikan', 'Inventaris', 'Ex Luar') asc")
             ->get();
 
-        return view('print.stok-gudang', compact('stocks'));
+        return view('print.stok-gudang', [
+            'stocks'        => $stocks,
+            'depo'          => 'Cirebon',
+            'tanggal'       => now(),
+            'dibuatOleh'    => null,   // tampil sebagai titik-titik, isi manual saat cetak jika perlu
+            'diketahuiOleh' => null,
+        ]);
     }
     // dipindah dari: Route::get('/cetak-alokasi-mesin', ...)->name('cetak.alokasi')
     // PERBAIKAN (24 Juni 2026) -- bagian 2:
@@ -689,5 +696,124 @@ class PrintMesinController extends Controller
         </html>";
 
         return response($html);
+    }
+
+    public function trackingMesin($id)
+    {
+        $machine = \App\Models\Machine::with(['customer'])->findOrFail($id);
+
+        // Kumpulkan semua event dalam timeline
+        $timeline = collect();
+
+        // 1. Semua deployment (aktif maupun sudah ditarik)
+        $deployments = DB::table('deployments')
+            ->join('customers', 'deployments.customer_id', '=', 'customers.id')
+            ->leftJoin('technicians', 'deployments.technician_id', '=', 'technicians.id')
+            ->where('deployments.machine_id', $id)
+            ->select(
+                'deployments.id',
+                'deployments.tanggal_instal',
+                'deployments.tanggal_tarik',
+                'deployments.deleted_at',
+                'deployments.counter_bw',
+                'deployments.counter_color',
+                'deployments.no_kontrak',
+                'customers.nama_customer',
+                'customers.kota',
+                'customers.alamat',
+                'technicians.nama_technician',
+            )
+            ->orderBy('deployments.tanggal_instal')
+            ->get();
+
+        foreach ($deployments as $dep) {
+            // Event: Dipasang ke customer
+            $timeline->push([
+                'tanggal'   => $dep->tanggal_instal,
+                'tipe'      => 'RENTAL',
+                'icon'      => '📦',
+                'warna'     => 'green',
+                'judul'     => 'Dipasang ke Customer',
+                'detail'    => $dep->nama_customer . ' — ' . $dep->kota,
+                'sub'       => 'Teknisi: ' . ($dep->nama_technician ?? '-') . ' | Counter Awal BW: ' . number_format($dep->counter_bw) . ' / CL: ' . number_format($dep->counter_color) . ($dep->no_kontrak ? ' | Kontrak: ' . $dep->no_kontrak : ''),
+            ]);
+
+            // Event: Ditarik dari customer
+            if ($dep->tanggal_tarik || $dep->deleted_at) {
+                $tglTarik = $dep->tanggal_tarik ?? \Carbon\Carbon::parse($dep->deleted_at)->toDateString();
+                $timeline->push([
+                    'tanggal'   => $tglTarik,
+                    'tipe'      => 'TARIK',
+                    'icon'      => '🔙',
+                    'warna'     => 'orange',
+                    'judul'     => 'Ditarik dari Customer',
+                    'detail'    => $dep->nama_customer . ' — ' . $dep->kota,
+                    'sub'       => '',
+                ]);
+            }
+        }
+
+        // 2. Rolling — mesin ini pernah jadi mesin LAMA (diambil dari customer)
+        $rollingLama = DB::table('machine_replacements')
+            ->join('customers', 'machine_replacements.customer_id', '=', 'customers.id')
+            ->join('machines as m_new', 'machine_replacements.new_machine_id', '=', 'm_new.id')
+            ->leftJoin('technicians', 'machine_replacements.technician_id', '=', 'technicians.id')
+            ->where('machine_replacements.old_machine_id', $id)
+            ->select(
+                'machine_replacements.tanggal',
+                'machine_replacements.keterangan',
+                'machine_replacements.counter_bw_final',
+                'machine_replacements.counter_color_final',
+                'customers.nama_customer',
+                'customers.kota',
+                'm_new.serial_number as sn_baru',
+                'technicians.nama_technician',
+            )
+            ->get();
+
+        foreach ($rollingLama as $r) {
+            $timeline->push([
+                'tanggal'   => $r->tanggal,
+                'tipe'      => 'ROLLING_KELUAR',
+                'icon'      => '🔄',
+                'warna'     => 'red',
+                'judul'     => 'Rolling — Mesin Diganti (Keluar)',
+                'detail'    => 'Diganti dari ' . $r->nama_customer . ' oleh SN Baru: ' . $r->sn_baru,
+                'sub'       => 'Counter Akhir BW: ' . number_format($r->counter_bw_final) . ' / CL: ' . number_format($r->counter_color_final) . ' | Teknisi: ' . ($r->nama_technician ?? '-') . ($r->keterangan ? ' | ' . $r->keterangan : ''),
+            ]);
+        }
+
+        // 3. Rolling — mesin ini pernah jadi mesin BARU (pengganti)
+        $rollingBaru = DB::table('machine_replacements')
+            ->join('customers', 'machine_replacements.customer_id', '=', 'customers.id')
+            ->join('machines as m_old', 'machine_replacements.old_machine_id', '=', 'm_old.id')
+            ->leftJoin('technicians', 'machine_replacements.technician_id', '=', 'technicians.id')
+            ->where('machine_replacements.new_machine_id', $id)
+            ->select(
+                'machine_replacements.tanggal',
+                'machine_replacements.keterangan',
+                'customers.nama_customer',
+                'customers.kota',
+                'm_old.serial_number as sn_lama',
+                'technicians.nama_technician',
+            )
+            ->get();
+
+        foreach ($rollingBaru as $r) {
+            $timeline->push([
+                'tanggal'   => $r->tanggal,
+                'tipe'      => 'ROLLING_MASUK',
+                'icon'      => '✅',
+                'warna'     => 'blue',
+                'judul'     => 'Rolling — Masuk sebagai Pengganti',
+                'detail'    => 'Menggantikan SN: ' . $r->sn_lama . ' di ' . $r->nama_customer,
+                'sub'       => 'Teknisi: ' . ($r->nama_technician ?? '-') . ($r->keterangan ? ' | ' . $r->keterangan : ''),
+            ]);
+        }
+
+        // Urutkan timeline berdasarkan tanggal
+        $timeline = $timeline->sortBy('tanggal')->values();
+
+        return view('print.tracking-mesin', compact('machine', 'timeline'));
     }
 }

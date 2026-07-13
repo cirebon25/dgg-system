@@ -165,6 +165,12 @@ class MachineResource extends Resource
                     ->placeholder('Gudang DGG'),
             ])
             ->actions([
+                Tables\Actions\Action::make('tracking')
+                    ->label('Tracking')
+                    ->icon('heroicon-o-map-pin')
+                    ->color('info')
+                    ->url(fn($record) => route('mesin.tracking', $record->id))
+                    ->openUrlInNewTab(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('monitor')
                     ->label('Monitor Part')
