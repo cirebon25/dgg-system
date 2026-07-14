@@ -248,10 +248,12 @@ class PrintMesinController extends Controller
             'finisher',
             'double_scan',
             DB::raw('count(*) as total_unit'),
+            DB::raw('SUM(IF(kaset = 4, 1, 0)) as kaset_4_count'),
             DB::raw('GROUP_CONCAT(serial_number ORDER BY serial_number SEPARATOR ", ") as list_sn')
         )
             ->whereIn('status', ['Ready', 'Refurbish'])
-            ->groupBy('tipe_model', 'status', 'asal_mesin', 'volt', 'kaset', 'finisher', 'double_scan')
+            ->groupBy('tipe_model', 'status', 'asal_mesin', 'volt', 'finisher', 'double_scan')
+            // Hapus 'kaset' dari groupBy supaya 2 unit dengan kaset 4 bisa digabung
             ->orderBy('tipe_model', 'asc')
             ->orderByRaw("FIELD(status, 'Ready', 'Refurbish') asc")
             ->get();
@@ -260,7 +262,7 @@ class PrintMesinController extends Controller
             'stocks'        => $stocks,
             'depo'          => 'Cirebon',
             'tanggal'       => now(),
-            'dibuatOleh'    => auth()->user()?->name,
+            'dibuatOleh'    => null,
             'diketahuiOleh' => null,
         ]);
     }

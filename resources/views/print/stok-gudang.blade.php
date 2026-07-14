@@ -82,36 +82,42 @@
         th {
             font-weight: 700;
             text-transform: uppercase;
-            font-size: 9.5px;
+            font-size: 17px;
+            text-align: center;
         }
 
-        td.text-left,
-        th.text-left {
+        td.text-left {
             text-align: left;
         }
 
         /* ===== HALAMAN 1: GAYA EXCEL ===== */
         col.h1-no {
-            width: 26px;
+            width: 24px;
         }
 
         col.h1-tipe {
-            width: 34%;
+            width: 32%;
+            /* Dikecilkan dari 34% ke 28% */
         }
 
         col.h1-jumlah {
-            width: 50px;
+            width: 48px;
+        }
+
+        col.h1-status {
+            width: 80px;
         }
 
         tr.row-highlight td {
+            background: #fef9c3 !important;
+            font-weight: 700;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
-            font-weight: 700;
         }
 
-        tr.row-highlight td {
+        /* tr.row-highlight td {
             font-weight: 700;
-        }
+        } */
 
         tr.row-inventaris td {
             background: #fef9c3 !important;
@@ -130,7 +136,7 @@
         }
 
         col.h2-tipe {
-            width: 20%;
+            width: 16%;
         }
 
         col.h2-volt {
@@ -269,7 +275,7 @@
                 <col>
                 <col>
                 <col>
-                <col>
+                <col class="h1-status">
             </colgroup>
             <thead>
                 <tr>
@@ -291,22 +297,23 @@
                 @foreach ($stocks as $s)
                     @php
                         $statusDisplay = strtoupper($s->asal_mesin ?: $s->status);
-
                         $isHighlight = strtolower($s->asal_mesin) === 'kanibal';
                         $totalUnitP1 += $s->total_unit;
+
+                        // Kolom kaset: tampilkan jumlah unit yang punya kaset 4, kosongkan jika 0
+                        $kasetDisplay = $s->kaset_4_count > 0 ? $s->kaset_4_count : '';
                     @endphp
 
                     <tr class="{{ $isHighlight ? 'row-highlight' : '' }}">
                         <td>{{ $loop->iteration }}</td>
                         <td class="text-left">{{ $s->tipe_model }} - {{ $s->volt }}V</td>
                         <td>{{ $s->total_unit }}</td>
-                        <td>{{ $s->kaset ?: '' }}</td>
+                        <td>{{ $kasetDisplay }}</td>
                         <td>{{ $s->finisher ?: '' }}</td>
                         <td>{{ $s->double_scan ?: '' }}</td>
                         <td>{{ $statusDisplay }}</td>
                     </tr>
                 @endforeach
-
                 <tr class="row-total">
                     <td colspan="2">TOTAL</td>
                     <td>{{ $totalUnitP1 }}</td>
