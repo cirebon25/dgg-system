@@ -239,6 +239,7 @@ class PrintMesinController extends Controller
     // dipindah dari: Route::get('/cetak-stok-gudang', ...)->name('cetak.stok-gudang')
     public function stokGudang()
     {
+        // Query Mesin Photo Copy
         $stocks = Machine::select(
             'tipe_model',
             'status',
@@ -253,17 +254,30 @@ class PrintMesinController extends Controller
         )
             ->whereIn('status', ['Ready', 'Refurbish'])
             ->groupBy('tipe_model', 'status', 'asal_mesin', 'volt', 'finisher', 'double_scan')
-            // Hapus 'kaset' dari groupBy supaya 2 unit dengan kaset 4 bisa digabung
             ->orderBy('tipe_model', 'asc')
             ->orderByRaw("FIELD(status, 'Ready', 'Refurbish') asc")
             ->get();
 
+        // Query Mesin Air RO (hanya yang status Ready & Perbaikan, belum di-deploy)
+        $machineAirRos = \App\Models\MachineAirRo::select(
+            'serial_number',
+            'tipe_mesin',
+            'status',
+            DB::raw('count(*) as total_unit')
+        )
+            ->whereIn('status', ['Ready', 'Perbaikan'])
+            ->whereNull('customer_ro_id') // Hanya yang belum di-deploy (customer_ro_id kosong)
+            ->groupBy('serial_number', 'tipe_mesin', 'status')
+            ->orderBy('tipe_mesin', 'asc')
+            ->get();
+
         return view('print.stok-gudang', [
-            'stocks'        => $stocks,
-            'depo'          => 'Cirebon',
-            'tanggal'       => now(),
-            'dibuatOleh'    => null,
-            'diketahuiOleh' => null,
+            'stocks'         => $stocks,
+            'machineAirRos'  => $machineAirRos,
+            'depo'           => 'Cirebon',
+            'tanggal'        => now(),
+            'dibuatOleh'     => null,
+            'diketahuiOleh'  => null,
         ]);
     }
     // dipindah dari: Route::get('/cetak-alokasi-mesin', ...)->name('cetak.alokasi')

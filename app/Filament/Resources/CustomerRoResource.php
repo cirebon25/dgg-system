@@ -1,0 +1,79 @@
+<?php
+
+namespace App\Filament\Resources;
+
+use App\Models\CustomerRo;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+
+class CustomerRoResource extends Resource
+{
+    protected static ?string $model = CustomerRo::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    protected static ?string $navigationLabel = 'Customer RO';
+
+    protected static ?string $navigationGroup = 'Manajemen Mesin RO';
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\TextInput::make('nama_customer')
+                    ->label('Nama Customer')
+                    ->required()
+                    ->maxLength(255),
+
+                Forms\Components\TextInput::make('lokasi')
+                    ->label('Lokasi')
+                    ->maxLength(255),
+
+                Forms\Components\Textarea::make('keterangan')
+                    ->label('Keterangan')
+                    ->maxLength(65535)
+                    ->columnSpanFull(),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('nama_customer')
+                    ->label('Nama Customer')
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('lokasi')
+                    ->label('Lokasi')
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('machineAirRos_count')
+                    ->label('Jumlah Mesin RO')
+                    ->counts('machineAirRos'),
+            ])
+            ->filters([])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => \App\Filament\Resources\CustomerRoResource\Pages\ListCustomerRos::route('/'),
+            'create' => \App\Filament\Resources\CustomerRoResource\Pages\CreateCustomerRo::route('/create'),
+            'edit' => \App\Filament\Resources\CustomerRoResource\Pages\EditCustomerRo::route('/{record}/edit'),
+        ];
+    }
+}

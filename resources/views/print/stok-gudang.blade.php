@@ -33,7 +33,7 @@
             page-break-after: auto;
         }
 
-        /* ===== HEADER (dipakai di 2 halaman, teks atas selalu bold) ===== */
+        /* ===== HEADER ===== */
         header {
             text-align: center;
             margin-bottom: 8px;
@@ -45,6 +45,7 @@
         header p {
             font-weight: 700;
             text-transform: uppercase;
+            margin: 0;
         }
 
         header h1 {
@@ -65,7 +66,7 @@
             margin-top: 2px;
         }
 
-        /* ===== TABEL UMUM ===== */
+        /* ===== TABEL ===== */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -90,14 +91,12 @@
             text-align: left;
         }
 
-        /* ===== HALAMAN 1: GAYA EXCEL ===== */
         col.h1-no {
             width: 24px;
         }
 
         col.h1-tipe {
             width: 32%;
-            /* Dikecilkan dari 34% ke 28% */
         }
 
         col.h1-jumlah {
@@ -108,29 +107,6 @@
             width: 80px;
         }
 
-        tr.row-highlight td {
-            background: #fef9c3 !important;
-            font-weight: 700;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-
-        /* tr.row-highlight td {
-            font-weight: 700;
-        } */
-
-        tr.row-inventaris td {
-            background: #fef9c3 !important;
-            font-weight: 700;
-        }
-
-        tr.row-total td {
-            font-weight: 700;
-            font-style: italic;
-            font-size: 13px;
-        }
-
-        /* ===== HALAMAN 2: DETAIL + SERIAL NUMBER ===== */
         col.h2-no {
             width: 24px;
         }
@@ -161,6 +137,19 @@
 
         col.h2-status {
             width: 70px;
+        }
+
+        tr.row-highlight td {
+            background: #fef9c3 !important;
+            font-weight: 700;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        tr.row-total td {
+            font-weight: 700;
+            font-style: italic;
+            font-size: 13px;
         }
 
         th.bg-total-header {
@@ -237,26 +226,18 @@
                 print-color-adjust: exact;
             }
 
-            tr.row-inventaris td {
+            tr.row-highlight td {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
         }
     </style>
 </head>
-@php
-    // Mapping label tampilan: status di DB tetap "Ready",
-    // tapi yang tercetak di kertas jadi "EX LUAR".
-    // Highlight/badge warna TETAP mengikuti status asli, bukan label tampilan.
-    $statusLabelMap = [
-        'ready' => 'EX LUAR',
-    ];
-@endphp
 
 <body>
 
     {{-- ============================== --}}
-    {{-- HALAMAN 1 — RINGKASAN GAYA EXCEL --}}
+    {{-- HALAMAN 1 — MESIN PHOTO COPY --}}
     {{-- ============================== --}}
     <div class="page">
 
@@ -299,8 +280,6 @@
                         $statusDisplay = strtoupper($s->asal_mesin ?: $s->status);
                         $isHighlight = strtolower($s->asal_mesin) === 'kanibal';
                         $totalUnitP1 += $s->total_unit;
-
-                        // Kolom kaset: tampilkan jumlah unit yang punya kaset 4, kosongkan jika 0
                         $kasetDisplay = $s->kaset_4_count > 0 ? $s->kaset_4_count : '';
                     @endphp
 
@@ -350,7 +329,91 @@
     </div>
 
     {{-- ============================== --}}
-    {{-- HALAMAN 2 — DETAIL + SERIAL NUMBER --}}
+    {{-- HALAMAN 2 — MESIN AIR RO --}}
+    {{-- ============================== --}}
+    <div class="page">
+
+        <header>
+            <h1>STOCK MESIN AIR RO</h1>
+            <h2>PT. DINAMIKA GLOBAL GEMILANG</h2>
+            <h3>DEPO {{ strtoupper($depo ?? 'CIREBON') }}</h3>
+            <p>PERTANGGAL {{ strtoupper(\Carbon\Carbon::parse($tanggal ?? now())->translatedFormat('d F Y')) }}</p>
+        </header>
+
+        <table>
+            <colgroup>
+                <col style="width: 30px;">
+                <col style="width: 40%;">
+                <col style="width: 60px;">
+                <col style="width: 80px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>NO</th>
+                    <th class="text-left">TIPE MESIN</th>
+                    <th>JUMLAH</th>
+                    <th>STATUS</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php $totalAirRo = 0; @endphp
+
+                @forelse ($machineAirRos as $ro)
+                    @php $totalAirRo += $ro->total_unit; @endphp
+
+                    <tr>
+                        <td>{{ $loop->iteration }}</td>
+                        <td class="text-left">{{ $ro->tipe_mesin }}</td>
+                        <td>{{ $ro->total_unit }}</td>
+                        <td>{{ strtoupper($ro->status) }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="4" style="text-align: center; font-style: italic; color: #94a3b8;">
+                            Tidak ada stok mesin Air RO di gudang
+                        </td>
+                    </tr>
+                @endforelse
+
+                @if ($machineAirRos->count() > 0)
+                    <tr style="font-weight: 700; font-style: italic; font-size: 13px;">
+                        <td colspan="2" style="text-align: right;">TOTAL</td>
+                        <td>{{ $totalAirRo }}</td>
+                        <td></td>
+                    </tr>
+                @endif
+            </tbody>
+        </table>
+
+        <div style="margin-top: 24px;">
+            {{ $depo ?? 'Cirebon' }}, {{ \Carbon\Carbon::parse($tanggal ?? now())->translatedFormat('d F Y') }}
+        </div>
+
+        <table style="width:100%; border:none; margin-top:16px;">
+            <tr>
+                <td style="border:none; text-align:center; font-weight:700; width:50%;">Dibuat Oleh,</td>
+                <td style="border:none; text-align:center; font-weight:700; width:50%;">Diketahui Oleh,</td>
+            </tr>
+            <tr>
+                <td style="border:none; height:55px;"></td>
+                <td style="border:none; height:55px;"></td>
+            </tr>
+            <tr>
+                <td
+                    style="border:none; text-align:center; font-weight:700; font-style:italic; text-decoration:underline;">
+                    ( {{ $dibuatOleh ?? '................' }} )
+                </td>
+                <td
+                    style="border:none; text-align:center; font-weight:700; font-style:italic; text-decoration:underline;">
+                    ( {{ $diketahuiOleh ?? '................' }} )
+                </td>
+            </tr>
+        </table>
+
+    </div>
+
+    {{-- ============================== --}}
+    {{-- HALAMAN 3 — DETAIL PHOTO COPY + SERIAL NUMBER --}}
     {{-- ============================== --}}
     <div class="page">
 
@@ -419,12 +482,12 @@
 
                         <td>{{ $s->volt ?: '-' }}V</td>
                         <td class="bg-total-data">{{ $s->total_unit }} UNIT</td>
-                        <td>{{ $s->kaset ?: 0 }}</td>
+                        <td>{{ $s->kaset_4_count ?: 0 }}</td>
                         <td>{{ $s->finisher ?: 0 }}</td>
                         <td>{{ $s->double_scan ?: 0 }}</td>
                         <td>
                             <span class="badge-status {{ $badgeClass }}">
-                                {{ strtoupper($s->status) }}
+                                {{ strtoupper($s->asal_mesin ?: $s->status) }}
                             </span>
                         </td>
                         <td class="text-left">
