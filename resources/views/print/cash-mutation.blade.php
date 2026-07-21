@@ -29,7 +29,6 @@
             background: #fff;
         }
 
-        /* Bingkai luar memenuhi kertas dengan margin presisi */
         .sheet {
             width: 210mm;
             height: 148mm;
@@ -47,7 +46,6 @@
             flex-direction: column;
         }
 
-        /* HEADER */
         .header-row {
             display: flex;
             border-bottom: 1.2px solid #000;
@@ -55,12 +53,16 @@
         }
 
         .header-logo {
-            width: 17mm;
+            width: 24mm;
             display: flex;
             align-items: center;
             justify-content: center;
             border-right: 1px solid #000;
             padding: 3mm 0;
+            font-weight: 900;
+            font-size: 12px;
+            letter-spacing: -0.5px;
+            color: #0D47A1;
         }
 
         .header-company {
@@ -95,7 +97,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* JUDUL */
         .judul-row {
             text-align: center;
             font-size: 13px;
@@ -107,7 +108,6 @@
             flex: 0 0 auto;
         }
 
-        /* DIBAYAR KEPADA */
         .kepada-row {
             display: flex;
             justify-content: space-between;
@@ -118,13 +118,13 @@
             flex: 0 0 auto;
         }
 
-        /* TABEL URAIAN — mengisi sisa ruang secara proporsional */
         .uraian-wrap {
             flex: 1 1 auto;
             display: flex;
             flex-direction: column;
             border-bottom: 1.2px solid #000;
-            overflow: hidden;
+            overflow: visible;
+            /* Ubah dari hidden menjadi visible */
         }
 
         .uraian-table {
@@ -163,6 +163,16 @@
             border-bottom: 0.6px solid #ddd;
         }
 
+        /* Baris tetap PLAT / KM AWAL / KM AKHIR — warna beda tipis dari baris data biasa */
+        .uraian-table tbody tr.fixed-row td {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .uraian-table tbody tr.empty-row td {
+            height: 4.5mm;
+        }
+
         .col-uraian {
             width: auto;
             text-align: left;
@@ -178,19 +188,6 @@
             text-align: right !important;
         }
 
-        .vehicle-detail {
-            margin-top: 1mm;
-        }
-
-        .vehicle-detail div {
-            font-size: 8px;
-            color: #444;
-            font-style: italic;
-            line-height: 1.5;
-            white-space: nowrap;
-        }
-
-        /* TERBILANG + DIBAYAR DENGAN */
         .terbilang-block {
             display: flex;
             justify-content: space-between;
@@ -211,9 +208,17 @@
             margin-bottom: 2.5mm;
         }
 
+        .tb-line {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 2.5mm;
+            gap: 5px;
+        }
+
         .tb-label {
             font-weight: 700;
-            min-width: 17mm;
+            min-width: 30mm;
+            /* Disamakan dengan min-width .bayar-lbl di bawahnya agar titik duanya sejajar */
         }
 
         .tb-val {
@@ -278,7 +283,6 @@
             padding-bottom: 0.5mm;
         }
 
-        /* TTD */
         .ttd-row {
             display: flex;
             flex: 0 0 auto;
@@ -315,22 +319,7 @@
             {{-- HEADER --}}
             <div class="header-row">
                 <div class="header-logo">
-                    <svg width="13mm" height="13mm" viewBox="0 0 58 58" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                            <radialGradient id="g1" cx="38%" cy="32%" r="70%">
-                                <stop offset="0%" stop-color="#64B5F6" />
-                                <stop offset="48%" stop-color="#1565C0" />
-                                <stop offset="100%" stop-color="#0D47A1" />
-                            </radialGradient>
-                        </defs>
-                        <circle cx="29" cy="29" r="27.5" fill="url(#g1)" stroke="#888"
-                            stroke-width="1.2" />
-                        <path d="M29,29 L53,42 A27.5,27.5 0 0,1 12,54 Z" fill="#B71C1C" opacity="0.88" />
-                        <circle cx="29" cy="29" r="19" fill="none" stroke="rgba(255,255,255,0.4)"
-                            stroke-width="2" />
-                        <text x="29" y="34" text-anchor="middle" fill="#fff" font-family="Arial Black,Arial"
-                            font-weight="900" font-size="11.5" letter-spacing="-0.5">PT DGG</text>
-                    </svg>
+                    PT DGG
                 </div>
                 <div class="header-company">
                     <div class="company-name">PT. DINAMIKA GLOBAL GEMILANG</div>
@@ -345,7 +334,8 @@
 
             {{-- DIBAYAR KEPADA --}}
             <div class="kepada-row">
-                <span>Dibayar Kepada :&nbsp; ……………………………………………………………………………</span>
+                <span>Dibayar Kepada :&nbsp;
+                    {{ $data->dibayar_kepada ?? '……………………………………………………………………………' }}</span>
                 <span>{{ $tanggalStr }}</span>
             </div>
 
@@ -360,55 +350,69 @@
                         </tr>
                     </thead>
                     <tbody>
+                        {{-- Baris data uraian --}}
                         @foreach ($items as $item)
                             <tr>
-                                <td class="col-uraian">
-                                    {{ strtoupper($item->uraian ?? '') }}
-                                    @if (!empty($item->plat_nomor) || !empty($item->km_awal) || !empty($item->km_akhir))
-                                        <div class="vehicle-detail">
-                                            @if (!empty($item->plat_nomor))
-                                                <div>Plat No&nbsp;&nbsp;&nbsp;: {{ strtoupper($item->plat_nomor) }}
-                                                </div>
-                                            @endif
-                                            @if (!empty($item->km_awal))
-                                                <div>KM Awal&nbsp;&nbsp;:
-                                                    {{ number_format($item->km_awal, 0, ',', '.') }}</div>
-                                            @endif
-                                            @if (!empty($item->km_akhir))
-                                                <div>KM Akhir&nbsp;: {{ number_format($item->km_akhir, 0, ',', '.') }}
-                                                </div>
-                                            @endif
-                                        </div>
-                                    @endif
-                                </td>
+                                <td class="col-uraian">{{ strtoupper($item->uraian ?? '') }}</td>
                                 <td class="col-kode">{{ $item->kode_perkiraan ?? '' }}</td>
                                 <td class="col-jumlah">
                                     {{ $item->jumlah ? number_format($item->jumlah, 0, ',', '.') : '' }}</td>
                             </tr>
                         @endforeach
+
+                        {{-- Baris kosong pengisi, supaya tabel tetap presisi 1 halaman --}}
+                        @for ($i = 0; $i < $emptyRows; $i++)
+                            <tr class="empty-row">
+                                <td class="col-uraian">&nbsp;</td>
+                                <td class="col-kode"></td>
+                                <td class="col-jumlah"></td>
+                            </tr>
+                        @endfor
+
+                        {{-- Baris tetap: PLAT / KM AWAL / KM AKHIR --}}
+                        <tr class="fixed-row">
+                            <td class="col-uraian">PLAT : {{ $vehiclePlat ?? '' }}</td>
+                            <td class="col-kode"></td>
+                            <td class="col-jumlah"></td>
+                        </tr>
+                        <tr class="fixed-row">
+                            <td class="col-uraian">KM AWAL :
+                                {{ isset($vehicleKmAwal) ? number_format($vehicleKmAwal, 0, ',', '.') : '' }}</td>
+                            <td class="col-kode"></td>
+                            <td class="col-jumlah"></td>
+                        </tr>
+                        <tr class="fixed-row">
+                            <td class="col-uraian">KM AKHIR :
+                                {{ isset($vehicleKmAkhir) ? number_format($vehicleKmAkhir, 0, ',', '.') : '' }}</td>
+                            <td class="col-kode"></td>
+                            <td class="col-jumlah"></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
-
             {{-- TERBILANG + DIBAYAR DENGAN --}}
             <div class="terbilang-block">
                 <div class="terbilang-left">
-                    <div class="terbilang-line">
+                    <div class="tb-line">
                         <span class="tb-label">Terbilang</span>
-                        <span> :</span>
-                        <span class="tb-val"># {{ $terbilang }} #</span>
+                        <span>:</span>
+                        <span class="tb-val" style="margin-left: 2px;">{{ $terbilang }}</span>
                     </div>
 
                     <div class="bayar-dengan-label">Dibayar dengan;</div>
                     <div class="bayar-item">
                         <span class="bayar-lbl">- Uang Tunai</span>
                         <span>:</span>
-                        <span style="font-size:14px; font-weight:bold; line-height:1;">✓</span>
+                        <span style="font-size:14px; font-weight:bold; line-height:1; margin-left: 2px;">
+                            {{ ($data->jenis_pembayaran ?? 'Tunai') === 'Tunai' ? '✓' : '' }}
+                        </span>
                     </div>
                     <div class="bayar-item">
                         <span class="bayar-lbl">- Cek/giro bilyet Bank</span>
                         <span>:</span>
-                        <span style="border-bottom:1px solid #000; min-width:28mm; display:inline-block;">&nbsp;</span>
+                        <span style="font-size:14px; font-weight:bold; line-height:1; margin-left: 2px;">
+                            {{ ($data->jenis_pembayaran ?? 'Tunai') === 'Cek/Giro' ? '✓' : '' }}
+                        </span>
                     </div>
                 </div>
 
@@ -418,7 +422,7 @@
                         <span class="bayar-right-val"></span>
                     </div>
                     <div class="bayar-right-row">
-                        <span>No._______</span>
+                        <span>No. {{ $data->no_cek_giro ?? '_______' }}</span>
                         <span>Rp.</span>
                         <span class="bayar-right-val"></span>
                     </div>
@@ -431,13 +435,17 @@
 
             {{-- TTD --}}
             <div class="ttd-row">
-                <div class="ttd-cell">Dibuat Oleh,<div class="ttd-name">( {{ $data->pembuat ?? 'RUDI' }} )</div>
+                <div class="ttd-cell">Dibuat Oleh,
+                    <div class="ttd-name">( {{ $data->pembuat ?? '....................' }} )</div>
                 </div>
-                <div class="ttd-cell">Diketahui Oleh,<div class="ttd-name">( {{ $data->pemeriksa ?? 'RIZEN' }} )</div>
+                <div class="ttd-cell">Diketahui Oleh,
+                    <div class="ttd-name">( {{ $data->pemeriksa ?? '....................' }} )</div>
                 </div>
-                <div class="ttd-cell">Disetujui,<div class="ttd-name">( .................... )</div>
+                <div class="ttd-cell">Disetujui,
+                    <div class="ttd-name">( .................... )</div>
                 </div>
-                <div class="ttd-cell">Penerima,<div class="ttd-name">( {{ $data->penerima ?? 'RUDI' }} )</div>
+                <div class="ttd-cell">Penerima,
+                    <div class="ttd-name">( {{ $data->penerima ?? '....................' }} )</div>
                 </div>
             </div>
 

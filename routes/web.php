@@ -176,8 +176,12 @@ Route::get('/saldo-sparepart', [SaldoSparepartController::class, 'index'])
 Route::get('/sparepart/report/outflow', [SparepartOutflowController::class, 'index'])
     ->name('sparepart.report.outflow');
 
-Route::get('/cash-mutation/print/{id}', [CashMutationPrintController::class, 'print'])
-    ->name('cash-mutation.print')->middleware(['auth']);
+// Route::get('/cash-mutation/print/{id}', [CashMutationPrintController::class, 'print'])
+//     ->name('cash-mutation.print')->middleware(['auth']);
+
+Route::get('/cash-mutation/print/{cashMutation}', [CashMutationPrintController::class, 'print'])
+    ->name('cash-mutation.print')
+    ->middleware(['auth']);
 
 Route::get('/cetak-kas-bulanan', [CashLedgerPrintController::class, 'cetakBulanan'])
     ->name('cetak.kas-bulanan')->middleware('auth');
@@ -225,4 +229,3 @@ Route::get('/cetak-kartu-stok-sparepart/{sparepart_id}', [PrintSparepartTransCon
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/deployments/print-yearly', [DeploymentPrintController::class, 'printYearly'])
         ->name('deployments.print-yearly');
-});

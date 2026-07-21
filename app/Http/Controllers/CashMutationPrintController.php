@@ -3,66 +3,65 @@
 namespace App\Http\Controllers;
 
 use App\Models\CashMutation;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
+use Illuminate\Contracts\View\View;
 
 class CashMutationPrintController extends Controller
 {
-    public function print($id)
+    /**
+     * FIX: implicit route model binding menggantikan `print($id)` + findOrFail manual.
+     * Route: Route::get('/print/cash-mutation/{cash_mutation}', ...)
+     */
+    public function print(CashMutation $cashMutation): View
     {
-        $data = CashMutation::with(['items'])->findOrFail($id);
+        $cashMutation->loadMissing('items');
 
-        // ── Tanggal ──
-        $tgl = null;
-        try {
-            if ($data->tanggal) {
-                $tgl = $data->tanggal instanceof Carbon
-                    ? $data->tanggal
-                    : Carbon::parse($data->tanggal);
-            }
-        } catch (\Exception $e) {
-        }
-
-        // ── No Voucher ──
-        $bulanRomawi = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-        if ($tgl) {
-            $seq       = $data->no_urut ?? (explode('/', $data->no_voucher ?? '')[0] ?? '');
-            $noVoucher = 'NO. ' . trim($seq) . ' / ' . $bulanRomawi[$tgl->month - 1] . ' / ' . $tgl->format('y');
-        } else {
-            $noVoucher = 'NO. ' . ($data->no_voucher ?? '-');
-        }
-
-        // ── Tanggal string ──
-        $tanggalStr = $tgl
-            ? 'Cirebon ,   ' . $tgl->locale('id')->isoFormat('D MMMM Y')
+        // FIX: tidak lagi parse ulang tanggal manual — kolom sudah di-cast Carbon
+        // di model ('tanggal' => 'date:Y-m-d'), jadi $cashMutation->tanggal sudah
+        // pasti instance Carbon (atau null). try/catch Carbon::parse lama adalah dead code.
+        $tanggalStr = $cashMutation->tanggal
+            ? 'Cirebon ,   ' . $cashMutation->tanggal->locale('id')->isoFormat('D MMMM Y')
             : 'Cirebon , ';
 
-        // ── Total ──
-        $total = (float) ($data->total_jumlah ?? $data->items->sum('jumlah') ?? 0);
+        // FIX: nomor voucher lengkap sekarang diambil dari accessor model
+        // (getNoVoucherLengkapAttribute), bukan direkonstruksi ulang di controller.
+        // Fallback pengaman: kalau accessor belum ter-load (model lama) atau
+        // hasilnya kosong, tetap tampilkan sesuatu yang informatif, bukan blank.
+        $noVoucher = $cashMutation->no_voucher_lengkap
+            ?: ('NO. ' . ($cashMutation->no_voucher ?? '-'));
 
-        // ── Terbilang (hitung di controller, bukan di blade) ──
-        $terbilang = trim($data->terbilang ?? '');
+        $items = $cashMutation->items;
+        $total = (float) ($cashMutation->total_jumlah ?? $items->sum('jumlah'));
+
+        $terbilang = trim($cashMutation->terbilang ?? '');
         if (!$terbilang && $total > 0) {
             $terbilang = strtoupper(CashMutation::konversiTerbilang($total) . ' RUPIAH');
         }
-        if (!$terbilang) $terbilang = '-';
+        if (!$terbilang) {
+            $terbilang = '-';
+        }
 
-        // ── Items & empty rows ──
-        // CATATAN: emptyRows diperkecil ke 2 karena detail kendaraan (Plat No,
-        // KM Awal, KM Akhir) sekarang dipecah jadi 3 baris terpisah per item,
-        // sehingga tabel jadi lebih tinggi. Mengurangi baris kosong menjaga
-        // dokumen tetap pas 1 halaman A5 landscape.
-        $items     = $data->items ?? collect();
-        $emptyRows = max(0, 10 - count($items));
+        // Baris kosong pengisi tabel, supaya cetakan tetap pas 1 halaman A5 landscape.
+        // Base diturunkan dari 10 -> 6 karena sekarang selalu ada 3 baris tetap
+        // tambahan (PLAT / KM AWAL / KM AKHIR) di bawah tabel, sesuai dokumen fisik.
+        $emptyRows = max(0, 5 - count($items));
 
-        return view('print.cash-mutation', compact(
-            'data',
-            'noVoucher',
-            'tanggalStr',
-            'total',
-            'terbilang',
-            'items',
-            'emptyRows'
-        ));
+        // Data kendaraan untuk 3 baris tetap: ambil dari item pertama yang mengisi
+        // salah satu field ini (biasanya hanya 1 item transport per voucher).
+        $vehicleItem = $items->first(
+            fn($item) => $item->plat_nomor || $item->km_awal || $item->km_akhir
+        );
+
+        return view('print.cash-mutation', [
+            'data'           => $cashMutation,
+            'noVoucher'      => $noVoucher,
+            'tanggalStr'     => $tanggalStr,
+            'total'          => $total,
+            'terbilang'      => $terbilang,
+            'items'          => $items,
+            'emptyRows'      => $emptyRows,
+            'vehiclePlat'    => $vehicleItem->plat_nomor ?? null,
+            'vehicleKmAwal'  => $vehicleItem->km_awal ?? null,
+            'vehicleKmAkhir' => $vehicleItem->km_akhir ?? null,
+        ]);
     }
 }
