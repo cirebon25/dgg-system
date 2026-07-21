@@ -123,7 +123,8 @@ class CashMutationResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('no_voucher')
                     ->label('No. Voucher')
-                    ->searchable()
+                    // ->searchable()
+                    ->sortable()
                     ->default('-'),
 
                 Tables\Columns\TextColumn::make('tanggal')
@@ -150,7 +151,7 @@ class CashMutationResource extends Resource
                     ->trueColor('success')
                     ->falseColor('danger'),
             ])
-            ->defaultSort('tanggal', 'desc')
+            ->defaultSort('created_at', 'desc')
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('print')

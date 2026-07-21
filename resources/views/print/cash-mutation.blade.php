@@ -39,7 +39,10 @@
         }
 
         .outer {
-            border: 1.6px solid #000;
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
+            border-left: 2px solid #000;
+            border-right: 2px solid #000;
             width: 100%;
             height: 100%;
             display: flex;
@@ -160,13 +163,14 @@
         }
 
         .uraian-table tbody tr:not(:last-child) td {
-            border-bottom: 0.6px solid #ddd;
+            border-bottom: 1px solid #0f0f0f;
         }
 
         /* Baris tetap PLAT / KM AWAL / KM AKHIR — warna beda tipis dari baris data biasa */
         .uraian-table tbody tr.fixed-row td {
             font-weight: 600;
-            color: #333;
+            color: #0a0a0a;
+            text-transform: uppercase;
         }
 
         .uraian-table tbody tr.empty-row td {
@@ -176,6 +180,7 @@
         .col-uraian {
             width: auto;
             text-align: left;
+            text-transform: uppercase;
         }
 
         .col-kode {
@@ -218,12 +223,15 @@
         .tb-label {
             font-weight: 700;
             min-width: 30mm;
+            font-size: 12px;
             /* Disamakan dengan min-width .bayar-lbl di bawahnya agar titik duanya sejajar */
         }
 
         .tb-val {
             font-weight: 700;
             font-style: italic;
+            font-size: 12px;
+            text-transform: uppercase;
         }
 
         .bayar-dengan-label {

@@ -183,7 +183,7 @@
             <thead>
                 <tr>
                     <th style="width:25px">No.</th>
-                    <th style="width:55px">Tanggal</th>
+                    <th style="width:60px">Tanggal</th>
                     <th style="width:65px">No. Surat</th>
                     <th>Keterangan</th>
                     <th style="width:80px">Uang Masuk</th>
@@ -211,17 +211,16 @@
                         <td class="text-center">{{ \Carbon\Carbon::parse($row['tanggal'])->format('d/m/Y') }}</td>
                         <td class="text-center">{{ $row['no_surat'] ?? '-' }}</td>
 
-                        {{-- KOLOM KETERANGAN DENGAN PENGAMBILAN URAIAN PERTAMA --}}
+                        {{-- KOLOM KETERANGAN (UPPERCASE & DIPISAH KOMA) --}}
                         <td>
-                            @if (!empty($row['items']) && isset($row['items'][0]['uraian']))
-                                {{ $row['items'][0]['uraian'] }}
+                            @if (!empty($row['uraian_koma']))
+                                {{ strtoupper($row['uraian_koma']) }}
                             @elseif(!empty($row['uraian']))
-                                {{ $row['uraian'] }}
+                                {{ strtoupper($row['uraian']) }}
                             @else
-                                {{ $row['keterangan'] }}
+                                {{ strtoupper($row['keterangan'] ?? '-') }}
                             @endif
                         </td>
-
                         <td class="text-right">
                             {{ $row['uang_masuk'] > 0 ? 'Rp ' . number_format($row['uang_masuk'], 0, ',', '.') : '-' }}
                         </td>

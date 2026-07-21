@@ -6,6 +6,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup; // <-- PASTIIN DIPANGGIL DI SINI
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -97,19 +98,24 @@ class AdminPanelProvider extends PanelProvider
                 'Keuangan',
                 'Marketing',
                 'pengaturan',
-                'Bantuan',
+                'manajemen user',
+                'Manajemen Mesin RO',
+
+                // PUSAT BANTUAN DIKUNCI DI POSISI PALING BAWAH
+                NavigationGroup::make('Bantuan')
+                    ->label('Bantuan'),
             ])
             ->renderHook(
                 \Filament\View\PanelsRenderHook::SIDEBAR_FOOTER,
                 fn() => new \Illuminate\Support\HtmlString('
-       <div
-           class="flex items-center justify-center gap-x-2 px-6 py-3 border-t border-gray-100 dark:border-white/5 select-none pointer-events-none">
-           <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-           <span class="text-[10px] tracking-wider font-medium uppercase text-gray-400 dark:text-gray-500 font-mono">
-               Developer RUDIANTO
-           </span>
-       </div>
-       ')
+        <div
+            class="flex items-center justify-center gap-x-2 px-6 py-3 border-t border-gray-100 dark:border-white/5 select-none pointer-events-none">
+            <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span class="text-[10px] tracking-wider font-medium uppercase text-gray-400 dark:text-gray-500 font-mono">
+                Developer RUDIANTO
+            </span>
+        </div>
+        ')
             );
     }
 }
