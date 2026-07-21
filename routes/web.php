@@ -19,6 +19,7 @@ use App\Http\Controllers\ProspectController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SaldoSparepartController;
 use App\Http\Controllers\SparepartOutflowController;
+use App\Http\Controllers\DeploymentPrintController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -220,3 +221,8 @@ Route::get('/mesin/{id}/tracking', [PrintMesinController::class, 'trackingMesin'
 
 Route::get('/cetak-kartu-stok-sparepart/{sparepart_id}', [PrintSparepartTransController::class, 'kartuStokSparepart'])
     ->name('cetak.kartu-stok-sparepart');
+
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/deployments/print-yearly', [DeploymentPrintController::class, 'printYearly'])
+        ->name('deployments.print-yearly');
+});
