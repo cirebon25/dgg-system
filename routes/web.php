@@ -227,5 +227,6 @@ Route::get('/cetak-kartu-stok-sparepart/{sparepart_id}', [PrintSparepartTransCon
     ->name('cetak.kartu-stok-sparepart');
 
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/deployments/print-yearly', [DeploymentPrintController::class, 'printYearly'])
+    Route::get('/deployments/print-yearly', [\App\Http\Controllers\DeploymentPrintController::class, 'printYearly'])
         ->name('deployments.print-yearly');
+});

@@ -74,4 +74,14 @@ class CashLedger extends Model
             ->orderBy('tanggal')
             ->orderBy('id');
     }
+
+    public function cashMutation()
+    {
+        return $this->belongsTo(CashMutation::class, 'cash_mutation_id');
+    }
+
+    public function cashReceipt()
+    {
+        return $this->belongsTo(CashReceipt::class, 'cash_receipt_id');
+    }
 }

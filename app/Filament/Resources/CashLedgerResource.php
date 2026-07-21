@@ -84,9 +84,28 @@ class CashLedgerResource extends Resource
                     ->label('No. Bukti')
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('keterangan')
+                Tables\Columns\TextColumn::make('uraian_transaksi')
                     ->label('Uraian Transaksi')
-                    ->searchable()
+                    ->state(function (CashLedger $record) {
+                        // 1. Jika berasal dari Mutasi Kas (Kas Keluar / SPM), ambil URAIAN MURNI dari items
+                        if ($record->cashMutation && $record->cashMutation->items->isNotEmpty()) {
+                            return $record->cashMutation->items->pluck('uraian')->filter()->implode(', ');
+                        }
+
+                        // 2. Jika berasal dari Kas Masuk (CashReceipt)
+                        if ($record->cashReceipt) {
+                            return $record->cashReceipt->uraian ?? $record->cashReceipt->keterangan ?? '-';
+                        }
+
+                        // 3. Jika tidak ada relasi, tampilkan keterangan asli
+                        return $record->keterangan ?? '-';
+                    })
+                    ->searchable(query: function (Builder $query, string $search) {
+                        return $query->where('keterangan', 'like', "%{$search}%")
+                            ->orWhereHas('cashMutation.items', function ($q) use ($search) {
+                                $q->where('uraian', 'like', "%{$search}%");
+                            });
+                    })
                     ->wrap(),
 
                 Tables\Columns\TextColumn::make('uang_masuk')
