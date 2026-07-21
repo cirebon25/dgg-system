@@ -15,18 +15,43 @@ class DeploymentChart extends ChartWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected function getData(): array
+    // Menyimpan value filter yang dipilih user (key dari getFilters())
+    public ?string $filter = null;
+
+    /**
+     * Menyediakan opsi dropdown tahun di header widget.
+     * Filament otomatis merender <select> dan menyimpan pilihan di $this->filter.
+     */
+    protected function getFilters(): ?array
     {
+        $years = Deployment::query()
+            ->selectRaw('DISTINCT YEAR(created_at) as year')
+            ->orderByDesc('year')
+            ->pluck('year', 'year')
+            ->map(fn($year) => (string) $year)
+            ->toArray();
+
         $currentYear = date('Y');
 
-        // Hanya hitung deployment yang BUKAN hasil Rolling.
-        // Deployment hasil rolling akan punya id yang tercatat sebagai
-        // 'deployment_id' di tabel machine_replacements (lihat GantiMesin::submit()).
+        // Jaga-jaga: kalau tahun berjalan belum punya data sama sekali,
+        // tetap tampilkan sebagai opsi supaya user bisa lihat chart kosong
+        if (! isset($years[$currentYear])) {
+            $years = [$currentYear => $currentYear] + $years;
+        }
+
+        return $years;
+    }
+
+    protected function getData(): array
+    {
+        // Ambil tahun aktif dari filter, fallback ke tahun sekarang
+        $selectedYear = $this->filter ?? date('Y');
+
         $deployments = Deployment::select(
             DB::raw('MONTH(created_at) as month'),
             DB::raw('count(*) as count')
         )
-            ->whereYear('created_at', $currentYear)
+            ->whereYear('created_at', $selectedYear)
             ->whereNotIn('id', function ($query) {
                 $query->select('deployment_id')
                     ->from('machine_replacements')
@@ -40,14 +65,14 @@ class DeploymentChart extends ChartWidget
         $labels = [];
 
         for ($i = 1; $i <= 12; $i++) {
-            $labels[] = Carbon::create($currentYear, $i, 1)->translatedFormat('M');
+            $labels[] = Carbon::create((int) $selectedYear, $i, 1)->translatedFormat('M');
             $data[] = $deployments[$i] ?? 0;
         }
 
         return [
             'datasets' => [
                 [
-                    'label' => 'Total Pemasangan Baru (Deploy Murni) ' . $currentYear,
+                    'label' => 'Total Pemasangan Baru (Deploy Murni) ' . $selectedYear,
                     'data' => $data,
                     'backgroundColor' => 'rgba(251, 191, 36, 0.1)',
                     'borderColor' => '#fbbf24',
