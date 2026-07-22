@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\CashLedger;
-use App\Models\CashMutation;
 use Illuminate\Http\Request;
 
 class CashLedgerPrintController extends Controller
@@ -13,44 +12,43 @@ class CashLedgerPrintController extends Controller
         $bulan = (int) $request->get('bulan', now()->month);
         $tahun = (int) $request->get('tahun', now()->year);
 
-        // 1. Ambil data transaksi kas bulanan dasar & saldo awal TERLEBIH DAHULU
-        $transaksi = CashLedger::bulan($tahun, $bulan)->get();
-        $saldoAwal = CashLedger::saldoAwalBulan($tahun, $bulan);
-
-        // 2. Ambil semua data SPM (CashMutation) bulan ini beserta items-nya
-        $spmData = CashMutation::with(['items'])
-            ->whereMonth('tanggal', $bulan)
-            ->whereYear('tanggal', $tahun)
+        // Ambil transaksi + eager load relasi cashMutation.items & cashReceipt
+        // Urutan SAMA PERSIS dengan Filament Resource: tanggal asc, id asc
+        // dan items() diurutkan sesuai urutan input (id asc)
+        $transaksi = CashLedger::with([
+            'cashMutation.items' => fn($q) => $q->orderBy('id', 'asc'),
+            'cashReceipt',
+        ])
+            ->bulan($tahun, $bulan)
+            ->orderBy('tanggal', 'asc')
+            ->orderBy('id', 'asc')
             ->get();
 
-        // 3. Hitung running saldo per baris
-        $saldo = $saldoAwal; // Saldo awal sudah aman digunakan di sini
+        $saldoAwal = CashLedger::saldoAwalBulan($tahun, $bulan);
 
-        $rows = $transaksi->map(function ($item) use (&$saldo, $spmData) {
+        // Hitung running saldo per baris, ambil uraian LANGSUNG dari relasi
+        // record (bukan pencocokan teks), sama seperti kolom di Resource.
+        $saldo = $saldoAwal;
+        $rows = $transaksi->map(function ($item) use (&$saldo) {
             $saldo += ($item->uang_masuk ?? 0) - ($item->uang_keluar ?? 0);
 
-            $itemArray = $item->toArray();
             $itemsUraian = [];
 
-            // Pencocokan otomatis dengan data SPM
-            if (!empty($item->no_surat) || !empty($item->keterangan)) {
-                $matchedSpm = $spmData->first(function ($spm) use ($item) {
-                    $noVoucherClean = trim($spm->no_voucher ?? '');
-                    if (empty($noVoucherClean)) return false;
-
-                    $inNoSurat    = !empty($item->no_surat) && (strpos($item->no_surat, $noVoucherClean) !== false);
-                    $inKeterangan = !empty($item->keterangan) && (strpos($item->keterangan, $noVoucherClean) !== false);
-
-                    return $inNoSurat || $inKeterangan;
-                });
-
-                // Ambil SEMUA item uraian dari SPM yang cocok
-                if ($matchedSpm && $matchedSpm->items && $matchedSpm->items->isNotEmpty()) {
-                    $itemsUraian = $matchedSpm->items->pluck('uraian')->filter()->toArray();
+            if ($item->cashMutation && $item->cashMutation->items->isNotEmpty()) {
+                // items sudah diurutkan by id asc via eager load di atas
+                $itemsUraian = $item->cashMutation->items
+                    ->pluck('uraian')
+                    ->filter()
+                    ->toArray();
+            } elseif ($item->cashReceipt) {
+                $uraian = $item->cashReceipt->uraian ?? $item->cashReceipt->keterangan ?? null;
+                if ($uraian) {
+                    $itemsUraian = [$uraian];
                 }
             }
 
-            // Gabungkan sisa_saldo dan uraian_koma ke array baris
+            $itemArray = $item->toArray();
+
             return array_merge($itemArray, [
                 'sisa_saldo'  => $saldo,
                 'items'       => $itemsUraian,

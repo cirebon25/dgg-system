@@ -25,10 +25,17 @@ class MachineRayonStats extends BaseWidget
         return $table
             ->query(
                 Rayon::query()
-                    ->join('customers', 'rayons.id', '=', 'customers.rayon_id')
-                    ->join('deployments', 'customers.id', '=', 'deployments.customer_id')
-                    ->select('rayons.id', 'rayons.nama_rayon', DB::raw('count(deployments.id) as total'))
-                    ->groupBy('rayons.id', 'rayons.nama_rayon')
+                    ->withCount(['customers as total' => function ($query) {
+                        $query->join('deployments', 'customers.id', '=', 'deployments.customer_id');
+                    }])
+                    // Atau jika menggunakan relasi langsung dari customers ke deployments:
+                    ->select('rayons.id', 'rayons.nama_rayon')
+                    ->addSelect([
+                        'total' => \App\Models\Deployment::query()
+                            ->join('customers', 'deployments.customer_id', '=', 'customers.id')
+                            ->whereColumn('customers.rayon_id', 'rayons.id')
+                            ->select(DB::raw('count(deployments.id)'))
+                    ])
                     ->orderBy('total', 'desc')
             )
             ->columns([

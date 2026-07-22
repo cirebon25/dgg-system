@@ -1,8 +1,8 @@
 <x-filament-widgets::widget>
-    <x-filament::card class="relative">
+    <x-filament::card>
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-bold tracking-tight text-gray-950 dark:text-white">
-                {{ $this->getHeading() }}
+                {{ static::$heading }}
             </h2>
 
             <div class="flex items-center gap-3">
@@ -24,8 +24,30 @@
             </div>
         </div>
 
-        <div class="relative w-full h-[300px]">
-            <canvas x-data="chart({ cachedData: @js($this->getData()), type: @js($this->getType()), options: @js($this->getOptions()) })" wire:ignore></canvas>
+        @php
+            $result = $this->getTableData();
+            $reportData = $result['data'];
+            $startYear = $result['startYear'];
+            $endYear = $result['endYear'];
+        @endphp
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 text-sm">
+                        <th class="py-3 px-4 font-semibold">Tahun Pemasangan</th>
+                        <th class="py-3 px-4 font-semibold">Total Pemasangan Baru (Unit)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-white/10 text-sm text-gray-700 dark:text-gray-200">
+                    @foreach ($reportData as $year => $count)
+                        <tr class="hover:bg-gray-50 dark:hover:bg-white/5">
+                            <td class="py-3 px-4 font-medium">{{ $year }}</td>
+                            <td class="py-3 px-4">{{ $count }} Unit</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
     </x-filament::card>
 </x-filament-widgets::widget>

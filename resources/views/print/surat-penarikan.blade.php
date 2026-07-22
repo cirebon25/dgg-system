@@ -379,7 +379,7 @@
                 <div class="ttd-box">
                     <div class="ttd-lbl">Petugas Lapangan</div>
                     <div class="ttd-line"></div>
-                    <div style="font-size: 10px; font-weight: 600; margin-top: 4px;">( Air / Teknisi )</div>
+                    <div style="font-size: 10px; font-weight: 600; margin-top: 4px;">( Teknisi )</div>
                 </div>
                 <div class="ttd-box">
                     <div class="ttd-lbl">PT DGG Cirebon</div>

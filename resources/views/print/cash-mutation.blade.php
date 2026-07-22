@@ -39,14 +39,13 @@
         }
 
         .outer {
-            border-top: 2px solid #000;
-            border-bottom: 2px solid #000;
-            border-left: 2px solid #000;
-            border-right: 2px solid #000;
+            border: 2px solid #000;
             width: 100%;
             height: 100%;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+            /* Mencegah konten keluar dari garis */
         }
 
         .header-row {
@@ -294,7 +293,8 @@
         .ttd-row {
             display: flex;
             flex: 0 0 auto;
-            height: 22mm;
+            height: 28mm;
+            /* Perbesar sedikit tinggi total area tanda tangan */
         }
 
         .ttd-cell {
@@ -313,7 +313,8 @@
         }
 
         .ttd-name {
-            margin-top: auto;
+            margin-top: 8.5mm;
+            /* Mendorong nama agar lebih turun ke bawah */
             font-weight: 700;
             padding-bottom: 1.5mm;
         }
