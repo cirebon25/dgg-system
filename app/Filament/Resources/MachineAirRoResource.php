@@ -46,6 +46,7 @@ class MachineAirRoResource extends Resource
                         'Ready' => 'Ready (Siap Pakai)',
                         'Perbaikan' => 'Perbaikan (Dalam Perbaikan)',
                         'Rusak' => 'Rusak (Tidak Bisa Dipakai)',
+                        'inve'
                     ])
                     ->default('Ready')
                     ->required(),

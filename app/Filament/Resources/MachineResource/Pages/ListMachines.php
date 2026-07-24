@@ -167,6 +167,20 @@ class ListMachines extends ListRecords
                 ->url(route('cetak.stok-gudang'))
                 ->openUrlInNewTab(),
 
+            Action::make('download_stok_gudang_pdf')
+                ->label('Download PDF Stok Gudang')
+                ->color('success')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->url(route('cetak.stok-gudang.pdf'))
+                ->openUrlInNewTab(),
+
+            Action::make('download_stok_gudang_excel')
+                ->label('Download Excel Stok Gudang')
+                ->color('warning')
+                ->icon('heroicon-o-table-cells')
+                ->url(route('cetak.stok-gudang.excel'))
+                ->openUrlInNewTab(),
+
             // 4. TOMBOL CETAK PEMASANGAN BARU
             Actions\Action::make('cetakPemasangan')
                 ->label('Cetak Pemasangan Baru')

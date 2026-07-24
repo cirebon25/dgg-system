@@ -105,41 +105,46 @@
         .footer {
             margin-top: 40px;
             width: 100%;
-            display: flex;
-            justify-content: space-between;
+            overflow: hidden;
             page-break-inside: avoid;
         }
 
         .footer .keterangan-footer {
             font-size: 10px;
             width: 45%;
+            float: left;
         }
 
         .footer .keterangan-footer p {
             margin-bottom: 4px;
         }
 
-        .footer .ttd-block {
-            width: 45%;
+        .footer-right {
+            float: right;
+            display: flex;
+            gap: 20px;
+        }
+
+        .ttd-block {
+            width: 160px;
             text-align: center;
             font-size: 11px;
         }
 
-        .footer .ttd-block .tanggal {
+        .ttd-block .tanggal {
             margin-bottom: 4px;
         }
 
-        .footer .ttd-block .jabatan {
-            margin-bottom: 55px;
+        .ttd-block .jabatan {
+            margin-bottom: 50px;
         }
 
-        .footer .ttd-block .ttd-name {
+        .ttd-block .ttd-name {
             display: inline-block;
-            min-width: 180px;
+            width: 100%;
             border-top: 1px solid #000;
             padding-top: 4px;
             font-weight: bold;
-            text-decoration: underline;
         }
 
         .page-footer-note {
@@ -254,17 +259,25 @@
         </table>
 
         {{-- FOOTER --}}
+        {{-- FOOTER --}}
         <div class="footer">
             <div class="keterangan-footer">
                 <p><strong>Keterangan:</strong></p>
                 <p>Dokumen ini dicetak otomatis oleh DGG System</p>
                 <p>dan merupakan catatan resmi kas umum periode berjalan.</p>
             </div>
-            <div class="ttd-block">
-                <p class="tanggal">Cirebon,
-                    {{ \Carbon\Carbon::now()->isoFormat('D MMMM Y') }}</p>
-                <p class="jabatan">Admin,</p>
-                <p class="ttd-name">&nbsp;</p>
+
+            <div class="footer-right">
+                <div class="ttd-block">
+                    <p class="tanggal">&nbsp;</p>
+                    <p class="jabatan">Mengetahui,</p>
+                    <p class="ttd-name">( ........................... )</p>
+                </div>
+                <div class="ttd-block">
+                    <p class="tanggal">Cirebon, {{ \Carbon\Carbon::now()->isoFormat('D MMMM Y') }}</p>
+                    <p class="jabatan">Dibuat oleh,</p>
+                    <p class="ttd-name">( ........................... )</p>
+                </div>
             </div>
         </div>
 

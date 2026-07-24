@@ -15,7 +15,10 @@
 
         @page {
             size: A4 portrait;
-            margin: 8mm;
+            margin-top: 15mm;
+            margin-right: 20mm;
+            margin-bottom: 15mm;
+            margin-left: 20mm;
         }
 
         body {
@@ -331,10 +334,13 @@
     {{-- ============================== --}}
     {{-- HALAMAN 2 — MESIN AIR RO --}}
     {{-- ============================== --}}
+    {{-- ============================== --}}
+    {{-- HALAMAN 2 — MESIN DISPENSER RO --}}
+    {{-- ============================== --}}
     <div class="page">
 
         <header>
-            <h1>STOCK MESIN AIR RO</h1>
+            <h1>STOCK MESIN MESIN DISPENSER RO</h1>
             <h2>PT. DINAMIKA GLOBAL GEMILANG</h2>
             <h3>DEPO {{ strtoupper($depo ?? 'CIREBON') }}</h3>
             <p>PERTANGGAL {{ strtoupper(\Carbon\Carbon::parse($tanggal ?? now())->translatedFormat('d F Y')) }}</p>
@@ -343,41 +349,62 @@
         <table>
             <colgroup>
                 <col style="width: 30px;">
-                <col style="width: 40%;">
-                <col style="width: 60px;">
-                <col style="width: 80px;">
+                <col style="width: auto;">
+                <col style="width: 90px;">
+                <col style="width: 35%;">
             </colgroup>
             <thead>
                 <tr>
                     <th>NO</th>
-                    <th class="text-left">TIPE MESIN</th>
-                    <th>JUMLAH</th>
-                    <th>STATUS</th>
+                    <th class="text-left">TYPE MESIN</th>
+                    <th>JUMLAH<br>MESIN</th>
+                    <th>KETERANGAN</th>
                 </tr>
             </thead>
             <tbody>
-                @php $totalAirRo = 0; @endphp
+                @php
+                    // Kelompokkan per tipe_mesin, lalu di dalamnya per keterangan (asal mesin)
+                    $groupedRo = $machineAirRos->groupBy('tipe_mesin')->map(function ($items) {
+                        return $items
+                            ->groupBy(
+                                fn($item) => trim((string) $item->keterangan) !== '' ? trim($item->keterangan) : 'Baru',
+                            )
+                            ->sortBy(fn($g, $key) => $key === 'Baru' ? 0 : 1);
+                    });
 
-                @forelse ($machineAirRos as $ro)
-                    @php $totalAirRo += $ro->total_unit; @endphp
+                    $totalAirRo = 0;
+                    $mainNo = 0;
+                @endphp
 
-                    <tr>
-                        <td>{{ $loop->iteration }}</td>
-                        <td class="text-left">{{ $ro->tipe_mesin }}</td>
-                        <td>{{ $ro->total_unit }}</td>
-                        <td>{{ strtoupper($ro->status) }}</td>
-                    </tr>
+                @forelse ($groupedRo as $tipeMesin => $ketGroups)
+                    @php $mainNo++; @endphp
+
+                    @foreach ($ketGroups as $keterangan => $items)
+                        @php
+                            $isSub = !$loop->first;
+                            $label = $isSub ? $mainNo . chr(96 + $loop->index) : $mainNo;
+                            $jumlah = $items->count();
+                            $totalAirRo += $jumlah;
+                            $isHighlight = str_contains(strtolower($keterangan), 'inventaris');
+                        @endphp
+                        <tr class="{{ $isHighlight ? 'row-highlight' : '' }}">
+                            <td>{{ $label }}</td>
+                            <td class="text-left">{{ $tipeMesin }}</td>
+                            <td>{{ $jumlah }}</td>
+                            <td class="text-left" style="font-style: italic;">{{ $keterangan }}</td>
+                        </tr>
+                    @endforeach
                 @empty
                     <tr>
                         <td colspan="4" style="text-align: center; font-style: italic; color: #94a3b8;">
-                            Tidak ada stok mesin Air RO di gudang
+                            Tidak ada stok mesin Dispenser RO di gudang
                         </td>
                     </tr>
                 @endforelse
 
                 @if ($machineAirRos->count() > 0)
-                    <tr style="font-weight: 700; font-style: italic; font-size: 13px;">
-                        <td colspan="2" style="text-align: right;">TOTAL</td>
+                    <tr class="row-total">
+                        <td colspan="2">TOTAL</td>
                         <td>{{ $totalAirRo }}</td>
                         <td></td>
                     </tr>
@@ -411,7 +438,6 @@
         </table>
 
     </div>
-
     {{-- ============================== --}}
     {{-- HALAMAN 3 — DETAIL PHOTO COPY + SERIAL NUMBER --}}
     {{-- ============================== --}}

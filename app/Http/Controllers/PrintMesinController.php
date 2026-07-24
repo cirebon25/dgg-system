@@ -6,6 +6,10 @@ use App\Models\Deployment;
 use App\Models\Machine;
 use Illuminate\Support\Facades\DB;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Exports\StokGudangExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 class PrintMesinController extends Controller
 {
@@ -280,6 +284,63 @@ class PrintMesinController extends Controller
             'diketahuiOleh'  => null,
         ]);
     }
+
+
+    public function stokGudangExcel()
+    {
+        return Excel::download(new StokGudangExport('Cirebon', now()), 'stock-mesin-' . now()->format('Ymd') . '.xlsx');
+    }
+
+    public function stokGudangPdf()
+    {
+        // Query Mesin Photo Copy
+        $stocks = Machine::select(
+            'tipe_model',
+            'status',
+            'asal_mesin',
+            'volt',
+            'kaset',
+            'finisher',
+            'double_scan',
+            DB::raw('count(*) as total_unit'),
+            DB::raw('SUM(IF(kaset = 4, 1, 0)) as kaset_4_count'),
+            DB::raw('GROUP_CONCAT(serial_number ORDER BY serial_number SEPARATOR ", ") as list_sn')
+        )
+            ->whereIn('status', ['Ready', 'Refurbish'])
+            ->groupBy('tipe_model', 'status', 'asal_mesin', 'volt', 'finisher', 'double_scan')
+            ->orderBy('tipe_model', 'asc')
+            ->orderByRaw("FIELD(status, 'Ready', 'Refurbish') asc")
+            ->get();
+
+        // Query Mesin Air RO
+        $machineAirRos = \App\Models\MachineAirRo::select(
+            'serial_number',
+            'tipe_mesin',
+            'status',
+            DB::raw('count(*) as total_unit')
+        )
+            ->whereIn('status', ['Ready', 'Perbaikan'])
+            ->whereNull('customer_ro_id')
+            ->groupBy('serial_number', 'tipe_mesin', 'status')
+            ->orderBy('tipe_mesin', 'asc')
+            ->get();
+
+        $pdf = Pdf::loadView('print.stok-gudang', [
+            'stocks'         => $stocks,
+            'machineAirRos'  => $machineAirRos,
+            'depo'           => 'Cirebon',
+            'tanggal'        => now(),
+            'dibuatOleh'     => null,
+            'diketahuiOleh'  => null,
+        ])
+            ->setPaper('a4', 'portrait')
+            ->setOption('margin-top', 15)
+            ->setOption('margin-bottom', 15)
+            ->setOption('margin-left', 20)
+            ->setOption('margin-right', 20);
+
+        return $pdf->download('stock-mesin-' . now()->format('Ymd') . '.pdf');
+    }
     // dipindah dari: Route::get('/cetak-alokasi-mesin', ...)->name('cetak.alokasi')
     // PERBAIKAN (24 Juni 2026) -- bagian 2:
     // Query ini pakai DB::table() (query builder polos), BUKAN Eloquent Model --
@@ -453,10 +514,10 @@ class PrintMesinController extends Controller
                     text-align: right;
                     border-radius: 2px;
                     page-break-inside: avoid;
-                }
+                   }
 
-    @mediaprint{
-    @page{
+                    @mediaprint{
+                    @page{
                         size: A4 landscape;
                         margin: 0;
                     }
@@ -628,7 +689,7 @@ class PrintMesinController extends Controller
                     <div style='display:flex; justify-content:space-between; border-bottom:2px solid #000; padding-bottom:5px;'>
                         <div>
                             <h2 style='margin:0 0 5px 0; font-size:16px;'>PT. DINAMIKA GLOBAL GEMILANG</h2>
-                            <p style='margin:0; font-weight:bold; letter-spacing:1px;'>Part Replacements</p>
+                            <p style='margin:0; font-weight:bold; letter-spacing:1px;'>PEMASANGAN MESIN BARU</p>
                         </div>
                         <div style='text-align:right;'>
                             <p style='margin:0 0 5px 0;'><b>Nomor: SJ/FC/CRB/" . date('dmy', strtotime($d->created_at)) . "/" . str_pad($d->id, 3, '0', STR_PAD_LEFT) . "</b></p>

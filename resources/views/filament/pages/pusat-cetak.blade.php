@@ -49,12 +49,24 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {{-- Laporan Performance Rayon --}}
+
+
+        {{-- Laporan Performance Rayon --}}
         <div class="p-6 bg-white border rounded-xl shadow-sm dark:bg-gray-800">
             <h5 class="text-lg font-bold mb-2">🔄 Laporan Performance Rayon</h5>
             <p class="text-sm text-gray-500 mb-4">Presentase performance rayon.</p>
             <x-filament::button onclick="bukaModal('print.performance-rayon', 'Performance Rayon', 'month', 'year')"
                 icon="heroicon-m-arrows-right-left" color="fuchsia">
                 Cetak Performance Rayon
+            </x-filament::button>
+        </div>
+
+        <div class="p-6 bg-white border rounded-xl shadow-sm dark:bg-gray-800">
+            <h3 class="text-lg font-bold mb-2">📊 Stok Gudang (Excel)</h3>
+            <p class="text-sm text-gray-500 mb-4">Rekap stok mesin Photo Copy & Dispenser RO dalam format Excel.</p>
+            <x-filament::button tag="a" href="{{ route('cetak.stok-gudang.excel') }}" target="_blank"
+                icon="heroicon-m-table-cells" color="warning">
+                Download Excel
             </x-filament::button>
         </div>
 

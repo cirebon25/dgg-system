@@ -54,6 +54,8 @@ Route::get('/sparepart/monitor-umur/{machine_id}', [PrintServiceController::clas
 Route::get('/admin/service-log/{serviceLog}/surat-jalan', [PrintServiceController::class, 'suratJalan'])
     ->name('service-log.surat-jalan')->middleware(['auth']);
 
+Route::get('/cetak-stok-gudang/excel', [PrintMesinController::class, 'stokGudangExcel'])
+    ->name('cetak.stok-gudang.excel');
 /*
 |--------------------------------------------------------------------------
 | Print: Mesin — QR, histori, alokasi, stok gudang, SJ baru
@@ -77,6 +79,9 @@ Route::get('/cetak-alokasi-mesin', [PrintMesinController::class, 'alokasiMesin']
 
 Route::get('/cetak-surat-jalan/{id}', [PrintMesinController::class, 'suratJalan'])
     ->name('cetak.surat-jalan');
+
+Route::get('/cetak-stok-gudang/pdf', [PrintMesinController::class, 'stokGudangPdf'])
+    ->name('cetak.stok-gudang.pdf');
 
 /*
 |--------------------------------------------------------------------------
