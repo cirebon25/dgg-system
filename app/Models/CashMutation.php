@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\ValidationException;
 
 class CashMutation extends Model
 {
@@ -19,10 +20,6 @@ class CashMutation extends Model
         'penerima',
     ];
 
-    /**
-     * PENTING: cast tanggal sebagai 'date:Y-m-d' bukan 'date'
-     * supaya Carbon::parse() tidak error.
-     */
     protected $casts = [
         'tanggal'      => 'date:Y-m-d',
         'total_jumlah' => 'decimal:2',
@@ -33,18 +30,14 @@ class CashMutation extends Model
         return $this->hasMany(CashMutationItem::class);
     }
 
-    /* -------------------------------------------------------
-     * Auto-generate no_voucher saat creating
-     * Format: {urutan} / {bulan romawi} / {yy}
-     * Contoh: 20 / V / 26
-     * ------------------------------------------------------- */
     protected static function booted(): void
     {
         static::creating(function (self $model) {
+            self::validateSaldo($model);
+
             if (empty($model->no_voucher)) {
                 $bulanRomawi = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 
-                // Gunakan tanggal yang diisi user, fallback ke now()
                 $tgl = $model->tanggal
                     ? Carbon::parse($model->tanggal)
                     : now();
@@ -52,7 +45,6 @@ class CashMutation extends Model
                 $bln = $bulanRomawi[$tgl->month - 1];
                 $thn = $tgl->format('y');
 
-                // Urutan per bulan
                 $urutan = self::whereYear('tanggal', $tgl->year)
                     ->whereMonth('tanggal', $tgl->month)
                     ->count() + 1;
@@ -61,6 +53,55 @@ class CashMutation extends Model
                 $model->no_voucher = $urutan . ' / ' . $bln . ' / ' . $thn;
             }
         });
+
+        static::updating(function (self $model) {
+            self::validateSaldo($model);
+        });
+    }
+
+    /**
+     * Validasi agar total pengeluaran tidak melebihi sisa saldo kas berjalan.
+     */
+    protected static function validateSaldo(self $model): void
+    {
+        $tgl = $model->tanggal ? Carbon::parse($model->tanggal) : now();
+        $tahun = $tgl->year;
+        $bulan = $tgl->month;
+
+        // 1. Ambil saldo awal bulan dari CashLedger (pastikan method saldoAwalBulan ada di CashLedger)
+        $saldoAwal = method_exists(CashLedger::class, 'saldoAwalBulan')
+            ? CashLedger::saldoAwalBulan($tahun, $bulan)
+            : 0;
+
+        // 2. Hitung total uang masuk pada bulan tersebut
+        $totalMasuk = CashLedger::whereYear('tanggal', $tahun)
+            ->whereMonth('tanggal', $bulan)
+            ->sum('uang_masuk');
+
+        // 3. Hitung total uang keluar pada bulan tersebut
+        $totalKeluarQuery = CashLedger::whereYear('tanggal', $tahun)
+            ->whereMonth('tanggal', $bulan);
+
+        // Jika sedang mode edit, abaikan pengeluaran lama dari record ini agar tidak double-hitung
+        if ($model->exists) {
+            // Asumsi CashLedger terhubung atau dicatat berdasarkan no_surat / relasi
+            $totalKeluarQuery->where('no_surat', '!=', $model->no_voucher);
+        }
+
+        $totalKeluar = $totalKeluarQuery->sum('uang_keluar');
+
+        // Sisa saldo bersih saat ini sebelum transaksi ini dimasukkan
+        $sisaSaldo = $saldoAwal + $totalMasuk - $totalKeluar;
+
+        // 4. Bandingkan dengan total pengeluaran baru yang ingin disimpan
+        $pengeluaranBaru = (float) $model->total_jumlah;
+
+        if ($pengeluaranBaru > $sisaSaldo) {
+            throw ValidationException::withMessages([
+                'total_jumlah' => 'Transaksi DITOLAK! Nominal pengeluaran (Rp ' . number_format($pengeluaranBaru, 0, ',', '.') .
+                    ') melebihi sisa saldo kas yang tersedia (Rp ' . number_format($sisaSaldo, 0, ',', '.') . ').'
+            ]);
+        }
     }
 
     /* -------------------------------------------------------
@@ -86,15 +127,15 @@ class CashMutation extends Model
             'sebelas',
         ];
 
-        if ($angka < 12)          return $prefix . $satuan[$angka];
-        if ($angka < 20)          return $prefix . self::konversiTerbilang($angka - 10) . ' belas';
-        if ($angka < 100)         return $prefix . self::konversiTerbilang((int)($angka / 10)) . ' puluh'
+        if ($angka < 12)        return $prefix . $satuan[$angka];
+        if ($angka < 20)        return $prefix . self::konversiTerbilang($angka - 10) . ' belas';
+        if ($angka < 100)       return $prefix . self::konversiTerbilang((int)($angka / 10)) . ' puluh'
             . ($angka % 10 ? ' ' . self::konversiTerbilang($angka % 10) : '');
-        if ($angka < 200)         return $prefix . 'seratus'
+        if ($angka < 200)       return $prefix . 'seratus'
             . ($angka - 100 ? ' ' . self::konversiTerbilang($angka - 100) : '');
-        if ($angka < 1_000)       return $prefix . self::konversiTerbilang((int)($angka / 100)) . ' ratus'
+        if ($angka < 1_000)     return $prefix . self::konversiTerbilang((int)($angka / 100)) . ' ratus'
             . ($angka % 100 ? ' ' . self::konversiTerbilang($angka % 100) : '');
-        if ($angka < 2_000)       return $prefix . 'seribu'
+        if ($angka < 2_000)     return $prefix . 'seribu'
             . ($angka - 1_000 ? ' ' . self::konversiTerbilang($angka - 1_000) : '');
         if ($angka < 1_000_000)   return $prefix . self::konversiTerbilang((int)($angka / 1_000)) . ' ribu'
             . ($angka % 1_000 ? ' ' . self::konversiTerbilang($angka % 1_000) : '');
@@ -108,7 +149,6 @@ class CashMutation extends Model
     public function getNoSuratFormatted(): string
     {
         if (empty($this->no_voucher)) return '';
-        // Convert "2 / VI / 26" → "02/VI/26"
         $parts = array_map('trim', explode('/', $this->no_voucher));
         return str_pad($parts[0], 2, '0', STR_PAD_LEFT) . '/' . ($parts[1] ?? '') . '/' . ($parts[2] ?? '');
     }

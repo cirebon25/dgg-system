@@ -1,7 +1,7 @@
 <x-filament-panels::page>
 
     {{-- FILTER --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div>
             <label class="text-xs text-slate-400 mb-1 block">Bulan</label>
             <x-filament::input.wrapper>
@@ -24,33 +24,43 @@
                 </x-filament::input.select>
             </x-filament::input.wrapper>
         </div>
+        <div>
+            <label class="text-xs text-slate-400 mb-1 block">Teknisi</label>
+            <x-filament::input.wrapper>
+                <x-filament::input.select wire:model.live="technician_id">
+                    <option value="">Semua Teknisi</option>
+                    @foreach ($this->technicians as $id => $nama)
+                        <option value="{{ $id }}">{{ $nama }}</option>
+                    @endforeach
+                </x-filament::input.select>
+            </x-filament::input.wrapper>
+        </div>
+    </div>
 
-        {{-- RINGKASAN --}}
-        @php
-            $totalMasuk = collect($historyData)
-                ->whereIn('tipe', ['MASUK', 'RETUR'])
-                ->sum('jumlah');
-            $totalKeluar = collect($historyData)
-                ->whereIn('tipe', ['PINJAM', 'PAKAI', 'DEPLOY'])
-                ->sum('jumlah');
-            $totalTrx = collect($historyData)->count();
-        @endphp
-        <div class="col-span-2 flex gap-3 items-end">
-            <div
-                style="flex:1;background:#064e3b22;border:1px solid #065f46;border-radius:8px;padding:8px 16px;text-align:center">
-                <div style="font-size:11px;color:#6ee7b7">Total Masuk</div>
-                <div style="font-size:20px;font-weight:bold;color:#34d399">+{{ number_format($totalMasuk) }}</div>
-            </div>
-            <div
-                style="flex:1;background:#4c051922;border:1px solid #9f1239;border-radius:8px;padding:8px 16px;text-align:center">
-                <div style="font-size:11px;color:#fca5a5">Total Keluar</div>
-                <div style="font-size:20px;font-weight:bold;color:#f87171">-{{ number_format($totalKeluar) }}</div>
-            </div>
-            <div
-                style="flex:1;background:#1e293b;border:1px solid #553a33;border-radius:8px;padding:8px 16px;text-align:center">
-                <div style="font-size:11px;color:#94a3b8">Total Transaksi</div>
-                <div style="font-size:20px;font-weight:bold;color:#e2e8f0">{{ $totalTrx }}</div>
-            </div>
+    {{-- RINGKASAN --}}
+    @php
+        $totalMasuk = collect($historyData)
+            ->whereIn('tipe', ['MASUK', 'RETUR'])
+            ->sum('jumlah');
+        $totalKeluar = collect($historyData)
+            ->whereIn('tipe', ['PINJAM', 'PAKAI', 'DEPLOY'])
+            ->sum('jumlah');
+        $totalTrx = collect($historyData)->count();
+    @endphp
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div
+            style="background:#064e3b22;border:1px solid #065f46;border-radius:8px;padding:12px 16px;text-align:center">
+            <div style="font-size:11px;color:#6ee7b7">Total Masuk</div>
+            <div style="font-size:20px;font-weight:bold;color:#34d399">+{{ number_format($totalMasuk) }}</div>
+        </div>
+        <div
+            style="background:#4c051922;border:1px solid #9f1239;border-radius:8px;padding:12px 16px;text-align:center">
+            <div style="font-size:11px;color:#fca5a5">Total Keluar</div>
+            <div style="font-size:20px;font-weight:bold;color:#f87171">-{{ number_format($totalKeluar) }}</div>
+        </div>
+        <div style="background:#1e293b;border:1px solid #553a33;border-radius:8px;padding:12px 16px;text-align:center">
+            <div style="font-size:11px;color:#94a3b8">Total Transaksi</div>
+            <div style="font-size:20px;font-weight:bold;color:#e2e8f0">{{ $totalTrx }}</div>
         </div>
     </div>
 
@@ -116,7 +126,27 @@
                                     <span style="color:#94a3b8">{{ $item->jumlah }}</span>
                                 @endif
                             </td>
-                            <td style="padding:10px 12px;color:#d2dae6;font-size:12px">{{ $item->detail }}</td>
+                            <td style="padding:10px 12px;color:#d2dae6;font-size:12px">
+                                @php
+                                    $detail = $item->detail;
+                                    $detail = preg_replace(
+                                        '/(TEKNISI:\s*[^|]+)/i',
+                                        '<span style="background:#a7f3d0;color:#000000;padding:2px 6px;border-radius:4px;font-weight:bold;font-size:11px">$1</span>',
+                                        $detail,
+                                    );
+                                    $detail = preg_replace(
+                                        '/(KE TEKNISI:\s*[^|]+)/i',
+                                        '<span style="background:#a7f3d0;color:#000000;padding:2px 6px;border-radius:4px;font-weight:bold;font-size:11px">$1</span>',
+                                        $detail,
+                                    );
+                                    $detail = preg_replace(
+                                        '/(RETUR DARI:\s*[^|]+)/i',
+                                        '<span style="background:#a7f3d0;color:#000000;padding:2px 6px;border-radius:4px;font-weight:bold;font-size:11px">$1</span>',
+                                        $detail,
+                                    );
+                                @endphp
+                                {!! $detail !!}
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>

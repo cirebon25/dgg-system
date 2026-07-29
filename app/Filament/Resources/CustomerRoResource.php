@@ -11,6 +11,8 @@ use Filament\Tables\Table;
 
 class CustomerRoResource extends Resource
 {
+    protected static array $allowedRoles = ['admin', 'admin_teknisi'];
+
     protected static ?string $model = CustomerRo::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';

@@ -135,9 +135,11 @@
             text-transform: uppercase;
         }
 
+        /* WARNA DAN FORMAT JUMLAH PART BISA DIATUR DISINI */
         .part-qty {
-            font-weight: 600;
-            color: #cf0707;
+            font-weight: 700;
+            color: #3307f7;
+            /* Warna Merah (bisa diganti sesuai keinginan, misal: #0026e6 untuk biru) */
         }
 
         /* Gaya Khusus Warna Biru Untuk Teks Counter CL */
@@ -191,6 +193,12 @@
 
             .text-cl-blue {
                 color: #0026e6 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .part-qty {
+                color: #3307f7 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -253,27 +261,34 @@
                 </tr>
 
                 @php
+                    // URUTKAN BERDASARKAN TANGGAL DARI YANG TERKECIL (TANGGAL 1 KE ATAS)
+                    $sortedItems = collect($items)->sortBy(function ($item) {
+                        return $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('Y-m-d') : '9999-12-31';
+                    });
+
                     // Gabungkan baris yang memiliki serial_number DAN tanggal yang sama
-                    $groupedBySerialAndDate = collect($items)
-                        ->groupBy(function ($item) {
-                            return $item->serial_number .
-                                '_' .
-                                ($item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('Ymd') : 'nodate');
-                        })
-                        ->sortKeys();
+                    $groupedBySerialAndDate = $sortedItems->groupBy(function ($item) {
+                        return $item->serial_number .
+                            '_' .
+                            ($item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('Ymd') : 'nodate');
+                    });
                 @endphp
 
                 @foreach ($groupedBySerialAndDate as $combinedKey => $partsGroup)
                     @php
                         $first = $partsGroup->first();
 
-                        // Kumpulkan nama part menyamping dipisah koma
+                        // Kumpulkan nama part menyamping dipisah koma dengan format jumlah
                         $combinedParts = $partsGroup
                             ->groupBy('nama_part')
                             ->map(function ($g) {
                                 $firstPart = $g->first();
                                 $qty = $g->sum('jumlah_part') ?: $g->sum('qty') ?: $g->sum('jumlah') ?: 1;
-                                return strtoupper($firstPart->nama_part ?? '-') . ($qty > 1 ? " ({$qty})" : '');
+
+                                $partName = strtoupper($firstPart->nama_part ?? '-');
+                                return $qty > 1
+                                    ? "{$partName} <span class=\"part-qty\">({$qty})</span>"
+                                    : "{$partName}";
                             })
                             ->implode(', ');
                     @endphp
@@ -289,7 +304,8 @@
                         <td class="tc mono font-bold">{{ $first->serial_number ?? '-' }}</td>
 
                         <td class="tl">
-                            <div class="part-list">{{ $combinedParts }}</div>
+                            {{-- Gunakan {!! !!} agar tag html pada jumlah part terbaca --}}
+                            <div class="part-list">{!! $combinedParts !!}</div>
                         </td>
 
                         <td class="tc mono">

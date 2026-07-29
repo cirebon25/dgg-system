@@ -11,6 +11,8 @@ use Filament\Tables\Table;
 
 class MachineAirRoResource extends Resource
 {
+    protected static array $allowedRoles = ['admin', 'admin_teknisi'];
+
     protected static ?string $model = MachineAirRo::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
