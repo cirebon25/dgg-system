@@ -264,7 +264,7 @@
             <div class="keterangan-footer">
                 <p><strong>Keterangan:</strong></p>
                 <p>Dokumen ini dicetak otomatis oleh DGG System</p>
-                <p>dan merupakan catatan resmi kas umum periode berjalan.</p>
+                <p>dan merupakan catatan kas umum periode berjalan.</p>
             </div>
 
             <div class="footer-right">
@@ -272,6 +272,42 @@
                     <p class="tanggal">&nbsp;</p>
                     <p class="jabatan">Mengetahui,</p>
                     <p class="ttd-name">( ........................... )</p>
+                </div>
+                <div>
+
+                </div>
+                <div>
+
+                </div>
+                <div>
+
+                </div>
+                <div>
+
+                </div>
+                <div>
+
+                </div>
+                <div>
+
+                </div>
+                <div>
+
+                </div>
+                <div>
+
+                </div>
+                <div>
+
+                </div>
+                <div>
+
+                </div>
+                <div>
+
+                </div>
+                <div>
+
                 </div>
                 <div class="ttd-block">
                     <p class="tanggal">Cirebon, {{ \Carbon\Carbon::now()->isoFormat('D MMMM Y') }}</p>

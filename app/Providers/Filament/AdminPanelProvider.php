@@ -6,7 +6,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Navigation\NavigationGroup; // <-- PASTIIN DIPANGGIL DI SINI
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -19,6 +19,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use App\Filament\Pages\EditMachineReplacement;
+use App\Filament\Pages\Auth\Login; // <-- Pastikan ini terpanggil
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -31,7 +32,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('DGG System')
             ->globalSearchKeyBindings(['command+k', 'ctrl+1'])
             ->sidebarCollapsibleOnDesktop()
-            ->login()
+            ->login(Login::class) // <-- DIUBAH MENJADI INI (Mengarah ke kelas Login custom)
             ->colors([
                 'primary' => Color::Amber,
                 'secondary' => Color::Gray,

@@ -256,26 +256,70 @@ class CashLedgerResource extends Resource
                     ->label('Edit')
                     ->icon('heroicon-o-pencil-square')
                     ->color('warning'),
+
                 Tables\Actions\Action::make('cetak')
                     ->label('Cetak Laporan')
                     ->icon('heroicon-o-printer')
                     ->color('info')
-                    ->url(fn(CashLedger $record) => route('cetak.kas-bulanan', [
-                        'bulan' => $record->tanggal->month,
-                        'tahun' => $record->tanggal->year,
-                    ]))
+                    ->url(function (CashLedger $record, Tables\Contracts\HasTable $livewire) {
+                        // Ambil nilai filter bulan & tahun yang sedang aktif di tabel
+                        $filters = $livewire->tableFilters;
+                        $bulan = $filters['bulan']['bulan'] ?? $record->tanggal->month;
+                        $tahun = $filters['bulan']['tahun'] ?? $record->tanggal->year;
+
+                        return route('cetak.kas-bulanan', [
+                            'bulan' => $bulan,
+                            'tahun' => $tahun,
+                        ]);
+                    })
                     ->openUrlInNewTab(),
             ])
             ->headerActions([
                 Tables\Actions\Action::make('cetak_laporan')
-                    ->label('Cetak Laporan Bulan Ini')
+                    ->label('Cetak Laporan Periode Ini')
                     ->icon('heroicon-o-printer')
                     ->color('success')
-                    ->url(fn() => route('cetak.kas-bulanan', [
-                        'bulan' => now()->month,
-                        'tahun' => now()->year,
-                    ]))
-                    ->openUrlInNewTab(),
+                    ->form([
+                        Forms\Components\Select::make('bulan')
+                            ->label('Pilih Bulan')
+                            ->options([
+                                1 => 'Januari',
+                                2 => 'Februari',
+                                3 => 'Maret',
+                                4 => 'April',
+                                5 => 'Mei',
+                                6 => 'Juni',
+                                7 => 'Juli',
+                                8 => 'Agustus',
+                                9 => 'September',
+                                10 => 'Oktober',
+                                11 => 'November',
+                                12 => 'Desember',
+                            ])
+                            ->default(now()->month)
+                            ->required(),
+
+                        Forms\Components\Select::make('tahun')
+                            ->label('Pilih Tahun')
+                            ->options(array_combine(
+                                range(now()->year, now()->year - 3),
+                                range(now()->year, now()->year - 3)
+                            ))
+                            ->default(now()->year)
+                            ->required(),
+                    ])
+                    ->action(function (array $data) {
+                        // Redirect atau buka tab baru dengan membawa parameter bulan & tahun yang dipilih di modal
+                        $url = route('cetak.kas-bulanan', [
+                            'bulan' => $data['bulan'],
+                            'tahun' => $data['tahun'],
+                        ]);
+
+                        return redirect()->away($url);
+                    })
+                    ->modalHeading('Cetak Laporan Buku Kas')
+                    ->modalDescription('Silakan pilih bulan dan tahun laporan yang ingin dicetak.')
+                    ->modalSubmitActionLabel('Cetak Sekarang'),
             ])
             ->bulkActions([]);
     }
