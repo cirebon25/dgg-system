@@ -45,7 +45,6 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            /* Mencegah konten keluar dari garis */
         }
 
         .header-row {
@@ -126,7 +125,6 @@
             flex-direction: column;
             border-bottom: 1.2px solid #000;
             overflow: visible;
-            /* Ubah dari hidden menjadi visible */
         }
 
         .uraian-table {
@@ -165,7 +163,6 @@
             border-bottom: 1px solid #0f0f0f;
         }
 
-        /* Baris tetap PLAT / KM AWAL / KM AKHIR — warna beda tipis dari baris data biasa */
         .uraian-table tbody tr.fixed-row td {
             font-weight: 600;
             color: #0a0a0a;
@@ -206,12 +203,6 @@
             font-size: 10px;
         }
 
-        .terbilang-line {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 2.5mm;
-        }
-
         .tb-line {
             display: flex;
             align-items: baseline;
@@ -223,7 +214,6 @@
             font-weight: 700;
             min-width: 30mm;
             font-size: 12px;
-            /* Disamakan dengan min-width .bayar-lbl di bawahnya agar titik duanya sejajar */
         }
 
         .tb-val {
@@ -294,7 +284,6 @@
             display: flex;
             flex: 0 0 auto;
             height: 28mm;
-            /* Perbesar sedikit tinggi total area tanda tangan */
         }
 
         .ttd-cell {
@@ -314,14 +303,53 @@
 
         .ttd-name {
             margin-top: 8.5mm;
-            /* Mendorong nama agar lebih turun ke bawah */
             font-weight: 700;
             padding-bottom: 1.5mm;
+        }
+
+        /* Tombol Cetak / Print Styling & Sembunyikan saat cetak */
+        .no-print-container {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 9999;
+        }
+
+        .btn-print {
+            background-color: #0D47A1;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-print:hover {
+            background-color: #1565C0;
+        }
+
+        @media print {
+            .no-print-container {
+                display: none !important;
+            }
         }
     </style>
 </head>
 
 <body>
+    <!-- Tombol Print Manual -->
+    <div class="no-print-container">
+        <button class="btn-print" onclick="window.print()">
+            🖨️ CETAK BUKTI
+        </button>
+    </div>
+
     <div class="sheet">
         <div class="outer">
 
@@ -399,6 +427,7 @@
                     </tbody>
                 </table>
             </div>
+
             {{-- TERBILANG + DIBAYAR DENGAN --}}
             <div class="terbilang-block">
                 <div class="terbilang-left">
@@ -460,13 +489,6 @@
 
         </div>
     </div>
-    <script>
-        window.addEventListener('load', function() {
-            setTimeout(function() {
-                window.print();
-            }, 400);
-        });
-    </script>
 </body>
 
 </html>
