@@ -74,7 +74,8 @@
 
         /* Header Kuning Terang Sesuai Lampiran */
         .report-table thead tr.h1 th,
-        .report-table thead tr.h2 th {
+        .report-table thead tr.h2 th,
+        .recap-table thead th {
             background: #ffea31;
             color: #000;
             border: 1px solid #000;
@@ -106,12 +107,28 @@
             text-transform: uppercase;
         }
 
-        .report-table td {
+        .report-table td,
+        .recap-table td {
             border: 1px solid #000;
             padding: 5px 5px;
             vertical-align: middle;
             font-size: 9.5px;
             word-wrap: break-word;
+        }
+
+        /* ── TABEL REKAP PER SPAREPART DI BAWAH ── */
+        .recap-section-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            margin-top: 25px;
+        }
+
+        .recap-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
         }
 
         .tc {
@@ -135,14 +152,11 @@
             text-transform: uppercase;
         }
 
-        /* WARNA DAN FORMAT JUMLAH PART BISA DIATUR DISINI */
         .part-qty {
             font-weight: 700;
             color: #3307f7;
-            /* Warna Merah (bisa diganti sesuai keinginan, misal: #0026e6 untuk biru) */
         }
 
-        /* Gaya Khusus Warna Biru Untuk Teks Counter CL */
         .text-cl-blue {
             color: #0026e6;
             font-weight: bold;
@@ -179,7 +193,8 @@
                 padding: 0;
             }
 
-            .report-table thead th {
+            .report-table thead th,
+            .recap-table thead th {
                 background: #ffea31 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
@@ -225,6 +240,7 @@
         </div>
     </div>
 
+    <!-- TABEL UTAMA (SEPERTI SEMULA) -->
     <table class="report-table">
         <colgroup>
             <col style="width: 65px;">
@@ -261,12 +277,10 @@
                 </tr>
 
                 @php
-                    // URUTKAN BERDASARKAN TANGGAL DARI YANG TERKECIL (TANGGAL 1 KE ATAS)
                     $sortedItems = collect($items)->sortBy(function ($item) {
                         return $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('Y-m-d') : '9999-12-31';
                     });
 
-                    // Gabungkan baris yang memiliki serial_number DAN tanggal yang sama
                     $groupedBySerialAndDate = $sortedItems->groupBy(function ($item) {
                         return $item->serial_number .
                             '_' .
@@ -277,8 +291,6 @@
                 @foreach ($groupedBySerialAndDate as $combinedKey => $partsGroup)
                     @php
                         $first = $partsGroup->first();
-
-                        // Kumpulkan nama part menyamping dipisah koma dengan format jumlah
                         $combinedParts = $partsGroup
                             ->groupBy('nama_part')
                             ->map(function ($g) {
@@ -304,7 +316,6 @@
                         <td class="tc mono font-bold">{{ $first->serial_number ?? '-' }}</td>
 
                         <td class="tl">
-                            {{-- Gunakan {!! !!} agar tag html pada jumlah part terbaca --}}
                             <div class="part-list">{!! $combinedParts !!}</div>
                         </td>
 
@@ -348,6 +359,49 @@
             @endforelse
         </tbody>
     </table>
+
+    @if (count($groupedUsages) > 0)
+        @php
+            // Kumpulkan dan hitung total seluruh part dari semua rayon secara global
+            $globalAllParts = collect();
+            foreach ($groupedUsages as $items) {
+                foreach ($items as $item) {
+                    $qty = $item->jumlah_part ?: $item->qty ?: $item->jumlah ?: 1;
+                    $pName = strtoupper($item->nama_part ?? '-');
+                    $globalAllParts->put($pName, $globalAllParts->get($pName, 0) + $qty);
+                }
+            }
+            // Urutkan berdasarkan nama part secara alfabetis
+            $sortedGlobalParts = $globalAllParts->sortKeys();
+        @endphp
+
+        <!-- TABEL REKAP BERDASARKAN NAMA SPAREPART DI BAWAH -->
+        <div class="recap-section-title">Rekapitulasi Total Pemakaian Sparepart</div>
+        <table class="recap-table">
+            <colgroup>
+                <col style="width: 50px;">
+                <col>
+                <col style="width: 120px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>NO</th>
+                    <th>NAMA SPAREPART</th>
+                    <th>TOTAL KELUAR</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php $no = 1; @endphp
+                @foreach ($sortedGlobalParts as $partName => $totalQty)
+                    <tr>
+                        <td class="tc">{{ $no++ }}</td>
+                        <td class="tl font-bold">{{ $partName }}</td>
+                        <td class="tc part-qty" style="font-size: 11px;">{{ $totalQty }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
 
     <div class="signature-area">
         <div class="signature-box">
