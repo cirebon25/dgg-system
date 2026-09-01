@@ -1,8 +1,3 @@
-Berikut adalah kode HTML/Blade yang telah diperbarui. Latar belakang biru (`background-color: #0509f34d`) kini **hanya
-diterapkan pada kolom Nama Customer** saja ketika baris tersebut memenuhi kondisi `hasExcess` dan `tercatat`, sementara
-kolom lainnya tetap putih/normal:
-
-```html
 <!DOCTYPE html>
 <html lang="id">
 
@@ -166,23 +161,27 @@ kolom lainnya tetap putih/normal:
                     <th rowspan="2">SN Mesin</th>
                     <th rowspan="2">Model</th>
                     <th rowspan="2">Harga Sewa</th>
-                    <th colspan="6">Black & White (BW)</th>
-                    <th colspan="6">Color (CL)</th>
+                    <th colspan="7">Black & White (BW)</th>
+                    <th colspan="7">Color (CL)</th>
                     <th rowspan="2">Total Tagihan</th>
                     <th rowspan="2">PPN (11%)</th>
                     <th rowspan="2">Total + PPN</th>
                 </tr>
                 <tr>
-                    <th>Ctr Lalu</th>
+                    {{-- Sub Header BW --}}
+                    <th>Ctr Bln Lalu</th>
                     <th>Ctr Akhir</th>
                     <th>Usage</th>
                     <th>Free</th>
+                    <th>Cash/Lbr</th>
                     <th>Lebih</th>
                     <th>Biaya</th>
+                    {{-- Sub Header Color --}}
                     <th>Ctr Lalu</th>
                     <th>Ctr Akhir</th>
                     <th>Usage</th>
                     <th>Free</th>
+                    <th>Cash/Lbr</th>
                     <th>Lebih</th>
                     <th>Biaya</th>
                 </tr>
@@ -208,6 +207,10 @@ kolom lainnya tetap putih/normal:
                         $hasExcess = $t['kelebihan_bw'] > 0 || $t['kelebihan_color'] > 0;
                         $tercatat = $item['is_mrc_tercatat'] ?? false;
                         $isBaseline = $item['is_baseline_pertama'] ?? false;
+
+                        // Ambil harga per lembar dari relasi contract (sesuai hasil Tinker: harga_bw & harga_color)
+                        $cashPerLbrBw = $item['contract']->harga_bw ?? 0;
+                        $cashPerLbrColor = $item['contract']->harga_color ?? 0;
                     @endphp
                     <tr>
                         <td class="text-center">{{ $i + 1 }}</td>
@@ -229,11 +232,12 @@ kolom lainnya tetap putih/normal:
                                 @endif
                             </td>
                             <td class="text-center">{{ number_format($t['free_bw']) }}</td>
+                            <td class="text-right">{{ $cashPerLbrBw > 0 ? number_format($cashPerLbrBw) : '-' }}</td>
                             <td class="text-center">
                                 {{ $t['kelebihan_bw'] > 0 ? number_format($t['kelebihan_bw']) : '-' }}</td>
                             <td class="text-right">{{ $t['biaya_bw'] > 0 ? number_format($t['biaya_bw']) : '-' }}</td>
                         @else
-                            <td class="text-center belum-tercatat" colspan="6">Belum dicatat MRC bulan ini</td>
+                            <td class="text-center belum-tercatat" colspan="7">Belum dicatat MRC bulan ini</td>
                         @endif
 
                         {{-- Color --}}
@@ -247,12 +251,14 @@ kolom lainnya tetap putih/normal:
                                 @endif
                             </td>
                             <td class="text-center">{{ number_format($t['free_color']) }}</td>
+                            <td class="text-right">{{ $cashPerLbrColor > 0 ? number_format($cashPerLbrColor) : '-' }}
+                            </td>
                             <td class="text-center">
                                 {{ $t['kelebihan_color'] > 0 ? number_format($t['kelebihan_color']) : '-' }}</td>
                             <td class="text-right">{{ $t['biaya_color'] > 0 ? number_format($t['biaya_color']) : '-' }}
                             </td>
                         @else
-                            <td class="text-center belum-tercatat" colspan="6">-</td>
+                            <td class="text-center belum-tercatat" colspan="7">-</td>
                         @endif
 
                         <td class="text-right">Rp {{ number_format($subTotal) }}</td>
@@ -261,13 +267,13 @@ kolom lainnya tetap putih/normal:
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="20" class="text-center">Tidak ada data</td>
+                        <td colspan="22" class="text-center">Tidak ada data</td>
                     </tr>
                 @endforelse
             </tbody>
             <tfoot>
                 <tr style="background: #e2e8f0;">
-                    <td colspan="17" class="text-right font-bold" style="padding:10px;">GRAND TOTAL</td>
+                    <td colspan="19" class="text-right font-bold" style="padding:10px;">GRAND TOTAL</td>
                     <td class="text-right font-bold">Rp {{ number_format($grandTotal) }}</td>
                     <td class="text-right font-bold">Rp {{ number_format($grandPpn) }}</td>
                     <td class="text-right font-bold">Rp {{ number_format($grandTotalPpn) }}</td>
@@ -290,5 +296,3 @@ kolom lainnya tetap putih/normal:
 </body>
 
 </html>
-
-```
