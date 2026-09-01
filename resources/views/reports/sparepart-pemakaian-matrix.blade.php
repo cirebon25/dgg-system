@@ -119,7 +119,7 @@
 
     <div class="page">
         <div class="header">
-            <h2>Matrix Pemakaian Sparepart per Bulan — Tahun {{ $tahun }}</h2>
+            <h2>Matrix Pemakaian Sparepart ke Customer per Bulan — Tahun {{ $tahun }}</h2>
             <p>Dicetak: {{ \Carbon\Carbon::now()->isoFormat('D MMMM YYYY, HH:mm') }} WIB</p>
         </div>
         <hr>
@@ -139,7 +139,7 @@
                     <tr>
                         <td class="nama">{{ $row['sparepart']->nama_sparepart }}</td>
                         @foreach (range(1, 12) as $bulan)
-                            <td>{{ $row['bulanan'][$bulan] ?? '-' }}</td>
+                            <td>{{ $row['bulanan'][$bulan] ?: '-' }}</td>
                         @endforeach
                         <td class="total-col">{{ $row['total'] }}</td>
                     </tr>

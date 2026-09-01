@@ -240,7 +240,7 @@
         </div>
     </div>
 
-    <!-- TABEL UTAMA (SEPERTI SEMULA) -->
+    <!-- TABEL UTAMA -->
     <table class="report-table">
         <colgroup>
             <col style="width: 65px;">
@@ -295,7 +295,8 @@
                             ->groupBy('nama_part')
                             ->map(function ($g) {
                                 $firstPart = $g->first();
-                                $qty = $g->sum('jumlah_part') ?: $g->sum('qty') ?: $g->sum('jumlah') ?: 1;
+                                // Mengubah 'jumlah_part' menjadi 'jumlah' sesuai kolom di database
+                                $qty = $g->sum('jumlah') ?: $g->sum('qty') ?: 1;
 
                                 $partName = strtoupper($firstPart->nama_part ?? '-');
                                 return $qty > 1
@@ -366,7 +367,8 @@
             $globalAllParts = collect();
             foreach ($groupedUsages as $items) {
                 foreach ($items as $item) {
-                    $qty = $item->jumlah_part ?: $item->qty ?: $item->jumlah ?: 1;
+                    // Mengubah 'jumlah_part' menjadi 'jumlah' sesuai kolom di database
+                    $qty = $item->jumlah ?? ($item->qty ?? 1);
                     $pName = strtoupper($item->nama_part ?? '-');
                     $globalAllParts->put($pName, $globalAllParts->get($pName, 0) + $qty);
                 }
@@ -375,7 +377,7 @@
             $sortedGlobalParts = $globalAllParts->sortKeys();
         @endphp
 
-        <!-- TABEL REKAP BERDASARKAN NAMA SPAREPART DI BAWAH -->
+        <!-- TABEL REKAP BERDASARKAN NAMA SPAREPART -->
         <div class="recap-section-title">Rekapitulasi Total Pemakaian Sparepart</div>
         <table class="recap-table">
             <colgroup>

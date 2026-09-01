@@ -28,7 +28,12 @@ class MachineResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['serial_number', 'tipe_model', 'status'];
+        return [
+            'serial_number',
+            'tipe_model',
+            'status',
+            'customer.nama_customer' // <--- Tambahkan ini agar bisa dicari berdasarkan nama customer
+        ];
     }
 
     public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string

@@ -148,7 +148,11 @@ class CustomerResource extends Resource
             ])
 
             ->defaultGroup(
-                Group::make('tech_kota_key')
+                Group::make('technician_id') // ← kolom REAL, bukan alias
+                    ->getKeyFromRecordUsing(function ($record) {
+                        $kota = $record->kota ?? '';
+                        return "{$record->technician_id}-{$kota}";
+                    })
                     ->getTitleFromRecordUsing(function ($record) {
                         $namaTek = $record->technician?->nama_technician ?? 'Tanpa Teknisi';
                         $kota    = $record->kota ?? 'Tanpa Kota';
@@ -209,7 +213,7 @@ class CustomerResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ])
-            ->selectRaw("*, CONCAT(COALESCE(technician_id, 0), '-', COALESCE(kota, '')) as tech_kota_key")
+            // ->selectRaw("*, CONCAT(COALESCE(technician_id, 0), '-', COALESCE(kota, '')) as tech_kota_key")
             ->with(['rayon', 'technician']); // ← OPTIMASI
     }
 

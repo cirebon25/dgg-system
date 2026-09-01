@@ -235,3 +235,6 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/deployments/print-yearly', [\App\Http\Controllers\DeploymentPrintController::class, 'printYearly'])
         ->name('deployments.print-yearly');
 });
+
+Route::get('/deployments/{deployment}/print', [DeploymentPrintController::class, 'printServiceCard'])
+    ->name('deployment.print');

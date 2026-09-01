@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Validation\ValidationException;
 
 class CashMutation extends Model
 {
@@ -33,8 +32,6 @@ class CashMutation extends Model
     protected static function booted(): void
     {
         static::creating(function (self $model) {
-            self::validateSaldo($model);
-
             if (empty($model->no_voucher)) {
                 $bulanRomawi = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 
@@ -54,54 +51,10 @@ class CashMutation extends Model
             }
         });
 
-        static::updating(function (self $model) {
-            self::validateSaldo($model);
-        });
-    }
-
-    /**
-     * Validasi agar total pengeluaran tidak melebihi sisa saldo kas berjalan.
-     */
-    protected static function validateSaldo(self $model): void
-    {
-        $tgl = $model->tanggal ? Carbon::parse($model->tanggal) : now();
-        $tahun = $tgl->year;
-        $bulan = $tgl->month;
-
-        // 1. Ambil saldo awal bulan dari CashLedger (pastikan method saldoAwalBulan ada di CashLedger)
-        $saldoAwal = method_exists(CashLedger::class, 'saldoAwalBulan')
-            ? CashLedger::saldoAwalBulan($tahun, $bulan)
-            : 0;
-
-        // 2. Hitung total uang masuk pada bulan tersebut
-        $totalMasuk = CashLedger::whereYear('tanggal', $tahun)
-            ->whereMonth('tanggal', $bulan)
-            ->sum('uang_masuk');
-
-        // 3. Hitung total uang keluar pada bulan tersebut
-        $totalKeluarQuery = CashLedger::whereYear('tanggal', $tahun)
-            ->whereMonth('tanggal', $bulan);
-
-        // Jika sedang mode edit, abaikan pengeluaran lama dari record ini agar tidak double-hitung
-        if ($model->exists) {
-            // Asumsi CashLedger terhubung atau dicatat berdasarkan no_surat / relasi
-            $totalKeluarQuery->where('no_surat', '!=', $model->no_voucher);
-        }
-
-        $totalKeluar = $totalKeluarQuery->sum('uang_keluar');
-
-        // Sisa saldo bersih saat ini sebelum transaksi ini dimasukkan
-        $sisaSaldo = $saldoAwal + $totalMasuk - $totalKeluar;
-
-        // 4. Bandingkan dengan total pengeluaran baru yang ingin disimpan
-        $pengeluaranBaru = (float) $model->total_jumlah;
-
-        if ($pengeluaranBaru > $sisaSaldo) {
-            throw ValidationException::withMessages([
-                'total_jumlah' => 'Transaksi DITOLAK! Nominal pengeluaran (Rp ' . number_format($pengeluaranBaru, 0, ',', '.') .
-                    ') melebihi sisa saldo kas yang tersedia (Rp ' . number_format($sisaSaldo, 0, ',', '.') . ').'
-            ]);
-        }
+        // Catatan: validasi saldo real-time (validateSaldo) sengaja DICABUT.
+        // SPM sekarang murni dokumen input + cetak, tidak lagi memblokir
+        // berdasarkan sisa saldo Buku Kas. Pencatatan saldo resmi dilakukan
+        // manual oleh admin di CashLedgerResource.
     }
 
     /* -------------------------------------------------------

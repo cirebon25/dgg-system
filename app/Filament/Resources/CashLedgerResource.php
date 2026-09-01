@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\Summarizers\Sum;
+use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Traits\HasRoleAccess;
 
 class CashLedgerResource extends Resource
@@ -27,7 +28,9 @@ class CashLedgerResource extends Resource
 
     public static function canCreate(): bool
     {
-        return false;
+        // Diaktifkan kembali — Buku Kas sekarang adalah satu-satunya tempat
+        // pencatatan saldo resmi, diisi manual oleh admin (kas masuk & keluar).
+        return true;
     }
 
     public static function form(Form $form): Form
@@ -36,32 +39,37 @@ class CashLedgerResource extends Resource
             Forms\Components\Section::make('Detail Transaksi Kas')
                 ->columns(2)
                 ->schema([
-                    Forms\Components\TextInput::make('tanggal')
-                        ->label('Tanggal Transaksi'),
-                    // ->disabled(),
+                    Forms\Components\DatePicker::make('tanggal')
+                        ->label('Tanggal Transaksi')
+                        ->required()
+                        ->default(now())
+                        ->native(false),
 
                     Forms\Components\TextInput::make('no_surat')
                         ->label('No. Bukti / Referensi')
-                        ->disabled(),
+                        ->placeholder('Opsional, misal No. Voucher SPM atau No. Bukti Kas Masuk'),
 
-                    Forms\Components\TextInput::make('keterangan')
+                    Forms\Components\Textarea::make('keterangan')
                         ->label('Uraian Transaksi')
-                        ->disabled()
+                        ->required()
+                        ->rows(2)
                         ->columnSpanFull(),
 
                     Forms\Components\TextInput::make('uang_masuk')
                         ->label('Pemasukan Kas (Rp)')
+                        ->numeric()
+                        ->default(0)
                         ->prefix('Rp'),
-                    // ->disabled(),
 
                     Forms\Components\TextInput::make('uang_keluar')
                         ->label('Pengeluaran Kas (Rp)')
+                        ->numeric()
+                        ->default(0)
                         ->prefix('Rp'),
-                    // ->disabled(),
 
                     Forms\Components\TextInput::make('dibuat_oleh')
                         ->label('Nama Pembuat')
-                        ->disabled(),
+                        ->default(fn() => auth()->user()?->name ?? ''),
                 ]),
         ]);
     }
@@ -87,17 +95,18 @@ class CashLedgerResource extends Resource
                 Tables\Columns\TextColumn::make('uraian_transaksi')
                     ->label('Uraian Transaksi')
                     ->state(function (CashLedger $record) {
-                        // 1. Jika berasal dari Mutasi Kas (Kas Keluar / SPM), ambil URAIAN MURNI dari items
+                        // 1. Jika berasal dari Mutasi Kas lama (data historis sebelum
+                        //    perubahan ini), ambil URAIAN MURNI dari items
                         if ($record->cashMutation && $record->cashMutation->items->isNotEmpty()) {
                             return $record->cashMutation->items->pluck('uraian')->filter()->implode(', ');
                         }
 
-                        // 2. Jika berasal dari Kas Masuk (CashReceipt)
+                        // 2. Jika berasal dari Kas Masuk lama (relasi historis)
                         if ($record->cashReceipt) {
                             return $record->cashReceipt->uraian ?? $record->cashReceipt->keterangan ?? '-';
                         }
 
-                        // 3. Jika tidak ada relasi, tampilkan keterangan asli
+                        // 3. Entry manual (kondisi normal sekarang) — tampilkan keterangan asli
                         return $record->keterangan ?? '-';
                     })
                     ->searchable(query: function (Builder $query, string $search) {
@@ -116,7 +125,6 @@ class CashLedgerResource extends Resource
                             : '-'
                     )
                     ->color(fn($state) => $state > 0 ? 'success' : 'gray')
-                    // ->summarize(Sum::make()->money('IDR')->label('Total Masuk')),
                     ->summarize([
                         Sum::make()
                             ->label('Total Masuk')
@@ -257,12 +265,14 @@ class CashLedgerResource extends Resource
                     ->icon('heroicon-o-pencil-square')
                     ->color('warning'),
 
+                Tables\Actions\DeleteAction::make()
+                    ->label('Hapus'),
+
                 Tables\Actions\Action::make('cetak')
                     ->label('Cetak Laporan')
                     ->icon('heroicon-o-printer')
                     ->color('info')
                     ->url(function (CashLedger $record, Tables\Contracts\HasTable $livewire) {
-                        // Ambil nilai filter bulan & tahun yang sedang aktif di tabel
                         $filters = $livewire->tableFilters;
                         $bulan = $filters['bulan']['bulan'] ?? $record->tanggal->month;
                         $tahun = $filters['bulan']['tahun'] ?? $record->tanggal->year;
@@ -309,7 +319,6 @@ class CashLedgerResource extends Resource
                             ->required(),
                     ])
                     ->action(function (array $data) {
-                        // Redirect atau buka tab baru dengan membawa parameter bulan & tahun yang dipilih di modal
                         $url = route('cetak.kas-bulanan', [
                             'bulan' => $data['bulan'],
                             'tahun' => $data['tahun'],
@@ -321,14 +330,17 @@ class CashLedgerResource extends Resource
                     ->modalDescription('Silakan pilih bulan dan tahun laporan yang ingin dicetak.')
                     ->modalSubmitActionLabel('Cetak Sekarang'),
             ])
-            ->bulkActions([]);
+            ->bulkActions([
+                Tables\Actions\DeleteBulkAction::make(),
+            ]);
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCashLedgers::route('/'),
-            'edit'  => Pages\EditCashLedger::route('/{record}/edit'),
+            'index'  => Pages\ListCashLedgers::route('/'),
+            'create' => Pages\CreateCashLedger::route('/create'),
+            'edit'   => Pages\EditCashLedger::route('/{record}/edit'),
         ];
     }
 }

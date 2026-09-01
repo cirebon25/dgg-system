@@ -46,15 +46,6 @@ class CashMutationResource extends Resource
                                 ->required()
                                 ->columnSpan(2),
 
-                            // Forms\Components\TextInput::make('jumlah')
-                            //     ->label('Nominal (Rp)')
-                            //     ->numeric()
-                            //     ->required()
-                            //     ->live(onBlur: true)
-                            //     ->afterStateUpdated(function (callable $set, callable $get) {
-                            //         self::recalculateTotal($set, $get);
-                            //     }),
-
                             Forms\Components\TextInput::make('jumlah')
                                 ->label('Nominal (Rp)')
                                 ->numeric()
@@ -62,43 +53,10 @@ class CashMutationResource extends Resource
                                 ->live(onBlur: true)
                                 ->afterStateUpdated(function (callable $set, callable $get) {
                                     self::recalculateTotal($set, $get);
-                                })
-                                ->rules([
-                                    function ($get) {
-                                        return function (string $attribute, $value, \Closure $fail) use ($get) {
-                                            // Ambil tanggal transaksi atau gunakan tanggal hari ini
-                                            $tanggal = $get('../../tanggal') ?? now();
-
-                                            // Hitung saldo berjalan saat ini
-                                            $tahun = \Carbon\Carbon::parse($tanggal)->year;
-                                            $bulan = \Carbon\Carbon::parse($tanggal)->month;
-
-                                            $saldoAwal = \App\Models\CashLedger::saldoAwalBulan($tahun, $bulan);
-
-                                            // Hitung total masuk dan keluar sampai tanggal ini
-                                            $totalMasuk = \App\Models\CashLedger::whereYear('tanggal', $tahun)
-                                                ->whereMonth('tanggal', $bulan)
-                                                ->sum('uang_masuk');
-
-                                            $totalKeluar = \App\Models\CashLedger::whereYear('tanggal', $tahun)
-                                                ->whereMonth('tanggal', $bulan)
-                                                ->sum('uang_keluar');
-
-                                            $sisaSaldo = $saldoAwal + $totalMasuk - $totalKeluar;
-
-                                            // Jika ini form Edit, tambahkan kembali nilai lama transaksi ini ke saldo agar tidak salah hitung
-                                            // (Opsional, tergantung kebutuhan edit data)
-
-                                            // Hitung total keseluruhan dari repeater saat ini
-                                            $items = $get('../../items') ?? [];
-                                            $totalPengeluaranBaru = collect($items)->sum(fn($item) => (float) ($item['jumlah'] ?? 0));
-
-                                            if ($totalPengeluaranBaru > $sisaSaldo) {
-                                                $fail("Pengeluaran melebihi sisa saldo kas yang tersedia! Sisa saldo saat ini: Rp " . number_format($sisaSaldo, 0, ',', '.'));
-                                            }
-                                        };
-                                    },
-                                ]),
+                                }),
+                            // Validasi terhadap sisa saldo Buku Kas DICABUT.
+                            // SPM sekarang hanya dokumen input + cetak, tidak
+                            // memotong / dibatasi oleh saldo kas berjalan.
 
                             Forms\Components\TextInput::make('plat_nomor')
                                 ->label('Nomor Polisi Kendaraan')
@@ -111,9 +69,6 @@ class CashMutationResource extends Resource
                             Forms\Components\TextInput::make('km_akhir')
                                 ->label('Kilometer Akhir')
                                 ->numeric(),
-
-                            // Forms\Components\TextInput::make('kode_perkiraan')
-                            //     ->label('Kode Akun / Perkiraan'),
                         ])
                         ->columns(4)
                         ->addActionLabel('Tambah Baris Uraian')
@@ -168,7 +123,6 @@ class CashMutationResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('no_voucher')
                     ->label('No. Voucher')
-                    // ->searchable()
                     ->sortable()
                     ->default('-'),
 

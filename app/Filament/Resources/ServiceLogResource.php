@@ -66,6 +66,16 @@ class ServiceLogResource extends Resource
                             ->required()
                             ->searchable()
                             ->reactive()
+                            ->suffixAction(
+                                Forms\Components\Actions\Action::make('scanQR')
+                                    ->icon('heroicon-o-qr-code')
+                                    ->color('primary')
+                                    ->tooltip('Scan QR Mesin')
+                                    ->modalHeading('Scan QR Code Mesin')
+                                    ->modalSubmitAction(false) // Tidak butuh tombol submit form modal
+                                    ->modalCancelActionLabel('Tutup')
+                                    ->modalContent(view('filament.forms.components.qr-scanner-modal'))
+                            )
                             ->afterStateUpdated(function ($state, Forms\Set $set) {
                                 $bulanLalu = now()->subMonth();
 

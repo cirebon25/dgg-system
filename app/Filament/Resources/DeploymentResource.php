@@ -230,8 +230,31 @@ class DeploymentResource extends Resource
                     ->relationship('customer', 'nama_customer'),
             ])
             ->actions([
+
+                Tables\Actions\Action::make('print')
+                    ->label('Print Kartu Service')
+                    ->icon('heroicon-o-printer')
+                    ->url(fn(Deployment $record) => route('deployment.print', $record))
+                    ->openUrlInNewTab()
+                    ->action(function (Deployment $record) {
+                        $record->loadMissing(['customer', 'machine']);
+
+                        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.service-card', [
+                            'nama_perusahaan' => $record->customer->nama_customer,
+                            'alamat'          => $record->customer->alamat,
+                            'tgl_instal'      => $record->tanggal_instal?->format('d/m/Y'),
+                            'merk_type'       => $record->machine->tipe_model,
+                            'no_seri'         => $record->machine->serial_number,
+                            'voltage'         => $record->volt,
+                        ])->setPaper('a4', 'landscape');
+
+                        return response()->streamDownload(
+                            fn() => print($pdf->output()),
+                            'kartu-service-' . $record->id . '.pdf'
+                        );
+                    }),
                 Tables\Actions\Action::make('cetak_sj')
-                    ->label('Cetak Surat Jalan')
+                    ->label('Cetak sj')
                     ->icon('heroicon-m-printer')
                     ->color('success')
                     ->url(fn(Deployment $record): string => route('cetak.surat-jalan', ['id' => $record->id]))

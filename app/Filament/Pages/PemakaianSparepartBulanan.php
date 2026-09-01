@@ -3,12 +3,12 @@
 namespace App\Filament\Pages;
 
 use App\Models\Sparepart;
-use App\Models\SparepartStockSnapshot;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\DB;
 
 class PemakaianSparepartBulanan extends Page implements HasForms
 {
@@ -62,55 +62,57 @@ class PemakaianSparepartBulanan extends Page implements HasForms
             12 => 'Des',
         ];
 
-        $snapshots = SparepartStockSnapshot::where(function ($q) use ($tahun) {
-            $q->where('tahun', $tahun)
-                ->orWhere(function ($q2) use ($tahun) {
-                    $q2->where('tahun', $tahun - 1)->where('bulan', 12);
-                });
-        })
-            ->get()
-            ->groupBy('sparepart_id');
-
+        // Semua sparepart, tanpa terkecuali
         $spareparts = Sparepart::orderBy('nama_sparepart')->get();
+
+        // Sumber 1: sparepart dipakai saat servis ke customer
+        $serviceUsage = DB::table('service_log_spareparts')
+            ->join('service_logs', 'service_logs.id', '=', 'service_log_spareparts.service_log_id')
+            ->whereNull('service_logs.deleted_at')
+            ->whereYear('service_logs.tanggal', $tahun)
+            ->selectRaw('service_log_spareparts.sparepart_id, MONTH(service_logs.tanggal) as bulan, SUM(service_log_spareparts.jumlah) as total')
+            ->groupBy('service_log_spareparts.sparepart_id', DB::raw('MONTH(service_logs.tanggal)'))
+            ->get();
+
+        // Sumber 2: sparepart terpasang saat deployment/instalasi mesin baru ke customer
+        $deploymentUsage = DB::table('deployment_sparepart')
+            ->join('deployments', 'deployments.id', '=', 'deployment_sparepart.deployment_id')
+            ->whereNull('deployments.deleted_at')
+            ->whereYear('deployments.tanggal_instal', $tahun)
+            ->selectRaw('deployment_sparepart.sparepart_id, MONTH(deployments.tanggal_instal) as bulan, SUM(deployment_sparepart.jumlah) as total')
+            ->groupBy('deployment_sparepart.sparepart_id', DB::raw('MONTH(deployments.tanggal_instal)'))
+            ->get();
+
+        // Gabungkan: [sparepart_id][bulan] => total
+        $usageMap = [];
+
+        foreach ($serviceUsage as $row) {
+            $usageMap[$row->sparepart_id][$row->bulan] = ($usageMap[$row->sparepart_id][$row->bulan] ?? 0) + $row->total;
+        }
+
+        foreach ($deploymentUsage as $row) {
+            $usageMap[$row->sparepart_id][$row->bulan] = ($usageMap[$row->sparepart_id][$row->bulan] ?? 0) + $row->total;
+        }
 
         $matrix = [];
         $totalPerBulan = array_fill(1, 12, 0);
 
         foreach ($spareparts as $sp) {
-            $snapsForThis = $snapshots[$sp->id] ?? collect();
-            $snapsByBulanTahun = $snapsForThis->keyBy(fn($s) => $s->tahun . '-' . $s->bulan);
-
             $row = [];
+            $totalRow = 0;
 
             for ($bulan = 1; $bulan <= 12; $bulan++) {
-                $akhir = $snapsByBulanTahun[$tahun . '-' . $bulan]->stok_akhir ?? null;
-
-                if ($bulan === 1) {
-                    $awal = $snapsByBulanTahun[($tahun - 1) . '-12']->stok_akhir ?? null;
-                } else {
-                    $awal = $snapsByBulanTahun[$tahun . '-' . ($bulan - 1)]->stok_akhir ?? null;
-                }
-
-                if ($awal !== null && $akhir !== null) {
-                    $pemakaian = max(0, $awal - $akhir);
-                } else {
-                    $pemakaian = null;
-                }
-
-                $row[$bulan] = $pemakaian;
-
-                if ($pemakaian !== null && $pemakaian > 0) {
-                    $totalPerBulan[$bulan] += $pemakaian;
-                }
+                $jumlah = (int) ($usageMap[$sp->id][$bulan] ?? 0);
+                $row[$bulan] = $jumlah;
+                $totalRow += $jumlah;
+                $totalPerBulan[$bulan] += $jumlah;
             }
 
-            if (collect($row)->filter(fn($v) => $v !== null)->isNotEmpty()) {
-                $matrix[] = [
-                    'sparepart' => $sp,
-                    'bulanan'   => $row,
-                    'total'     => collect($row)->filter()->sum(),
-                ];
-            }
+            $matrix[] = [
+                'sparepart' => $sp,
+                'bulanan'   => $row,
+                'total'     => $totalRow,
+            ];
         }
 
         $this->matrix = $matrix;

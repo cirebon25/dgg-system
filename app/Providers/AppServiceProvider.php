@@ -29,14 +29,18 @@ class AppServiceProvider extends ServiceProvider
         |--------------------------------------------------------------------------
         | PENTING: AccommodationClaimObserver SUDAH DICABUT TOTAL dari sini
         | untuk menghindari error 500 Class Not Found.
+        |
+        | CashMutationObserver JUGA DICABUT — Buku Kas (CashLedger) tidak lagi
+        | tersinkron otomatis dari SPM (CashMutation). Admin mencatat saldo
+        | secara manual langsung di CashLedgerResource.
         */
         if (class_exists(\App\Models\MachineReplacement::class) && class_exists(\App\Observers\ReplacementObserver::class)) {
             \App\Models\MachineReplacement::observe(\App\Observers\ReplacementObserver::class);
         }
 
-        if (class_exists(\App\Models\CashMutation::class) && class_exists(\App\Observers\CashMutationObserver::class)) {
-            \App\Models\CashMutation::observe(\App\Observers\CashMutationObserver::class);
-        }
+        // if (class_exists(\App\Models\CashMutation::class) && class_exists(\App\Observers\CashMutationObserver::class)) {
+        //     \App\Models\CashMutation::observe(\App\Observers\CashMutationObserver::class);
+        // }
 
         /*
         |--------------------------------------------------------------------------

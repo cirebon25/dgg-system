@@ -1,3 +1,8 @@
+Berikut adalah kode HTML/Blade yang telah diperbarui. Latar belakang biru (`background-color: #0509f34d`) kini **hanya
+diterapkan pada kolom Nama Customer** saja ketika baris tersebut memenuhi kondisi `hasExcess` dan `tercatat`, sementara
+kolom lainnya tetap putih/normal:
+
+```html
 <!DOCTYPE html>
 <html lang="id">
 
@@ -72,7 +77,7 @@
             font-size: 10px;
         }
 
-        .highlight-row {
+        .highlight-customer {
             background-color: #0509f34d !important;
         }
 
@@ -164,6 +169,8 @@
                     <th colspan="6">Black & White (BW)</th>
                     <th colspan="6">Color (CL)</th>
                     <th rowspan="2">Total Tagihan</th>
+                    <th rowspan="2">PPN (11%)</th>
+                    <th rowspan="2">Total + PPN</th>
                 </tr>
                 <tr>
                     <th>Ctr Lalu</th>
@@ -181,18 +188,32 @@
                 </tr>
             </thead>
             <tbody>
-                @php $grandTotal = 0; @endphp
+                @php
+                    $grandTotal = 0;
+                    $grandPpn = 0;
+                    $grandTotalPpn = 0;
+                @endphp
                 @forelse ($tagihans ?? [] as $i => $item)
                     @php
                         $t = $item['tagihan'];
-                        $grandTotal += $t['total'];
+                        $subTotal = $t['total'];
+
+                        $ppn = $subTotal * 0.11;
+                        $totalWithPpn = $subTotal + $ppn;
+
+                        $grandTotal += $subTotal;
+                        $grandPpn += $ppn;
+                        $grandTotalPpn += $totalWithPpn;
+
                         $hasExcess = $t['kelebihan_bw'] > 0 || $t['kelebihan_color'] > 0;
                         $tercatat = $item['is_mrc_tercatat'] ?? false;
                         $isBaseline = $item['is_baseline_pertama'] ?? false;
                     @endphp
-                    <tr class="{{ $hasExcess && $tercatat ? 'highlight-row' : '' }}">
+                    <tr>
                         <td class="text-center">{{ $i + 1 }}</td>
-                        <td class="text-left">{{ $item['contract']->customer?->nama_customer ?? '-' }}</td>
+                        <td class="text-left {{ $hasExcess && $tercatat ? 'highlight-customer' : '' }}">
+                            {{ $item['contract']->customer?->nama_customer ?? '-' }}
+                        </td>
                         <td class="text-center">{{ $item['contract']->machine?->serial_number ?? '-' }}</td>
                         <td class="text-center">{{ $item['contract']->machine?->tipe_model ?? '-' }}</td>
                         <td class="text-right">{{ number_format($t['harga_sewa']) }}</td>
@@ -234,11 +255,13 @@
                             <td class="text-center belum-tercatat" colspan="6">-</td>
                         @endif
 
-                        <td class="text-right font-bold">Rp {{ number_format($t['total']) }}</td>
+                        <td class="text-right">Rp {{ number_format($subTotal) }}</td>
+                        <td class="text-right">Rp {{ number_format($ppn) }}</td>
+                        <td class="text-right font-bold">Rp {{ number_format($totalWithPpn) }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="18" class="text-center">Tidak ada data</td>
+                        <td colspan="20" class="text-center">Tidak ada data</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -246,6 +269,8 @@
                 <tr style="background: #e2e8f0;">
                     <td colspan="17" class="text-right font-bold" style="padding:10px;">GRAND TOTAL</td>
                     <td class="text-right font-bold">Rp {{ number_format($grandTotal) }}</td>
+                    <td class="text-right font-bold">Rp {{ number_format($grandPpn) }}</td>
+                    <td class="text-right font-bold">Rp {{ number_format($grandTotalPpn) }}</td>
                 </tr>
             </tfoot>
         </table>
@@ -265,3 +290,5 @@
 </body>
 
 </html>
+
+```

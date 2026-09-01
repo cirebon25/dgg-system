@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Deployment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class DeploymentPrintController extends Controller
 {
@@ -41,6 +42,25 @@ class DeploymentPrintController extends Controller
             'reportData' => $reportData,
             'startYear'  => $startYear,
             'endYear'    => $endYear,
+        ]);
+    }
+
+    public function printServiceCard(Deployment $deployment)
+    {
+        $deployment->loadMissing(['customer', 'machine']);
+
+        $pdf = Pdf::loadView('pdf.service-card', [
+            'nama_perusahaan' => $deployment->customer->nama_customer,
+            'alamat'          => $deployment->customer->alamat,
+            'tgl_instal'      => $deployment->tanggal_instal?->format('d/m/Y'),
+            'merk_type'       => $deployment->machine->tipe_model,
+            'no_seri'         => $deployment->machine->serial_number,
+            'voltage'         => $deployment->volt,
+        ])->setPaper('a4', 'landscape');
+
+        // Buat file base64 di sini, BUKAN di view service-card
+        return view('pdf.print-wrapper', [
+            'base64' => base64_encode($pdf->output()),
         ]);
     }
 }
