@@ -15,7 +15,7 @@ class CashMutationResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin', 'keuangan', 'manager', 'teknisi'];
+    protected static array $allowedRoles = ['admin', 'keuangan', 'manager', 'teknisi', 'admin_teknik'];
 
     protected static ?string $model           = CashMutation::class;
     protected static ?string $navigationIcon  = 'heroicon-o-arrow-up-circle';

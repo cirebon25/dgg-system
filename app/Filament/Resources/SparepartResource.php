@@ -18,7 +18,7 @@ class SparepartResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin', 'admin_teknik'];
+    protected static array $allowedRoles = ['admin'];
 
     protected static ?string $model = Sparepart::class;
 
@@ -75,6 +75,13 @@ class SparepartResource extends Resource
                             ->label('No Part')
                             ->required(),
 
+                        // Ditambahkan agar stok bisa diisi/diubah juga melalui halaman Form Edit/Create
+                        Forms\Components\TextInput::make('stok')
+                            ->label('Stok Gudang')
+                            ->numeric()
+                            ->required()
+                            ->default(0),
+
                         Forms\Components\Textarea::make('keterangan')
                             ->label('Keterangan')
                             ->nullable()
@@ -86,6 +93,7 @@ class SparepartResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('no_part', 'asc')
             ->columns([
                 TextColumn::make('nama_sparepart')
                     ->label('Nama Sparepart')
@@ -105,6 +113,7 @@ class SparepartResource extends Resource
                 TextColumn::make('no_part')
                     ->label('No Part')
                     ->searchable()
+                    ->sortable()
                     ->placeholder('-'),
 
                 TextColumn::make('harga_beli')
@@ -125,54 +134,6 @@ class SparepartResource extends Resource
                     ->sortable(),
             ])
             ->headerActions([
-                //     Tables\Actions\Action::make('import_sparepart')
-                //         ->label('Import CSV')
-                //         ->icon('heroicon-m-arrow-up-tray')
-                //         ->color('info')
-                //         ->form([
-                //             Forms\Components\FileUpload::make('file_csv')
-                //                 ->label('Pilih File CSV/Excel')
-                //                 ->disk('public')
-                //                 ->directory('imports')
-                //                 ->required(),
-                //         ])
-                //         ->action(function (array $data) {
-                //             $filePath = storage_path('app/public/' . $data['file_csv']);
-                //             $rows = Excel::toArray([], $filePath)[0];
-                //             array_shift($rows);
-
-                //             foreach ($rows as $row) {
-                //                 $sp = Sparepart::updateOrCreate(
-                //                     ['no_part' => $row[1]],
-                //                     [
-                //                         'nama_sparepart' => $row[0],
-                //                         'code_part'      => $row[3] ?? null,
-                //                         'nama_alias'     => $row[4] ?? null,
-                //                     ]
-                //                 );
-
-                //                 $jumlahMasuk = (int) ($row[2] ?? 0);
-                //                 if ($jumlahMasuk > 0) {
-                //                     \App\Models\SparepartEntry::create([
-                //                         'sparepart_id' => $sp->id,
-                //                         'jumlah'       => $jumlahMasuk,
-                //                         'supplier'     => 'Import Awal CSV',
-                //                         'keterangan'   => 'Inisialisasi stok awal via file CSV',
-                //                     ]);
-                //                     $sp->increment('stok', $jumlahMasuk);
-                //                 }
-                //             }
-
-                //             if (file_exists($filePath)) unlink($filePath);
-
-                //             \Filament\Notifications\Notification::make()
-                //                 ->title('Import Berhasil!')
-                //                 ->success()
-                //                 ->send();
-                //         }),
-
-
-
                 Tables\Actions\Action::make('rekapKeluar')
                     ->label('Cetak Rekap Part Terpakai   Keluar')
                     ->color('danger')
@@ -245,6 +206,31 @@ class SparepartResource extends Resource
                 Tables\Actions\CreateAction::make(),
             ])
             ->actions([
+                // Tombol cepat untuk edit stok langsung dari tabel baris data
+                Tables\Actions\Action::make('editStok')
+                    ->label('Edit Stok')
+                    ->icon('heroicon-o-pencil-square')
+                    ->color('warning')
+                    ->form([
+                        Forms\Components\TextInput::make('stok')
+                            ->label('Jumlah Stok Baru')
+                            ->numeric()
+                            ->required(),
+                    ])
+                    ->fillForm(fn(Sparepart $record): array => [
+                        'stok' => $record->stok,
+                    ])
+                    ->action(function (Sparepart $record, array $data): void {
+                        $record->update([
+                            'stok' => $data['stok'],
+                        ]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Stok Berhasil Diperbarui')
+                            ->success()
+                            ->send();
+                    }),
+
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
 
@@ -272,8 +258,6 @@ class SparepartResource extends Resource
         ];
     }
 
-    // Helper static untuk dipakai di semua resource lain
-    // Contoh penggunaan: Sparepart::getOptionsWithAlias()
     public static function getOptionsWithAlias(): array
     {
         return Sparepart::all()

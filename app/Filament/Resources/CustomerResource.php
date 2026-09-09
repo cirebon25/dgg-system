@@ -21,7 +21,7 @@ class CustomerResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin', 'admin_teknik',];
+    protected static array $allowedRoles = ['admin'];
 
     protected static ?string $model = Customer::class;
     protected static ?string $navigationLabel = 'Customer';

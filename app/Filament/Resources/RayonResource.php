@@ -16,7 +16,7 @@ class RayonResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin', 'admin_teknik'];
+    protected static array $allowedRoles = ['admin'];
 
     protected static ?string $navigationLabel = 'Rayon';
     protected static ?string $model = Rayon::class;

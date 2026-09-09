@@ -17,7 +17,7 @@ class MachineResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin', 'admin_teknik'];
+    protected static array $allowedRoles = ['admin'];
 
     protected static ?string $model = Machine::class;
     protected static ?string $navigationIcon = 'heroicon-o-cpu-chip';

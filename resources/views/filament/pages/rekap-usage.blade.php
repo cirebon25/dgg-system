@@ -1,5 +1,10 @@
 <x-filament-panels::page>
 
+    {{-- Ambil data sekali saja untuk efisiensi --}}
+    @php
+        $data = $this->getUsageData();
+    @endphp
+
     {{-- Filter Bulan & Tahun --}}
     <div
         class="flex flex-wrap items-end gap-4 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
@@ -43,7 +48,6 @@
     </div>
 
     {{-- TOP 3 BW & Color Summary Cards --}}
-    @php $data = $this->getUsageData(); @endphp
     @if ($data->count() > 0)
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
@@ -305,30 +309,37 @@
                                 class="px-3 py-2.5 text-right text-xs border border-gray-200 dark:border-gray-700 text-gray-600">
                                 TOTAL KESELURUHAN
                             </td>
+                            {{-- Total BW Bulan Ini --}}
                             <td
                                 class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200">
                                 {{ number_format($data->sum('total_bw')) }}
                             </td>
+                            {{-- Total Color Bulan Ini --}}
                             <td
                                 class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-blue-600">
                                 {{ number_format($data->sum('total_color')) }}
                             </td>
+                            {{-- Total Keseluruhan Bulan Ini --}}
                             <td
                                 class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-amber-600">
                                 {{ number_format($data->sum('total_bulan')) }}
                             </td>
+                            {{-- Total Lifetime BW --}}
                             <td
                                 class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-gray-500">
-                                {{ number_format($data->sum('total_hidup')) }}
+                                {{ number_format($data->sum(fn($row) => $row->total_bw_life ?? $row->total_hidup)) }}
                             </td>
+                            {{-- Total Lifetime Color --}}
                             <td
                                 class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-blue-400">
-                                -
+                                {{ number_format($data->sum(fn($row) => $row->total_color_life ?? 0)) }}
                             </td>
+                            {{-- Total Rata-rata / Bulan --}}
                             <td
                                 class="px-3 py-2.5 text-right font-mono text-xs border border-gray-200 dark:border-gray-700 text-gray-500">
-                                -
+                                {{ number_format($data->sum('rata_rata')) }}
                             </td>
+                            {{-- Total Kunjungan --}}
                             <td
                                 class="px-3 py-2.5 text-center text-xs border border-gray-200 dark:border-gray-700 text-gray-600">
                                 {{ number_format($data->sum('total_kunjungan')) }}x

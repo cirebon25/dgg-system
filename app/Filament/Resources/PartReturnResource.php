@@ -16,7 +16,7 @@ class PartReturnResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin', 'admin_teknik'];
+    protected static array $allowedRoles = ['admin'];
 
     protected static ?string $model = PartReturn::class;
 

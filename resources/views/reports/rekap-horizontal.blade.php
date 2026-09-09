@@ -184,13 +184,13 @@
         }
 
         .bg-rr {
-            background-color: #d64646 !important;
+            background-color: #469256 !important;
             color: #e6e2e0 !important;
             font-weight: bold;
         }
 
         .bg-jk {
-            background-color: #f5e8df !important;
+            background-color: #97d1e7 !important;
             color: #614700 !important;
             font-weight: bold;
         }
@@ -228,6 +228,32 @@
 
         .col-minggu {
             background-color: #b3937e !important;
+        }
+
+        /* ★ TAMBAHAN BARU: styling baris mesin lama (histori penggantian) */
+        .row-historis {
+            background-color: #fafafa !important;
+            font-style: italic;
+            opacity: 0.85;
+        }
+
+        .row-historis td {
+            border-top: 1px dashed #999 !important;
+        }
+
+        .ket-mesin-lama {
+            font-size: 6px;
+            font-weight: normal;
+            color: #ad6800;
+            display: block;
+            margin-top: 1px;
+        }
+
+        .bg-ket-historis {
+            background-color: #fff7e6 !important;
+            color: #ad6800 !important;
+            font-weight: bold;
+            text-transform: uppercase;
         }
 
         .page-break {
@@ -338,11 +364,16 @@
     </header>
 
     {{-- =============================================
-         BAGIAN 1: LAPORAN PER RAYON (TIDAK DIUBAH)
+         BAGIAN 1: LAPORAN PER RAYON
     ============================================= --}}
     @foreach ($rayons as $rayon)
         @php
-            $deployments = \App\Models\Deployment::with([
+            // ============================================================
+            // ★ 1. DEPLOYMENT AKTIF (mesin yang saat ini terpasang)
+            //    Ini adalah dasar hitungan TOTAL_MESIN / SUDAH_RM / BELUM_RM
+            //    supaya tidak dobel-hitung ketika ada mesin yang sudah diganti.
+            // ============================================================
+            $deploymentsAktif = \App\Models\Deployment::with([
                 'customer',
                 'machine.serviceLogs' => function ($query) use ($month, $year) {
                     $query->whereMonth('tanggal', $month)->whereYear('tanggal', $year)->orderBy('tanggal', 'asc');
@@ -353,13 +384,80 @@
                 })
                 ->get();
 
-            $allLogs = $deployments->flatMap(function ($dep) {
-                return $dep->machine ? $dep->machine->serviceLogs : collect();
+            // ============================================================
+            // ★ 2. RIWAYAT PERGANTIAN MESIN (RR / rolling) YANG TERJADI
+            //    DI BULAN & TAHUN LAPORAN INI. Diambil dari machine_replacements
+            //    (dicatat otomatis oleh halaman Filament "Ganti Mesin").
+            //    Untuk setiap pergantian di bulan ini, kita tampilkan mesin
+            //    LAMA-nya sebagai baris tambahan (histori), lengkap dengan
+            //    kunjungan-kunjungannya SEBELUM tanggal ganti, tapi TIDAK
+            //    ikut dihitung sebagai unit baru di TOTAL_MESIN.
+            // ============================================================
+            $replacementsBulanIni = \App\Models\MachineReplacement::with([
+                'customer',
+                'newMachine',
+                'oldMachine.serviceLogs' => function ($query) use ($month, $year) {
+                    $query->whereMonth('tanggal', $month)->whereYear('tanggal', $year)->orderBy('tanggal', 'asc');
+                },
+            ])
+                ->whereHas('customer', function ($q) use ($rayon) {
+                    $q->where('rayon_id', $rayon->id);
+                })
+                ->whereMonth('tanggal', $month)
+                ->whereYear('tanggal', $year)
+                ->get();
+
+            // Bangun objek "deployment semu" untuk tiap mesin lama yang diganti bulan ini,
+            // supaya bisa diperlakukan sama seperti $deploymentsAktif di loop tabel di bawah.
+            $deploymentsHistoris = $replacementsBulanIni->map(function ($rep) {
+                // Cari data deployment lama (sudah soft-deleted) untuk ambil no_kontrak & tanggal_instal asli
+                $depLama = \App\Models\Deployment::withTrashed()
+                    ->where('customer_id', $rep->customer_id)
+                    ->where('machine_id', $rep->old_machine_id)
+                    ->orderByDesc('deleted_at')
+                    ->first();
+
+                return (object) [
+                    'id' => 'hist-' . $rep->id,
+                    'customer_id' => $rep->customer_id,
+                    'customer' => $rep->customer,
+                    'machine' => $rep->oldMachine,
+                    'no_kontrak' => $depLama->no_kontrak ?? null,
+                    'tanggal_instal' => $depLama->tanggal_instal ?? null,
+                    'is_historis' => true,
+                    'tanggal_ganti' => $rep->tanggal,
+                    'sn_baru' => $rep->newMachine?->serial_number,
+                ];
             });
+
+            // Gabungkan aktif + historis, urut per customer (aktif dulu baru historisnya)
+            // supaya baris "mesin lama" nongol tepat di bawah baris mesin barunya.
+            $deployments = $deploymentsAktif
+                ->concat($deploymentsHistoris)
+                ->sortBy(function ($d) {
+                    return sprintf('%08d-%d', $d->customer_id, $d->is_historis ?? false ? 1 : 0);
+                })
+                ->values();
+
+            // ============================================================
+            // STATISTIK
+            // - RM/CM/TN/RN/RR: dihitung dari SEMUA kunjungan bulan ini
+            //   (aktif + historis), karena kunjungan tetap valid terlepas
+            //   mesinnya sudah diganti atau belum.
+            // - TOTAL_MESIN / SUDAH_RM / BELUM_RM: HANYA dari deployment aktif,
+            //   supaya mesin yang sudah diganti tidak menambah jumlah unit di rayon.
+            // ============================================================
+            $allLogsAktif = $deploymentsAktif->flatMap(
+                fn($dep) => $dep->machine ? $dep->machine->serviceLogs : collect(),
+            );
+            $allLogsHistoris = $deploymentsHistoris->flatMap(
+                fn($dep) => $dep->machine ? $dep->machine->serviceLogs : collect(),
+            );
+            $allLogs = $allLogsAktif->concat($allLogsHistoris);
 
             $sudahRmCount = 0;
             $belumRmCount = 0;
-            foreach ($deployments as $dep) {
+            foreach ($deploymentsAktif as $dep) {
                 if ($dep->customer && $dep->machine) {
                     $hasRM = $dep->machine->serviceLogs->contains(
                         fn($log) => strtoupper($log->tipe_kunjungan) === 'RM',
@@ -376,14 +474,14 @@
                 'RR' => $allLogs->where('tipe_kunjungan', 'RR')->count(),
                 'SUDAH_RM' => $sudahRmCount,
                 'BELUM_RM' => $belumRmCount,
-                'TOTAL_MESIN' => $deployments->whereNotNull('machine_id')->count(),
+                'TOTAL_MESIN' => $deploymentsAktif->whereNotNull('machine_id')->count(),
             ];
 
             $deploymentsByKota = $deployments->groupBy(function ($dep) {
                 return $dep->customer->kota ? strtoupper($dep->customer->kota) : 'TANPA KOTA';
             });
 
-            // ← TAMBAHAN: Hitung jumlah hari valid di bulan ini
+            // ← Hitung jumlah hari valid di bulan ini
             $daysInMonth = \Carbon\Carbon::create($year, $month)->daysInMonth;
         @endphp
 
@@ -412,7 +510,7 @@
                         <th rowspan="2" width="50">KETERANGAN</th>
                     </tr>
                     <tr>
-                        {{-- ← TAMBAHAN: Deteksi Sabtu/Minggu di header tanggal --}}
+                        {{-- ← Deteksi Sabtu/Minggu di header tanggal --}}
                         @for ($i = 1; $i <= 31; $i++)
                             @php
                                 $thWeekendClass = '';
@@ -442,6 +540,7 @@
                         @foreach ($itemsInKota as $dep)
                             @if ($dep->customer && $dep->machine)
                                 @php
+                                    $isHistoris = $dep->is_historis ?? false;
                                     $customer = $dep->customer;
                                     $m = $dep->machine;
                                     $logs = $m->serviceLogs;
@@ -507,15 +606,30 @@
                                     $hasRM = $logs->contains(fn($log) => strtoupper($log->tipe_kunjungan) === 'RM');
                                     $textKeterangan = $hasRM ? 'sudah rm' : 'blm rm';
                                     $classKeterangan = $hasRM ? 'bg-ket-sudah' : 'bg-ket-blm';
+
+                                    // ★ Override keterangan untuk baris histori mesin yang sudah diganti
+                                    if ($isHistoris) {
+                                        $tglGantiFmt = $dep->tanggal_ganti
+                                            ? \Carbon\Carbon::parse($dep->tanggal_ganti)->format('d/m/Y')
+                                            : '-';
+                                        $snBaruDisplay = $dep->sn_baru ?? '-';
+                                        $textKeterangan = 'diganti ' . $tglGantiFmt . ' → SN ' . $snBaruDisplay;
+                                        $classKeterangan = 'bg-ket-historis';
+                                    }
                                 @endphp
-                                <tr>
-                                    <td><b>{{ $no++ }}</b></td>
+                                <tr class="{{ $isHistoris ? 'row-historis' : '' }}">
+                                    <td><b>{{ $isHistoris ? '↳' : $no++ }}</b></td>
                                     <td class="text-left bold">
                                         {{ $customer->nama_customer }}
                                         <div
                                             style="font-weight: normal; font-size: 6.5px; color: #555; margin-top: 2px;">
                                             {{ $customer->alamat ?? '-' }}
                                         </div>
+                                        @if ($isHistoris)
+                                            <span class="ket-mesin-lama">GANTI MESIN
+                                                {{ \Carbon\Carbon::parse($dep->tanggal_ganti)->format('d M Y') }}
+                                                dengan SN {{ $dep->sn_baru ?? '-' }}</span>
+                                        @endif
                                     </td>
                                     <td>{{ $m->tipe_model }}</td>
                                     <td class="bold bg-seri">{{ $m->serial_number }}</td>
@@ -523,7 +637,7 @@
                                         {{ $dep->tanggal_instal ? \Carbon\Carbon::parse($dep->tanggal_instal)->format('d M Y') : '-' }}
                                     </td>
 
-                                    {{-- ← TAMBAHAN: Deteksi Sabtu/Minggu di cell data --}}
+                                    {{-- ← Deteksi Sabtu/Minggu di cell data --}}
                                     @for ($day = 1; $day <= 31; $day++)
                                         @php
                                             $logHariIni = $logs->first(

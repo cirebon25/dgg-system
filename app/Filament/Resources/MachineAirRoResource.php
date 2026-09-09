@@ -8,10 +8,13 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use App\Filament\Traits\HasRoleAccess; // <-- Pastikan trait ini di-import
 
 class MachineAirRoResource extends Resource
 {
-    protected static array $allowedRoles = ['admin', 'admin_teknisi'];
+    use HasRoleAccess; // <-- Gunakan trait di sini
+
+    protected static array $allowedRoles = ['admin']; // <-- Batasi akses khusus admin
 
     protected static ?string $model = MachineAirRo::class;
 
@@ -48,7 +51,6 @@ class MachineAirRoResource extends Resource
                         'Ready' => 'Ready (Siap Pakai)',
                         'Perbaikan' => 'Perbaikan (Dalam Perbaikan)',
                         'Rusak' => 'Rusak (Tidak Bisa Dipakai)',
-                        'inve'
                     ])
                     ->default('Ready')
                     ->required(),

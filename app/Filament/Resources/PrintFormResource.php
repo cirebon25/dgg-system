@@ -9,19 +9,20 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use App\Filament\Traits\HasRoleAccess;
 
 class PrintFormResource extends Resource
 {
+    use HasRoleAccess;
+
+    // Masukkan semua role yang diizinkan di sini (sesuaikan penulisan hurufnya dengan data di database Anda)
+    protected static array $allowedRoles = ['admin', 'teknisi', 'admin_teknik'];
+
     protected static ?string $model = PrintForm::class;
     protected static ?string $navigationIcon = 'heroicon-o-printer';
     protected static ?string $navigationLabel = 'Upload Form Cetak baru';
     protected static ?string $navigationGroup = 'Pusat Cetak';
     protected static ?int $navigationSort = 1;
-
-    public static function canAccess(): bool
-    {
-        return auth()->user()->role === 'admin';
-    }
 
     public static function form(Form $form): Form
     {

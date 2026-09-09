@@ -8,10 +8,13 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use App\Filament\Traits\HasRoleAccess; // <-- Pastikan trait ini di-import
 
 class CustomerRoResource extends Resource
 {
-    protected static array $allowedRoles = ['admin', 'admin_teknisi'];
+    use HasRoleAccess; // <-- Gunakan trait di sini
+
+    protected static array $allowedRoles = ['admin']; // <-- Batasi hanya untuk admin
 
     protected static ?string $model = CustomerRo::class;
 

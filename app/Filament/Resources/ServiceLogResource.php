@@ -13,6 +13,8 @@ use Filament\Forms\Get;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 class ServiceLogResource extends Resource
 {
@@ -291,6 +293,23 @@ class ServiceLogResource extends Resource
                     ->color('violet')
                     ->action(fn(array $data) => redirect()->route('print.performance-rayon', $data)),
 
+                // ExportAction::make('exportExcel')
+                //     ->label('Download Excel')
+                //     ->icon('heroicon-o-arrow-down-tray')
+                //     ->color('success')
+                //     ->exports([
+                //         ExcelExport::make()
+                //             ->fromView(
+                //                 view: 'exports.service-report', // Jika ingin menggunakan Blade khusus Excel
+                //                 data: [
+                //                     'rayons' => \App\Models\Rayon::with('deployments')->get(),
+                //                     'month' => now()->month, // Sesuaikan dengan filter Anda
+                //                     'year' => now()->year,   // Sesuaikan dengan filter Anda
+                //                 ]
+                //             )
+                //             ->withFilename(fn() => 'Laporan-Rekap-Service-' . date('Y-m-d')),
+                //     ]),
+                // // ])
                 Tables\Actions\Action::make('cetakHorizontal')
                     ->label('Laporan Teknisi')
                     ->icon('heroicon-o-table-cells')
