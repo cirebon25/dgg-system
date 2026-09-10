@@ -9,6 +9,8 @@ use App\Models\TechnicianStockHistory;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class CreatePartBorrowingHeader extends CreateRecord
 {
@@ -45,7 +47,7 @@ class CreatePartBorrowingHeader extends CreateRecord
     protected function afterCreate(): void
     {
         $header = $this->getRecord();
-        $header->load('items');
+        $header->load('items.sparepart', 'technician');
 
         DB::transaction(function () use ($header) {
             foreach ($header->items as $item) {
@@ -88,6 +90,36 @@ class CreatePartBorrowingHeader extends CreateRecord
             ->success()
             ->seconds(6)
             ->send();
+
+        $this->kirimNotifikasiWhatsapp($header);
+    }
+
+    protected function kirimNotifikasiWhatsapp($header): void
+    {
+        $technician = $header->technician;
+
+        if (!$technician || empty($technician->nomor_hp)) {
+            return; // tidak ada nomor HP, skip kirim WA
+        }
+
+        $daftarPart = $header->items->map(
+            fn($item) => "- {$item->sparepart->nama_sparepart} x{$item->jumlah}"
+        )->implode("\n");
+
+        $message = "Halo {$technician->nama_technician},\n\n"
+            . "Anda baru saja meminjam sparepart berikut dari Gudang Utama:\n"
+            . "{$daftarPart}\n\n"
+            . "Keterangan: " . ($header->keterangan ?: '-') . "\n\n"
+            . "Mohon dikonfirmasi. Terima kasih.";
+
+        try {
+            Http::timeout(10)->post('http://localhost:3001/send', [
+                'number'  => $technician->nomor_hp,
+                'message' => $message,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Gagal kirim WA notifikasi peminjaman: ' . $e->getMessage());
+        }
     }
 
     protected function getRedirectUrl(): string

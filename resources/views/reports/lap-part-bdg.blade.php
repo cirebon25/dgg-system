@@ -168,7 +168,7 @@
                         $total = ($item->stok ?? 0) + ($item->saldo_teknisi ?? 0);
                     @endphp
                     <tr>
-                        <td class="center">{{ $i + 1 }}</td>
+                        <td class="center">{{ $loop->iteration }}</td>
                         <td>{{ $item->no_part ?? '-' }}</td>
                         <td>{{ $item->nama_sparepart }}</td>
                         <td>{{ $item->code_part ?? '-' }}</td>
@@ -184,15 +184,16 @@
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="4" style="font-weight:bold;">Total Item</td>
-                    <td class="center" style="font-weight:bold;">
-                        {{ $spareparts->sum(fn($s) => ($s->stok ?? 0) + ($s->saldo_teknisi ?? 0)) }}
+                    <td colspan="4">Total Keseluruhan Jumlah (Nilai > 0)</td>
+                    <td class="center">
+                        {{ $spareparts->sum(function ($s) {
+                            $val = ($s->stok ?? 0) + ($s->saldo_teknisi ?? 0);
+                            return $val > 0 ? $val : 0;
+                        }) }}
                     </td>
                 </tr>
-            </tfoot>
-            <tfoot>
                 <tr>
-                    <td colspan="4">Total Item</td>
+                    <td colspan="4">Total Jenis Item Sparepart</td>
                     <td class="center">{{ $spareparts->count() }}</td>
                 </tr>
             </tfoot>
