@@ -30,46 +30,73 @@ class PartReturnResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Section::make('Formulir Pengembalian Barang')
-                    ->description('Barang akan menambah stok gudang dan MENGURANGI stok di Tas Teknisi.')
+                    ->description('Pilih teknisi lalu tambahkan sparepart yang diretur. Maksimal 10 item. Stok gudang akan bertambah, stok Tas Teknisi akan berkurang.')
                     ->schema([
+
                         Forms\Components\Select::make('technician_id')
                             ->relationship('technician', 'nama_technician')
                             ->label('Nama Teknisi')
                             ->required()
-                            ->searchable(),
+                            ->searchable()
+                            ->live()
+                            ->afterStateUpdated(fn(Forms\Set $set) => $set('items', []))
+                            ->columnSpanFull(),
 
-                        Forms\Components\Select::make('sparepart_id')
-                            ->relationship('sparepart', 'nama_sparepart')
-                            ->label('Pilih Sparepart')
-                            ->required()
-                            ->searchable(),
-                        // Cari bagian TextInput::make('jumlah') lalu ubah jadi seperti ini:
+                        Forms\Components\Repeater::make('items')
+                            ->label('Daftar Sparepart yang Diretur')
+                            ->schema([
+                                Forms\Components\Select::make('sparepart_id')
+                                    ->label('Sparepart')
+                                    ->options(function (Forms\Get $get) {
+                                        $technicianId = $get('../../technician_id');
+                                        if (!$technicianId) return [];
 
-                        Forms\Components\TextInput::make('jumlah')
-                            ->label('Jumlah Retur')
-                            ->numeric()
-                            ->required()
-                            ->minValue(1)
-                            ->reactive()
-                            ->rules([
-                                fn(Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
-                                    $techId = $get('technician_id');
-                                    $partId = $get('sparepart_id');
+                                        return \App\Models\TechnicianStock::where('technician_id', $technicianId)
+                                            ->where('jumlah', '>', 0)
+                                            ->with('sparepart')
+                                            ->get()
+                                            ->mapWithKeys(fn($ts) => [
+                                                $ts->sparepart_id => $ts->sparepart->nama_sparepart . " (sisa: {$ts->jumlah})"
+                                            ])
+                                            ->toArray();
+                                    })
+                                    ->required()
+                                    ->searchable()
+                                    ->live()
+                                    ->afterStateUpdated(fn(Forms\Set $set) => $set('jumlah', 1))
+                                    ->columnSpan(2),
 
-                                    if (!$techId || !$partId) return;
+                                Forms\Components\TextInput::make('jumlah')
+                                    ->label('Jumlah Retur')
+                                    ->numeric()
+                                    ->required()
+                                    ->default(1)
+                                    ->minValue(1)
+                                    ->live()
+                                    ->rules([
+                                        fn(Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
+                                            $techId = $get('../../technician_id');
+                                            $partId = $get('sparepart_id');
+                                            if (!$techId || !$partId) return;
 
-                                    $stock = \App\Models\TechnicianStock::where('technician_id', $techId)
-                                        ->where('sparepart_id', $partId)
-                                        ->first();
+                                            $stock = \App\Models\TechnicianStock::where('technician_id', $techId)
+                                                ->where('sparepart_id', $partId)
+                                                ->first();
+                                            $currentStock = $stock ? $stock->jumlah : 0;
 
-                                    // MENGGUNAKAN 'jumlah' sesuai hasil data Tinker Anda
-                                    $currentStock = $stock ? $stock->jumlah : 0;
-
-                                    if ($value > $currentStock) {
-                                        $fail("Gagal! Stok di tas Teknisi tidak mencukupi. Sisa saat ini: {$currentStock}");
-                                    }
-                                },
-                            ]),
+                                            if ($value > $currentStock) {
+                                                $fail("Stok di tas teknisi tidak cukup. Sisa: {$currentStock}");
+                                            }
+                                        },
+                                    ])
+                                    ->columnSpan(1),
+                            ])
+                            ->columns(3)
+                            ->minItems(1)
+                            ->maxItems(10)
+                            ->addActionLabel('+ Tambah Sparepart')
+                            ->reorderable(false)
+                            ->columnSpanFull(),
                     ])->columns(3),
             ]);
     }
