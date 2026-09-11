@@ -13,12 +13,11 @@ use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use App\Filament\Traits\HasRoleAccess;
 
-
 class ProspectResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin', 'manager'];
+    protected static array $allowedRoles = ['admin', 'manager', 'teknisi', 'admin_teknik'];
     protected static ?string $model = Prospect::class;
     protected static ?string $navigationIcon  = 'heroicon-o-building-storefront';
     protected static ?string $navigationLabel = 'Kunjungan Sales';
@@ -132,7 +131,6 @@ class ProspectResource extends Resource
                             ->columns(2)
                             ->addActionLabel('+ Tambah Kunjungan')
                             ->defaultItems(1)
-                            ->orderColumn('tanggal_kunjungan')
                             ->collapsible(),
                     ]),
             ]);
@@ -174,7 +172,6 @@ class ProspectResource extends Resource
                     ->label('Tgl Visit Terakhir')
                     ->date('d/m/Y'),
             ])
-
             ->headerActions([
                 Tables\Actions\Action::make('cetakLaporan')
                     ->label('Cetak Laporan Sales')
@@ -209,7 +206,6 @@ class ProspectResource extends Resource
 
                 Tables\Actions\CreateAction::make(),
             ])
-
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
