@@ -152,9 +152,9 @@
             text-transform: uppercase;
         }
 
-        .part-qty {
+        .part-qty-red {
             font-weight: 700;
-            color: #3307f7;
+            color: #dc2626 !important;
         }
 
         .text-cl-blue {
@@ -212,8 +212,8 @@
                 print-color-adjust: exact;
             }
 
-            .part-qty {
-                color: #3307f7 !important;
+            .part-qty-red {
+                color: #dc2626 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -295,12 +295,16 @@
                             ->groupBy('nama_part')
                             ->map(function ($g) {
                                 $firstPart = $g->first();
-                                // Mengubah 'jumlah_part' menjadi 'jumlah' sesuai kolom di database
-                                $qty = $g->sum('jumlah') ?: $g->sum('qty') ?: 1;
+
+                                // Mengambil nilai kuantitas dari berbagai kemungkinan nama kolom data
+                                $qty = $g->sum(function ($item) {
+                                    return $item->jumlah ?? ($item->qty ?? ($item->jumlah_part ?? 1));
+                                });
 
                                 $partName = strtoupper($firstPart->nama_part ?? '-');
+
                                 return $qty > 1
-                                    ? "{$partName} <span class=\"part-qty\">({$qty})</span>"
+                                    ? "{$partName} <span class=\"part-qty-red\">({$qty})</span>"
                                     : "{$partName}";
                             })
                             ->implode(', ');
@@ -363,17 +367,14 @@
 
     @if (count($groupedUsages) > 0)
         @php
-            // Kumpulkan dan hitung total seluruh part dari semua rayon secara global
             $globalAllParts = collect();
             foreach ($groupedUsages as $items) {
                 foreach ($items as $item) {
-                    // Mengubah 'jumlah_part' menjadi 'jumlah' sesuai kolom di database
-                    $qty = $item->jumlah ?? ($item->qty ?? 1);
+                    $qty = $item->jumlah ?? ($item->qty ?? ($item->jumlah_part ?? 1));
                     $pName = strtoupper($item->nama_part ?? '-');
                     $globalAllParts->put($pName, $globalAllParts->get($pName, 0) + $qty);
                 }
             }
-            // Urutkan berdasarkan nama part secara alfabetis
             $sortedGlobalParts = $globalAllParts->sortKeys();
         @endphp
 
@@ -398,7 +399,7 @@
                     <tr>
                         <td class="tc">{{ $no++ }}</td>
                         <td class="tl font-bold">{{ $partName }}</td>
-                        <td class="tc part-qty" style="font-size: 11px;">{{ $totalQty }}</td>
+                        <td class="tc part-qty-red" style="font-size: 11px;">{{ $totalQty }}</td>
                     </tr>
                 @endforeach
             </tbody>

@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use App\Filament\Traits\HasRoleAccess;
+use Illuminate\Database\Eloquent\Builder;
 
 class ProspectResource extends Resource
 {
@@ -27,32 +28,51 @@ class ProspectResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Data Perusahaan')
+                Forms\Components\Section::make('Informasi Perusahaan')
                     ->schema([
-                        Forms\Components\TextInput::make('nama_perusahaan')
+                        Forms\Components\Select::make('nama_perusahaan')
                             ->label('Nama Perusahaan')
                             ->required()
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(function ($state, $set, $record) {
+                            ->options(
+                                Prospect::query()->pluck('nama_perusahaan', 'nama_perusahaan')->toArray()
+                            )
+                            ->searchable()
+                            ->preload()
+                            ->allowHtml()
+                            ->getSearchResultsUsing(fn(string $search): array => Prospect::where('nama_perusahaan', 'like', "%{$search}%")->limit(50)->pluck('nama_perusahaan', 'nama_perusahaan')->toArray())
+                            ->getOptionLabelUsing(fn($value): ?string => $value)
+                            ->live(debounce: 500)
+                            ->afterStateUpdated(function ($state, $set, $get, $record) {
                                 if (!$state) return;
 
-                                // Cek apakah perusahaan sudah pernah dikunjungi
-                                $existing = Prospect::where('nama_perusahaan', 'like', "%{$state}%")
+                                // Cari data perusahaan yang mirip atau sama di database
+                                $existing = Prospect::where('nama_perusahaan', $state)
                                     ->when($record, fn($q) => $q->where('id', '!=', $record->id))
                                     ->with(['visits.marketing'])
                                     ->first();
 
-                                if ($existing && $existing->visits->isNotEmpty()) {
-                                    $histori = $existing->visits->map(function ($v) {
-                                        return "{$v->marketing?->nama_marketing} ({$v->tanggal_kunjungan->format('d/m/Y')}) — {$v->hasil_kunjungan}";
-                                    })->implode(' | ');
+                                if ($existing) {
+                                    // Autofill otomatis data yang sudah ada
+                                    $set('kota', $existing->kota);
+                                    $set('alamat', $existing->alamat);
+                                    $set('pic_nama', $existing->pic_nama);
+                                    $set('pic_jabatan', $existing->pic_jabatan);
+                                    $set('pic_telp', $existing->pic_telp);
+                                    $set('status', $existing->status);
 
-                                    Notification::make()
-                                        ->title('⚠️ Perusahaan ini sudah pernah dikunjungi!')
-                                        ->body("Histori kunjungan: {$histori}")
-                                        ->warning()
-                                        ->persistent()
-                                        ->send();
+                                    // Tampilkan notifikasi histori kunjungan jika ada
+                                    if ($existing->visits->isNotEmpty()) {
+                                        $histori = $existing->visits->map(function ($v) {
+                                            return "{$v->marketing?->nama_marketing} ({$v->tanggal_kunjungan?->format('d/m/Y')}) — {$v->hasil_kunjungan}";
+                                        })->implode(' | ');
+
+                                        Notification::make()
+                                            ->title('⚠️ Perusahaan sudah terdaftar & di-autofill!')
+                                            ->body("Histori kunjungan sebelumnya: {$histori}")
+                                            ->warning()
+                                            ->persistent()
+                                            ->send();
+                                    }
                                 }
                             }),
 
@@ -106,7 +126,7 @@ class ProspectResource extends Resource
                                     ->required(),
 
                                 Forms\Components\TextInput::make('jenis_mesin_existing')
-                                    ->label('Jenis Mesin Existing')
+                                    ->label('Jenis Mesin')
                                     ->placeholder('Contoh: Fotocopy A3'),
 
                                 Forms\Components\TextInput::make('merk_mesin_existing')
@@ -147,7 +167,12 @@ class ProspectResource extends Resource
 
                 Tables\Columns\TextColumn::make('pic_nama')
                     ->label('PIC')
+                    ->searchable()
                     ->description(fn($record) => $record->pic_jabatan ?? '-'),
+
+                Tables\Columns\TextColumn::make('pic_telp')
+                    ->label('No. Telp PIC')
+                    ->searchable(),
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
@@ -222,7 +247,7 @@ class ProspectResource extends Resource
             ->defaultSort('updated_at', 'desc');
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
             ->withCount('visits')
