@@ -21,6 +21,9 @@ use App\Http\Controllers\SaldoSparepartController;
 use App\Http\Controllers\SparepartOutflowController;
 use App\Http\Controllers\DeploymentPrintController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
@@ -238,3 +241,54 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
 Route::get('/deployments/{deployment}/print', [DeploymentPrintController::class, 'printServiceCard'])
     ->name('deployment.print');
+
+fn() => null; // placeholder agar tidak error jika butuh namespace, gunakan kode di bawah:
+
+Route::get('/custom/confirm-password', function () {
+    return view('auth.custom-confirm-password');
+})->name('password.confirm')->middleware(['auth']);
+
+// Route::post('/custom/confirm-password', function (Request $request) {
+//     $request->validate(['password' => ['required']]);
+
+//     if (! Hash::check($request->password, $request->user()->password)) {
+//         return back()->withErrors(['password' => __('auth.password')]);
+//     }
+
+//     $request->session()->passwordConfirm();
+
+//     return redirect()->intended();
+// })->middleware(['auth']);
+
+
+Route::post('/custom/confirm-password', function (Request $request) {
+    $request->validate(['password' => ['required']]);
+
+    // Ganti 'pin_rahasia_anda' dengan password/PIN khusus yang Anda inginkan
+    $pinKhusus = '123456'; // Contoh PIN khusus modul pinjam part
+
+    if ($request->password !== $pinKhusus) {
+        return back()->withErrors(['password' => 'Password atau PIN modul salah!']);
+    }
+
+    // Tandai sesi bahwa modul ini sudah dikonfirmasi (berlaku 30 menit)
+    $request->session()->put('auth.password_confirmed_at', time());
+
+    return redirect()->intended();
+})->middleware(['auth']);
+
+Route::post('/custom/confirm-password', function (Request $request) {
+    $request->validate(['password' => ['required']]);
+
+    // Ambil PIN dari database (jika belum diset, default ke '123456')
+    $pinAktif = DB::table('settings')->where('key', 'modul_pinjam_pin')->value('value') ?? '123456';
+
+    if ($request->password !== $pinAktif) {
+        return back()->withErrors(['password' => 'PIN modul salah!']);
+    }
+
+    // Tandai sesi bahwa modul ini sudah dikonfirmasi (berlaku 1x transaksi)
+    $request->session()->put('auth.password_confirmed_at', time());
+
+    return redirect()->intended();
+})->middleware(['auth']);
