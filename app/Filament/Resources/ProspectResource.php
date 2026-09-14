@@ -30,17 +30,12 @@ class ProspectResource extends Resource
             ->schema([
                 Forms\Components\Section::make('Informasi Perusahaan')
                     ->schema([
-                        Forms\Components\Select::make('nama_perusahaan')
+                        Forms\Components\TextInput::make('nama_perusahaan')
                             ->label('Nama Perusahaan')
                             ->required()
-                            ->options(
+                            ->datalist(
                                 Prospect::query()->pluck('nama_perusahaan', 'nama_perusahaan')->toArray()
                             )
-                            ->searchable()
-                            ->preload()
-                            ->allowHtml()
-                            ->getSearchResultsUsing(fn(string $search): array => Prospect::where('nama_perusahaan', 'like', "%{$search}%")->limit(50)->pluck('nama_perusahaan', 'nama_perusahaan')->toArray())
-                            ->getOptionLabelUsing(fn($value): ?string => $value)
                             ->live(debounce: 500)
                             ->afterStateUpdated(function ($state, $set, $get, $record) {
                                 if (!$state) return;

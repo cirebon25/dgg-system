@@ -14,16 +14,16 @@
 
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
-            font-size: 9.5px;
+            font-size: 10px;
             color: #1e293b;
             background: #fff;
             line-height: 1.35;
         }
 
         .page {
-            width: 210mm;
-            min-height: 297mm;
-            padding: 8mm 10mm;
+            width: 297mm;
+            min-height: 210mm;
+            padding: 10mm 12mm;
             margin: 0 auto;
         }
 
@@ -38,7 +38,7 @@
         }
 
         .header h2 {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: bold;
             text-transform: uppercase;
             color: #0f172a;
@@ -48,7 +48,7 @@
         .header p {
             margin-top: 2px;
             color: #475569;
-            font-size: 9.5px;
+            font-size: 10px;
         }
 
         .header-right {
@@ -65,12 +65,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 10px;
+            font-size: 10.5px;
         }
 
         .grand-summary-item {
             display: inline-block;
-            margin-right: 12px;
+            margin-right: 15px;
         }
 
         /* Per Marketing Section Card */
@@ -92,7 +92,7 @@
         }
 
         .marketing-header h3 {
-            font-size: 10.5px;
+            font-size: 11px;
             font-weight: bold;
             text-transform: uppercase;
             margin: 0;
@@ -101,12 +101,12 @@
 
         .marketing-stats {
             display: flex;
-            gap: 5px;
+            gap: 6px;
         }
 
         .stat-badge {
-            font-size: 8.5px;
-            padding: 2px 5px;
+            font-size: 9px;
+            padding: 2px 6px;
             border-radius: 3px;
             font-weight: bold;
             background: rgba(255, 255, 255, 0.2);
@@ -122,19 +122,19 @@
 
         th {
             border: 1px solid #cbd5e1;
-            padding: 5px 6px;
+            padding: 6px 8px;
             background: #f1f5f9;
             font-weight: bold;
             text-align: left;
-            font-size: 8.5px;
+            font-size: 9px;
             color: #334155;
             text-transform: uppercase;
         }
 
         td {
             border: 1px solid #cbd5e1;
-            padding: 5px 6px;
-            font-size: 9px;
+            padding: 6px 8px;
+            font-size: 9.5px;
             vertical-align: top;
         }
 
@@ -149,7 +149,7 @@
 
         .text-sub {
             color: #64748b;
-            font-size: 8px;
+            font-size: 8.5px;
             display: block;
             margin-top: 1px;
         }
@@ -161,10 +161,10 @@
 
         /* Badge Status / Hasil Kunjungan */
         .badge {
-            padding: 2px 5px;
+            padding: 2px 6px;
             border-radius: 3px;
             font-weight: bold;
-            font-size: 8px;
+            font-size: 8.5px;
             display: inline-block;
             white-space: nowrap;
         }
@@ -191,7 +191,7 @@
 
         /* Tanda Tangan Footer */
         .footer {
-            margin-top: 20px;
+            margin-top: 25px;
             display: flex;
             justify-content: space-between;
             page-break-inside: avoid;
@@ -199,17 +199,17 @@
 
         .ttd {
             text-align: center;
-            width: 170px;
+            width: 200px;
         }
 
         .ttd .line {
-            margin-top: 45px;
+            margin-top: 50px;
             border-top: 1px solid #333;
         }
 
         /* Tombol Cetak / Kontrol Tampilan Web */
         .no-print {
-            width: 210mm;
+            width: 297mm;
             margin: 10px auto;
             padding: 5px 0;
             text-align: right;
@@ -231,11 +231,11 @@
 
             .page {
                 margin: 0;
-                padding: 6mm;
+                padding: 8mm;
             }
 
             @page {
-                size: A4 portrait;
+                size: A4 landscape;
                 margin: 0;
             }
         }
@@ -247,7 +247,7 @@
     <!-- Tombol Aksi Print -->
     <div class="no-print">
         <button onclick="window.print()" class="btn" style="background:#2563eb; color:#fff;">
-            🖨️ Cetak / Simpan PDF Laporan
+            🖨️ Cetak / Simpan PDF Laporan (Landscape)
         </button>
         <button onclick="window.close()" class="btn" style="background:#6b7280; color:#fff; margin-left:6px;">
             ✕ Tutup
@@ -260,7 +260,7 @@
             <div>
                 <h2>PT Dinamika Global Gemilang</h2>
                 <p><strong>Laporan Aktivitas & Rekapitulasi Kunjungan Tim Sales / Marketing</strong></p>
-                <p style="font-size: 8.5px; color: #64748b; margin-top: 1px;">Cirebon, Jawa Barat</p>
+                <p style="font-size: 9px; color: #64748b; margin-top: 1px;">Cirebon, Jawa Barat</p>
             </div>
             <div class="header-right">
                 <p>Periode: <strong>{{ $bulan }} {{ $tahun }}</strong></p>
@@ -287,25 +287,13 @@
                 <span class="grand-summary-item">Closing: <strong
                         style="color:#059669;">{{ $totalClosingAll }}</strong></span>
             </div>
-            <!-- Rekapitulasi Keseluruhan -->
-            <div class="grand-summary">
-                <div>
-                    <span class="grand-summary-item">Total Visit: <strong
-                            style="color:#2563eb;">{{ $totalVisitAll }}</strong></span>
-                    <span class="grand-summary-item">Kunjungan Awal: <strong>{{ $totalInterestAll }}</strong></span>
-                    <span class="grand-summary-item">Follow Up: <strong
-                            style="color:#d97706;">{{ $totalFollowUpAll }}</strong></span>
-                    <span class="grand-summary-item">Closing: <strong
-                            style="color:#059669;">{{ $totalClosingAll }}</strong></span>
-                </div>
-                <div>
-                    <span>
-                        Conversion Rate: <strong style="color:#7c3aed;">{{ $conversionRate }}%</strong>
-                        <span style="font-size: 7.5px; color: #64748b; font-weight: normal;">
-                            ( Rumus: (Total Closing {{ $totalClosingAll }} ÷ Total Visit {{ $totalVisitAll }}) × 100 )
-                        </span>
+            <div>
+                <span>
+                    Conversion Rate: <strong style="color:#7c3aed;">{{ $conversionRate }}%</strong>
+                    <span style="font-size: 8px; color: #64748b; font-weight: normal;">
+                        ( Rumus: (Total Closing {{ $totalClosingAll }} ÷ Total Visit {{ $totalVisitAll }}) × 100 )
                     </span>
-                </div>
+                </span>
             </div>
         </div>
 
@@ -326,12 +314,12 @@
                 <table>
                     <thead>
                         <tr>
-                            <th class="center" style="width: 20px;">No</th>
-                            <th class="center" style="width: 55px;">Tanggal</th>
-                            <th style="width: 110px;">Perusahaan & Alamat</th>
-                            <th style="width: 115px;">Detail PIC (Kontak)</th>
-                            <th style="width: 90px;">Mesin Existing</th>
-                            <th class="center" style="width: 65px;">Hasil</th>
+                            <th class="center" style="width: 30px;">No</th>
+                            <th class="center" style="width: 70px;">Tanggal</th>
+                            <th style="width: 150px;">Perusahaan & Alamat</th>
+                            <th style="width: 150px;">Detail PIC (Kontak)</th>
+                            <th style="width: 120px;">Mesin Existing</th>
+                            <th class="center" style="width: 90px;">Hasil</th>
                             <th>Catatan & Progres Kunjungan</th>
                         </tr>
                     </thead>
@@ -357,11 +345,11 @@
                                 <td>
                                     <strong>{{ $prospect?->nama_perusahaan ?? '-' }}</strong>
                                     @if ($prospect?->kota)
-                                        <span class="text-sub"> {{ $prospect->kota }}</span>
+                                        <span class="text-sub">{{ $prospect->kota }}</span>
                                     @endif
                                     @if ($prospect?->alamat)
                                         <span class="text-sub"
-                                            style="color: #475569;">{{ Str::limit($prospect->alamat, 45) }}</span>
+                                            style="color: #475569;">{{ Str::limit($prospect->alamat, 60) }}</span>
                                     @endif
                                 </td>
                                 <td>
@@ -370,7 +358,7 @@
                                         <span class="text-sub">Jabatan: {{ $prospect->pic_jabatan }}</span>
                                     @endif
                                     @if ($prospect?->pic_telp)
-                                        <span class="text-sub phone-text"> {{ $prospect->pic_telp }}</span>
+                                        <span class="text-sub phone-text">{{ $prospect->pic_telp }}</span>
                                     @endif
                                 </td>
                                 <td>
