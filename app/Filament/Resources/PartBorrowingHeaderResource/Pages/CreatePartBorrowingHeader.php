@@ -201,6 +201,49 @@ class CreatePartBorrowingHeader extends CreateRecord
     //     }
     // }
 
+    // protected function kirimNotifikasiWhatsapp($header): void
+    // {
+    //     $technician = $header->technician;
+
+    //     if (!$technician || empty($technician->nomor_hp)) {
+    //         return;
+    //     }
+
+    //     // 1. Ambil daftar part yang baru dipinjam pada transaksi ini
+    //     $daftarPinjam = $header->items->map(function ($item) {
+    //         return "- {$item->sparepart->nama_sparepart} (+{$item->jumlah} pcs)";
+    //     })->implode("\n");
+
+    //     // 2. Ambil SEMUA saldo sparepart yang saat ini ada di tas teknisi tersebut
+    //     $semuaStokTas = TechnicianStock::with('sparepart')
+    //         ->where('technician_id', $technician->id)
+    //         ->where('jumlah', '>', 0) // Opsional: Hanya tampilkan yang saldonya masih ada (> 0)
+    //         ->get();
+
+    //     $daftarSemuaStok = $semuaStokTas->map(function ($stock) {
+    //         return "- {$stock->sparepart->nama_sparepart}: *{$stock->jumlah} pcs*";
+    //     })->implode("\n");
+
+    //     // 3. Susun isi pesan WhatsApp
+    //     $message = "Halo {$technician->nama_technician},\n\n"
+    //         . "📦 *RINCIAN PEMINJAMAN BARU*:\n"
+    //         . "{$daftarPinjam}\n\n"
+    //         . "Keterangan: " . ($header->keterangan ?: '-') . "\n\n"
+    //         . "📋 *TOTAL SALDO DI TAS ANDA SAAT INI*:\n"
+    //         . ($daftarSemuaStok ?: "- Kosong") . "\n\n"
+    //         . "Mohon untuk dicek kembali. Terima kasih.";
+
+    //     try {
+    //         Http::timeout(10)->post('http://localhost:3001/send', [
+    //             'number'  => $technician->nomor_hp,
+    //             'message' => $message,
+    //         ]);
+    //     } catch (\Throwable $e) {
+    //         Log::warning('Gagal kirim WA notifikasi peminjaman: ' . $e->getMessage());
+    //     }
+    // }
+
+
     protected function kirimNotifikasiWhatsapp($header): void
     {
         $technician = $header->technician;
@@ -217,16 +260,21 @@ class CreatePartBorrowingHeader extends CreateRecord
         // 2. Ambil SEMUA saldo sparepart yang saat ini ada di tas teknisi tersebut
         $semuaStokTas = TechnicianStock::with('sparepart')
             ->where('technician_id', $technician->id)
-            ->where('jumlah', '>', 0) // Opsional: Hanya tampilkan yang saldonya masih ada (> 0)
+            ->where('jumlah', '>', 0)
             ->get();
 
         $daftarSemuaStok = $semuaStokTas->map(function ($stock) {
             return "- {$stock->sparepart->nama_sparepart}: *{$stock->jumlah} pcs*";
         })->implode("\n");
 
-        // 3. Susun isi pesan WhatsApp
+        // 3. Format Tanggal dan Waktu (menggunakan zona waktu lokal)
+        // Contoh hasil: 14 September 2026 15:30
+        $tanggalTransaksi = now()->translatedFormat('d F Y H:i');
+
+        // 4. Susun isi pesan WhatsApp dengan menyertakan tanggal
         $message = "Halo {$technician->nama_technician},\n\n"
-            . "📦 *RINCIAN PEMINJAMAN BARU*:\n"
+            . "*Waktu*: {$tanggalTransaksi} WIB\n\n"
+            . "📦*RINCIAN PEMINJAMAN BARU*:\n"
             . "{$daftarPinjam}\n\n"
             . "Keterangan: " . ($header->keterangan ?: '-') . "\n\n"
             . "📋 *TOTAL SALDO DI TAS ANDA SAAT INI*:\n"
