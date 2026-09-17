@@ -28,25 +28,43 @@ class PrintServiceController extends Controller
     }
 
     // dipindah dari: Route::get('/sparepart/monitor-umur/{machine_id}', ...)->name('sparepart.monitor')
+    // public function monitorUmur($machine_id)
+    // {
+    //     $machine = Machine::with(['deployment.customer', 'serviceLogs'])->findOrFail($machine_id);
+
+    //     $partHistories = ServiceLogSparepart::whereHas('serviceLog', function ($q) use ($machine_id) {
+    //         $q->where('machine_id', $machine_id);
+    //     })->with(['sparepart', 'serviceLog'])->get();
+
+    //     $latestLog = $machine->serviceLogs()->latest('tanggal')->first();
+    //     $counterSekarangBW = $latestLog->counter_bw ?? 0;
+    //     $counterSekarangCL = $latestLog->counter_color ?? 0;
+
+    //     return view('print.sparepart-monitoring', compact('machine', 'partHistories', 'counterSekarangBW', 'counterSekarangCL'));
+    // }
+
+
     public function monitorUmur($machine_id)
     {
         $machine = Machine::with(['deployment.customer', 'serviceLogs'])->findOrFail($machine_id);
 
+        // Ambil riwayat dan kelompokkan berdasarkan sparepart_id
         $partHistories = ServiceLogSparepart::whereHas('serviceLog', function ($q) use ($machine_id) {
             $q->where('machine_id', $machine_id);
-        })->with(['sparepart', 'serviceLog'])->get();
+        })
+            ->with(['sparepart', 'serviceLog'])
+            ->join('service_logs', 'service_log_spareparts.service_log_id', '=', 'service_logs.id')
+            ->orderBy('service_logs.tanggal', 'asc')
+            ->orderBy('service_logs.id', 'asc')
+            ->select('service_log_spareparts.*')
+            ->get()
+            ->groupBy('sparepart_id'); // Dikelompokkan per part
 
         $latestLog = $machine->serviceLogs()->latest('tanggal')->first();
         $counterSekarangBW = $latestLog->counter_bw ?? 0;
         $counterSekarangCL = $latestLog->counter_color ?? 0;
 
         return view('print.sparepart-monitoring', compact('machine', 'partHistories', 'counterSekarangBW', 'counterSekarangCL'));
-    }
-
-    // dipindah dari: Route::get('/admin/service-log/{serviceLog}/surat-jalan', ...)->name('service-log.surat-jalan')
-    public function suratJalan(ServiceLog $serviceLog)
-    {
-        return view('reports.surat-jalan', ['log' => $serviceLog]);
     }
 
     // Route::get('/cetak/part-per-mesin/{machine_id}', ...)->name('cetak.part-per-mesin')
