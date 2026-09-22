@@ -15,10 +15,15 @@ class RekapUsage extends Page
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
     protected static ?string $navigationLabel = 'Ranking Pemakaian';
     protected static ?string $title = 'Ranking Pemakaian Mesin';
-    protected static ?string $navigationGroup = 'Laporan';
+    // protected static ?string $navigationGroup = 'Laporan'; // Komentari baris ini agar tidak muncul di grup navigasi
     protected static string $view = 'filament.pages.rekap-usage';
-    protected static ?int $navigationSort = 16;
+    // protected static ?int $navigationSort = 16;
 
+    // Tambahkan fungsi ini agar halamannya tidak muncul sama sekali di sidebar/menu navigasi
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
     public string $month;
     public string $year;
 

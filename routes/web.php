@@ -24,6 +24,11 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\TechnicianStockPrintController;
+use App\Http\Controllers\InvoicePrintController;
+use App\Models\Invoice;
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -292,3 +297,22 @@ Route::post('/custom/confirm-password', function (Request $request) {
 
     return redirect()->intended();
 })->middleware(['auth']);
+
+
+Route::get('/admin/technician-stock-histories/print', [TechnicianStockPrintController::class, '__invoke'])
+    ->name('technician-stock.print')
+    ->middleware(['auth']); // sesuaikan middleware auth filament Anda
+
+
+
+
+// Route Cetak Satuan (Per Baris Invoice)
+Route::get('/admin/invoices/{record}/print', function (Invoice $record) {
+    return view('invoices.print', ['invoice' => $record]);
+})->name('invoice.print')->middleware(['web', 'auth']);
+
+// Route Cetak Rekap Semua Data
+Route::get('/admin/invoices/print-all', function (Request $request) {
+    $invoices = Invoice::with('customer')->orderBy('tanggal', 'desc')->get();
+    return view('invoices.print-all', ['invoices' => $invoices]);
+})->name('invoice.print-all')->middleware(['web', 'auth']);

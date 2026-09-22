@@ -17,7 +17,7 @@ class CashReceiptResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static ?string $model           = CashReceipt::class;
+    protected static ?string $model              = CashReceipt::class;
     protected static ?string $navigationIcon  = 'heroicon-o-arrow-down-circle';
     protected static ?string $navigationLabel = 'Input Kas Masuk';
     protected static ?string $navigationGroup = 'Keuangan';
@@ -26,50 +26,62 @@ class CashReceiptResource extends Resource
     protected static ?string $pluralModelLabel = 'Kas Masuk';
     protected static array   $allowedRoles    = ['admin', 'keuangan', 'manager'];
 
+    /**
+     * Menonaktifkan akses agar tidak ada satupun user yang bisa melihat modul ini.
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
-        Forms\Components\Section::make('Data Penerimaan Kas')
-        ->columns(2)
-        ->schema([
-        Forms\Components\DatePicker::make('tanggal')
-        ->label('Tanggal Penerimaan')
-        ->required()
-        ->default(now())
-        ->native(false),
+            Forms\Components\Section::make('Data Penerimaan Kas')
+                ->columns(2)
+                ->schema([
+                    Forms\Components\DatePicker::make('tanggal')
+                        ->label('Tanggal Penerimaan')
+                        ->required()
+                        ->default(now())
+                        ->native(false),
 
-        Forms\Components\TextInput::make('no_bukti')
-        ->label('No. Bukti / Referensi')
-        ->placeholder('Otomatis jika kosong')
-        ->helperText('Contoh: KM-001/VI/26 • dibuat otomatis jika tidak diisi')
-        ->maxLength(30),
+                    Forms\Components\TextInput::make('no_bukti')
+                        ->label('No. Bukti / Referensi')
+                        ->placeholder('Otomatis jika kosong')
+                        ->helperText('Contoh: KM-001/VI/26 • dibuat otomatis jika tidak diisi')
+                        ->maxLength(30),
 
-        Forms\Components\TextInput::make('sumber_dana')
-        ->label('Sumber / Pengirim Dana')
-        ->placeholder('Contoh: Bank BCA, Transfer Kantor Pusat...')
-        ->required()
-        ->maxLength(255),
+                    Forms\Components\TextInput::make('sumber_dana')
+                        ->label('Sumber / Pengirim Dana')
+                        ->placeholder('Contoh: Bank BCA, Transfer Kantor Pusat...')
+                        ->required()
+                        ->maxLength(255),
 
-        Forms\Components\TextInput::make('jumlah')
-        ->label('Jumlah Kas Masuk (Rp)')
-        ->prefix('Rp')
-        ->required()
-        ->integer()
-        ->minValue(1),
+                    Forms\Components\TextInput::make('jumlah')
+                        ->label('Jumlah Kas Masuk (Rp)')
+                        ->prefix('Rp')
+                        ->required()
+                        ->integer()
+                        ->minValue(1),
 
-        // REVISI NYATA: Menambahkan ->required() agar user wajib mengisi Uraian/Keterangan
-        Forms\Components\Textarea::make('keterangan')
-        ->label('Uraian / Keterangan')
-        ->placeholder('Contoh: Penerimaan modal operasional bulan Juni...')
-        ->required()
-        ->rows(3)
-        ->columnSpanFull(),
+                    Forms\Components\Textarea::make('keterangan')
+                        ->label('Uraian / Keterangan')
+                        ->placeholder('Contoh: Penerimaan modal operasional bulan Juni...')
+                        ->required()
+                        ->rows(3)
+                        ->columnSpanFull(),
 
-        Forms\Components\TextInput::make('dibuat_oleh')
-        ->label('Nama Pembuat')
-        ->default(fn() => auth()->user()?->name ?? '')
-        ->maxLength(100),
-        ]),
+                    Forms\Components\TextInput::make('dibuat_oleh')
+                        ->label('Nama Pembuat')
+                        ->default(fn() => auth()->user()?->name ?? '')
+                        ->maxLength(100),
+                ]),
         ]);
     }
 
@@ -115,10 +127,18 @@ class CashReceiptResource extends Resource
                         Forms\Components\Select::make('bulan')
                             ->label('Bulan')
                             ->options([
-                                1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
-                                4 => 'April',   5 => 'Mei',      6 => 'Juni',
-                                7 => 'Juli',    8 => 'Agustus',  9 => 'September',
-                                10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+                                1 => 'Januari',
+                                2 => 'Februari',
+                                3 => 'Maret',
+                                4 => 'April',
+                                5 => 'Mei',
+                                6 => 'Juni',
+                                7 => 'Juli',
+                                8 => 'Agustus',
+                                9 => 'September',
+                                10 => 'Oktober',
+                                11 => 'November',
+                                12 => 'Desember',
                             ])
                             ->default(now()->month),
                         Forms\Components\Select::make('tahun')
@@ -132,7 +152,7 @@ class CashReceiptResource extends Resource
                     ->query(function ($query, array $data) {
                         if (filled($data['bulan']) && filled($data['tahun'])) {
                             $query->whereYear('tanggal', $data['tahun'])
-                                  ->whereMonth('tanggal', $data['bulan']);
+                                ->whereMonth('tanggal', $data['bulan']);
                         }
                     }),
             ])
