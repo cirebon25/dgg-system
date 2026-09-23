@@ -39,11 +39,14 @@ class ArchiveAllData extends Page
         $this->activeDeployment = Deployment::count();
         $this->activeCustomer   = Customer::count();
 
+        // Mengambil data customer yang di-soft delete beserta mesin dan harga MRC-nya
         $this->archivedCustomers = Customer::onlyTrashed()
             ->with([
                 'technician',
                 'rayon',
-                'machines' => fn($q) => $q->withTrashed()
+                'machines' => fn($q) => $q->withTrashed()->with([
+                    'mrcContracts' => fn($query) => $query->where('aktif', 1)
+                ])
             ])
             ->get();
     }
@@ -78,8 +81,15 @@ class ArchiveAllData extends Page
         ];
     }
 
+    // Sembunyikan dari menu sidebar navigasi
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
+    // Blokir akses ke halaman ini untuk semua pengguna
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasRole(['admin']) ?? false;
+        return false;
     }
 }

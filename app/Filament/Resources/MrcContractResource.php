@@ -157,6 +157,7 @@ class MrcContractResource extends Resource
                     ->date('d/m/Y'),
             ])
             ->headerActions([
+                // Button existing: Cetak Tagihan per Bulan/Tahun
                 Tables\Actions\Action::make('cetakTagihan')
                     ->label('Cetak Tagihan MRC')
                     ->icon('heroicon-o-printer')
@@ -187,6 +188,13 @@ class MrcContractResource extends Resource
                             ->default(date('Y')),
                     ])
                     ->action(fn(array $data) => redirect()->route('mrc.tagihan', $data)),
+
+                // Tombol Baru: Cetak Semua Data Kontrak MRC
+                Tables\Actions\Action::make('cetakSemua')
+                    ->label('Cetak Semua Data')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('info')
+                    ->action(fn() => redirect()->route('mrc.cetak-semua')),
 
                 Tables\Actions\CreateAction::make(),
             ])

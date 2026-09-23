@@ -21,35 +21,28 @@ class EditMachineReplacement extends Page implements HasForms
     protected static ?string $navigationLabel = 'Edit Rolling';
     protected static ?string $title           = 'Edit Riwayat Rolling Unit';
     protected static ?string $navigationGroup = 'Transaksi';
-    protected static string  $view            = 'filament.pages.edit-machine-replacement';
+    protected static string $view             = 'filament.pages.edit-machine-replacement';
 
-    // ✅ TAMBAH PROPERTY INI - Untuk terima parameter dari URL
     public ?int $id = null;
-
     public ?MachineReplacement $replacement = null;
     public ?array $data = [];
 
     public function mount(): void
     {
-        $id = request()->query('id');
+        $id = request()->query('id') ?? $this->id;
 
         if (!$id) {
             Notification::make()
-                ->title('✅ Data Rolling Berhasil Diperbarui!')
-                ->body("Mesin Lama: {$this->replacement->oldMachine->serial_number}\nMesin Baru: {$this->replacement->newMachine->serial_number}")
-                ->success()
-                ->duration(5000)  // Tampilkan 5 detik
+                ->title('❌ Error')
+                ->body('ID Rolling tidak ditemukan pada URL.')
+                ->danger()
                 ->send();
 
-            // Tunggu sebentar sebelum redirect
-            sleep(2);
-
-            // Redirect kembali
             $this->redirect(route('filament.admin.pages.ganti-mesin'), navigate: true);
+            return;
         }
 
         try {
-            // ✅ Pastikan with() eager load semua relasi
             $this->replacement = MachineReplacement::with([
                 'customer',
                 'oldMachine',
@@ -57,17 +50,22 @@ class EditMachineReplacement extends Page implements HasForms
                 'technician',
             ])->findOrFail($id);
 
+            $this->id = $this->replacement->id;
+
             $this->form->fill([
                 'tanggal'             => $this->replacement->tanggal,
                 'keterangan'          => $this->replacement->keterangan,
                 'counter_bw_final'    => $this->replacement->counter_bw_final,
                 'counter_color_final' => $this->replacement->counter_color_final,
+                'counter_bw_awal'     => $this->replacement->newMachine?->counter_bw ?? 0,
+                'counter_color_awal'  => $this->replacement->newMachine?->counter_color ?? 0,
             ]);
         } catch (\Exception $e) {
             Notification::make()
                 ->title('❌ Error: ' . $e->getMessage())
                 ->danger()
                 ->send();
+
             $this->redirect(route('filament.admin.pages.ganti-mesin'));
         }
     }
@@ -171,17 +169,14 @@ class EditMachineReplacement extends Page implements HasForms
         try {
             $data = $this->form->getState();
 
-            // ✅ DEBUG - Log data yang dikirim
             \Log::info('EditMachineReplacement - Data yang dikirim:', $data);
             \Log::info('EditMachineReplacement - Replacement ID:', ['id' => $this->replacement->id]);
 
             DB::transaction(function () use ($data) {
-                // Cek apakah replacement ada
                 if (!$this->replacement) {
                     throw new \Exception('Replacement data tidak ditemukan');
                 }
 
-                // ✅ Update record machine_replacements
                 $updated_mr = $this->replacement->update([
                     'tanggal'             => $data['tanggal'],
                     'keterangan'          => $data['keterangan'],
@@ -190,7 +185,6 @@ class EditMachineReplacement extends Page implements HasForms
                 ]);
                 \Log::info('Machine Replacement updated:', ['result' => $updated_mr]);
 
-                // ✅ Update counter mesin LAMA
                 if (!$this->replacement->oldMachine) {
                     throw new \Exception('Mesin lama tidak ditemukan');
                 }
@@ -201,7 +195,6 @@ class EditMachineReplacement extends Page implements HasForms
                 ]);
                 \Log::info('Old Machine updated');
 
-                // ✅ Update counter mesin BARU
                 if (!$this->replacement->newMachine) {
                     throw new \Exception('Mesin baru tidak ditemukan');
                 }
@@ -213,7 +206,6 @@ class EditMachineReplacement extends Page implements HasForms
                 \Log::info('New Machine updated');
             });
 
-            // Refresh data
             $this->replacement->refresh();
 
             Notification::make()
@@ -223,7 +215,6 @@ class EditMachineReplacement extends Page implements HasForms
                 ->duration(5000)
                 ->send();
 
-            // Redirect setelah notif muncul
             session()->flash('success', true);
             $this->redirect(route('filament.admin.pages.ganti-mesin'));
         } catch (\Exception $e) {

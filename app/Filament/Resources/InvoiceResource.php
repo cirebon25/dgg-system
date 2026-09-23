@@ -76,6 +76,20 @@ class InvoiceResource extends Resource
                     ->searchable()
                     ->preload(),
 
+                Forms\Components\TextInput::make('nominal')
+                    ->label('Nominal')
+                    ->numeric()
+                    ->prefix('Rp')
+                    ->required(),
+
+                Forms\Components\TextInput::make('nama_pengirim')
+                    ->label('Nama Pengirim')
+                    ->maxLength(255),
+
+                Forms\Components\TextInput::make('nama_penerima')
+                    ->label('Nama Penerima')
+                    ->maxLength(255),
+
                 // Centang status invoice di dalam form
                 Forms\Components\Toggle::make('is_received')
                     ->label('Invoice Sudah Diterima Konsumen')
@@ -111,6 +125,21 @@ class InvoiceResource extends Resource
                     ->label('Tanggal')
                     ->date('d/m/Y')
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('nominal')
+                    ->label('Nominal')
+                    ->money('IDR')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('nama_pengirim')
+                    ->label('Pengirim')
+                    ->searchable()
+                    ->placeholder('-'),
+
+                Tables\Columns\TextColumn::make('nama_penerima')
+                    ->label('Penerima')
+                    ->searchable()
+                    ->placeholder('-'),
 
                 // Kolom Icon/Badge status centang (bukan toggle interaktif di tabel)
                 Tables\Columns\IconColumn::make('is_received')

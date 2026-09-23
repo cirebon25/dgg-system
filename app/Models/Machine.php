@@ -88,4 +88,9 @@ class Machine extends Model
             default => $this->status,
         };
     }
+
+    public function mrcContracts()
+    {
+        return $this->hasMany(MrcContract::class, 'machine_id', 'id');
+    }
 }

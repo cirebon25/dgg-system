@@ -8,4 +8,11 @@ use Filament\Resources\Pages\EditRecord;
 class EditMrcLog extends EditRecord
 {
     protected static string $resource = MrcLogResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            \Filament\Actions\DeleteAction::make(),
+        ];
+    }
 }

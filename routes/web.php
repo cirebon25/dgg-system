@@ -27,6 +27,8 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\TechnicianStockPrintController;
 use App\Http\Controllers\InvoicePrintController;
 use App\Models\Invoice;
+use App\Http\Controllers\MrcMrcController;
+
 
 
 
@@ -316,3 +318,11 @@ Route::get('/admin/invoices/print-all', function (Request $request) {
     $invoices = Invoice::with('customer')->orderBy('tanggal', 'desc')->get();
     return view('invoices.print-all', ['invoices' => $invoices]);
 })->name('invoice.print-all')->middleware(['web', 'auth']);
+
+
+Route::get('/mrc/cetak-semua', [MrcController::class, 'cetakSemua'])->name('mrc.cetak-semua');
+
+
+Route::get('/mrc/rekap', [MrcController::class, 'cetak'])
+    ->name('mrc.rekap')
+    ->middleware(['auth']);
