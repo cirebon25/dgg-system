@@ -59,7 +59,7 @@ class PrintSparepartTransController extends Controller
         ])->find($replacementId);
 
         if (!$replacement) {
-            return 'Gagal memuat dokumen! Data Surat Jalan tidak ditemukan. Silakan ulangi proses rolling dari menu Ganti Mesin, Boss Rudi.';
+            return 'Gagal memuat dokumen! Data Surat Jalan tidak ditemukan. Silakan ulangi proses rolling dari menu Ganti Mesin';
         }
 
         return view('cetak.surat-jalan-rolling', [

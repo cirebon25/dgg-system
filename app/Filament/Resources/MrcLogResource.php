@@ -18,7 +18,7 @@ class MrcLogResource extends Resource
     protected static array $allowedRoles = ['admin'];
     protected static ?string $model = ServiceLog::class;
     protected static ?string $navigationIcon  = 'heroicon-o-document-chart-bar';
-    protected static ?string $navigationLabel = 'Rekap MRC';
+    protected static ?string $navigationLabel = 'Input MRC';
     protected static ?string $navigationGroup = 'MRC & Billing';
     protected static ?string $slug            = 'mrc-log';
     protected static ?int    $navigationSort  = 2;

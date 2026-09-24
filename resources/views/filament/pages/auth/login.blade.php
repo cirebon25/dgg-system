@@ -125,7 +125,7 @@
         <!-- Watermark Developer Rudi di Bawah Form -->
         <div class="mt-6 pt-4 border-t border-gray-800/80 text-center select-none">
             <span class="dev-watermark text-[10px] font-mono tracking-widest text-cyan-400 uppercase">
-                ⚡ DEVELOPER RUDI // DGG SYSTEM
+                DEVELOPER RUDI // DGG SYSTEM
             </span>
         </div>
 

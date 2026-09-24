@@ -73,7 +73,7 @@ class CetakSwapController extends Controller
         $payload = $request->query('payload');
 
         if (!$payload) {
-            return 'Gagal memuat dokumen! Data Surat Jalan kosong. Silakan ulangi proses rolling dari menu Ganti Mesin, Boss Rudi.';
+            return 'Gagal memuat dokumen! Data Surat Jalan kosong. Silakan ulangi proses rolling dari menu Ganti Mesin.';
         }
 
         try {
