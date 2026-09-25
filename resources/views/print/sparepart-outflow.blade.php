@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Daftar Ganti Part — Periode {{ $month }}/{{ $year }}</title>
+    <title>Daftar Ganti Part & Pengeluaran Part — Periode {{ $month }}/{{ $year }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -187,6 +187,12 @@
             padding-top: 4px;
         }
 
+        /* ── PEMISAH HALAMAN CETAK ── */
+        .page-break {
+            page-break-before: always;
+            break-before: page;
+        }
+
         @media print {
             body {
                 background: #fff;
@@ -226,6 +232,10 @@
 </head>
 
 <body>
+
+    {{-- ======================================================= --}}
+    {{-- HALAMAN 1 — DAFTAR GANTI PART                            --}}
+    {{-- ======================================================= --}}
 
     <div class="kop">
         <h1>DAFTAR GANTI PART</h1>
@@ -405,6 +415,153 @@
             </tbody>
         </table>
     @endif
+
+    <div class="signature-area">
+        <div class="signature-box">
+            <div class="lbl">
+                Cirebon, {{ \Carbon\Carbon::now()->locale('id')->isoFormat('D MMMM Y') }}
+            </div>
+            <div class="line">ADMIN GUDANG</div>
+        </div>
+    </div>
+
+    {{-- ======================================================= --}}
+    {{-- HALAMAN 2 — DAFTAR PENGELUARAN PART (Tgl 1 s/d 31)       --}}
+    {{-- Pakai data $groupedUsages yang sama, disusun harian.     --}}
+    {{-- ======================================================= --}}
+
+    <div class="kop page-break">
+        <h1>DAFTAR PENGELUARAN PART</h1>
+
+        <div class="sub-header-info">
+            <div class="periode-box">
+                Periode Tanggal 1 s/d {{ \Carbon\Carbon::create($year, $month, 1)->endOfMonth()->format('d') }}
+                — {{ \Carbon\Carbon::create(null, $month, 1)->locale('id')->isoFormat('MMMM Y') }}
+            </div>
+            <div class="rayon-box">
+                PT. DINAMIKA GLOBAL GEMILANG
+            </div>
+        </div>
+    </div>
+
+    @php
+        // Ratakan semua item dari seluruh rayon jadi satu koleksi, lalu urutkan per tanggal (1 s/d akhir bulan)
+        $allItemsFlat = collect($groupedUsages)->flatten(1);
+
+        $sortedByDate = $allItemsFlat->sortBy(function ($item) {
+            return $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('Y-m-d') : '9999-12-31';
+        });
+
+        $groupedByDate = $sortedByDate->groupBy(function ($item) {
+            return $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('Y-m-d') : 'Tanpa Tanggal';
+        });
+    @endphp
+
+    <!-- TABEL PENGELUARAN PART HARIAN -->
+    <table class="report-table">
+        <colgroup>
+            <col style="width: 65px;">
+            <col style="width: 160px;">
+            <col style="width: 90px;">
+            <col>
+            <col style="width: 70px;">
+            <col style="width: 130px;">
+        </colgroup>
+        <thead>
+            <tr class="h1">
+                <th>TANGGAL</th>
+                <th>NAMA CUSTOMER</th>
+                <th>NO SERI</th>
+                <th>NAMA PART KELUAR</th>
+                <th>JUMLAH</th>
+                <th>TEKNISI</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse ($groupedByDate as $tanggalKey => $itemsOnDate)
+                @php
+                    $tanggalLabel =
+                        $tanggalKey !== 'Tanpa Tanggal' ? \Carbon\Carbon::parse($tanggalKey)->format('d/m/Y') : '-';
+
+                    $rowsForDate = collect($itemsOnDate)->groupBy(function ($item) {
+                        return $item->serial_number . '_' . ($item->nama_customer ?? '-');
+                    });
+                @endphp
+
+                @foreach ($rowsForDate as $rowKey => $partsGroup)
+                    @php
+                        $first = $partsGroup->first();
+                        $combinedParts = $partsGroup->groupBy('nama_part')->map(function ($g) {
+                            $firstPart = $g->first();
+                            $qty = $g->sum(function ($item) {
+                                return $item->jumlah ?? ($item->qty ?? ($item->jumlah_part ?? 1));
+                            });
+                            $partName = strtoupper($firstPart->nama_part ?? '-');
+
+                            return [
+                                'label' =>
+                                    $qty > 1
+                                        ? "{$partName} <span class=\"part-qty-red\">({$qty})</span>"
+                                        : "{$partName}",
+                                'qty' => $qty,
+                            ];
+                        });
+
+                        $totalQtyRow = $combinedParts->sum('qty');
+                        $combinedPartsLabel = $combinedParts->pluck('label')->implode(', ');
+                    @endphp
+                    <tr>
+                        <td class="tc">{{ $tanggalLabel }}</td>
+                        <td class="tl font-bold">{{ $first->nama_customer ?? '-' }}</td>
+                        <td class="tc mono font-bold">{{ $first->serial_number ?? '-' }}</td>
+                        <td class="tl">
+                            <div class="part-list">{!! $combinedPartsLabel !!}</div>
+                        </td>
+                        <td class="tc part-qty-red" style="font-size: 11px;">{{ $totalQtyRow }}</td>
+                        <td class="tc" style="text-transform: uppercase;">
+                            {{ $first->nama_technician ?? ($first->teknisi ?? '-') }}
+                        </td>
+                    </tr>
+                @endforeach
+            @empty
+                <tr>
+                    <td colspan="6" class="tc" style="padding: 30px; color: #999; font-weight: bold;">
+                        Tidak ada data pengeluaran sparepart pada periode tanggal 1 s/d akhir bulan ini.
+                    </td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    {{-- @if (count($groupedUsages) > 0)
+        <!-- REKAP TOTAL PENGELUARAN PART (sama seperti rekap halaman 1) -->
+        <div class="recap-section-title">Rekapitulasi Total Pengeluaran Sparepart (Tgl 1 s/d
+            {{ \Carbon\Carbon::create($year, $month, 1)->endOfMonth()->format('d') }})</div>
+        <table class="recap-table">
+            <colgroup>
+                <col style="width: 50px;">
+                <col>
+                <col style="width: 120px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>NO</th>
+                    <th>NAMA SPAREPART</th>
+                    <th>TOTAL KELUAR</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php $no2 = 1; @endphp
+                @foreach ($sortedGlobalParts as $partName => $totalQty)
+                    <tr>
+                        <td class="tc">{{ $no2++ }}</td>
+                        <td class="tl font-bold">{{ $partName }}</td>
+                        <td class="tc part-qty-red" style="font-size: 11px;">{{ $totalQty }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif --}}
 
     <div class="signature-area">
         <div class="signature-box">
