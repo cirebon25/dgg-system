@@ -22,7 +22,7 @@ class SparepartResource extends Resource
 
     protected static ?string $model = Sparepart::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
+    protected static ?string $navigationIcon = 'heroicon-o-squares-plus';
     protected static ?string $navigationGroup = 'Master Data';
     protected static ?int $navigationSort = 3;
     // ===== GLOBAL SEARCH =====

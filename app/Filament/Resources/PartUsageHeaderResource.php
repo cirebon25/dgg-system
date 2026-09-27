@@ -25,7 +25,7 @@ class PartUsageHeaderResource extends Resource
     protected static ?string $navigationLabel = 'Pemakaian Part Ws';
     protected static ?string $pluralModelLabel = 'Pemakaian Part Teknisi';
     protected static ?string $modelLabel = 'Pemakaian Part';
-    protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
+    protected static ?string $navigationIcon = 'heroicon-o-Wrench';
     protected static ?string $navigationGroup = 'Transaksi';
 
     public static function form(Form $form): Form

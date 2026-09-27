@@ -109,14 +109,42 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 \Filament\View\PanelsRenderHook::SIDEBAR_FOOTER,
                 fn() => new \Illuminate\Support\HtmlString('
-        <div
-            class="flex items-center justify-center gap-x-2 px-6 py-3 border-t border-gray-100 dark:border-white/5 select-none pointer-events-none">
-            <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span class="text-[10px] tracking-wider font-medium uppercase text-gray-400 dark:text-gray-500 font-mono">
-                Developer RUDIANTO
-            </span>
-        </div>
-        ')
+                <style>
+                    /* 1. Background menu sidebar aktif menjadi kuning */
+                    .fi-sidebar-item.fi-active > a,
+                    .fi-sidebar-item.fi-active > button {
+                        background-color: #EAB308 !important;
+                        color: #000000 !important;
+                    }
+                    /* Warna teks dan ikon di dalam menu aktif menjadi hitam agar kontras */
+                    .fi-sidebar-item.fi-active span,
+                    .fi-sidebar-item.fi-active svg {
+                        color: #000000 !important;
+                    }
+
+                    /* 2. Custom Thin Scrollbar untuk Sidebar */
+                    aside .fi-sidebar-nav::-webkit-scrollbar {
+                        width: 4px;
+                    }
+                    aside .fi-sidebar-nav::-webkit-scrollbar-track {
+                        background: transparent;
+                    }
+                    aside .fi-sidebar-nav::-webkit-scrollbar-thumb {
+                        background: rgba(255, 255, 255, 0.1);
+                        border-radius: 4px;
+                    }
+                    aside .fi-sidebar-nav::-webkit-scrollbar-thumb:hover {
+                        background: rgba(255, 255, 255, 0.2);
+                    }
+                </style>
+                <div
+                    class="flex items-center justify-center gap-x-2 px-6 py-3 border-t border-gray-100 dark:border-white/5 select-none pointer-events-none">
+                    <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span class="text-[10px] tracking-wider font-medium uppercase text-gray-400 dark:text-gray-500 font-mono">
+                        Developer RUDIANTO
+                    </span>
+                </div>
+                ')
             );
     }
 }

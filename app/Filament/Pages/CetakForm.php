@@ -7,7 +7,7 @@ use Filament\Pages\Page;
 
 class CetakForm extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-printer';
+    protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static ?string $navigationLabel = 'Cetak Form';
     protected static ?string $navigationGroup = 'Pusat Cetak';
     protected static ?int $navigationSort = 1;

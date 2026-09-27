@@ -19,7 +19,7 @@ class PrintFormResource extends Resource
     protected static array $allowedRoles = ['admin', 'teknisi', 'admin_teknik'];
 
     protected static ?string $model = PrintForm::class;
-    protected static ?string $navigationIcon = 'heroicon-o-printer';
+    protected static ?string $navigationIcon = 'heroicon-o-archive-box';
     protected static ?string $navigationLabel = 'Upload Form Cetak baru';
     protected static ?string $navigationGroup = 'Pusat Cetak';
     protected static ?int $navigationSort = 1;

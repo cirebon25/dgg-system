@@ -24,7 +24,7 @@ class ServiceLogResource extends Resource
 
     protected static ?string $model = ServiceLog::class;
     protected static ?string $navigationLabel = 'Input Servis Teknisi';
-    protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
+    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
     protected static ?string $navigationGroup = 'Transaksi';
 
     public static function form(Form $form): Form
