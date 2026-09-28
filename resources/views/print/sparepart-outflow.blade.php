@@ -162,6 +162,13 @@
             font-weight: bold;
         }
 
+        /* ── LIST CUSTOMER PER SPAREPART ── */
+        .customer-list {
+            line-height: 1.5;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
         /* ── TANDA TANGAN ── */
         .signature-area {
             display: flex;
@@ -378,14 +385,29 @@
     @if (count($groupedUsages) > 0)
         @php
             $globalAllParts = collect();
+            // Struktur: [NAMA PART => [NAMA CUSTOMER => total qty]]
+            $partCustomers = [];
+
             foreach ($groupedUsages as $items) {
                 foreach ($items as $item) {
                     $qty = $item->jumlah ?? ($item->qty ?? ($item->jumlah_part ?? 1));
                     $pName = strtoupper($item->nama_part ?? '-');
+                    $custName = trim($item->nama_customer ?? '-');
+                    if ($custName === '') {
+                        $custName = '-';
+                    }
+
                     $globalAllParts->put($pName, $globalAllParts->get($pName, 0) + $qty);
+
+                    $partCustomers[$pName][$custName] = ($partCustomers[$pName][$custName] ?? 0) + $qty;
                 }
             }
             $sortedGlobalParts = $globalAllParts->sortKeys();
+
+            ksort($partCustomers);
+            foreach ($partCustomers as $pKey => $custList) {
+                ksort($partCustomers[$pKey]);
+            }
         @endphp
 
         <!-- TABEL REKAP BERDASARKAN NAMA SPAREPART -->
@@ -410,6 +432,50 @@
                         <td class="tc">{{ $no++ }}</td>
                         <td class="tl font-bold">{{ $partName }}</td>
                         <td class="tc part-qty-red" style="font-size: 11px;">{{ $totalQty }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        <!-- TABEL LIST CUSTOMER PER SPAREPART (1 BULAN) -->
+        <div class="recap-section-title">
+            Daftar Customer Per Sparepart —
+            {{ \Carbon\Carbon::create(null, $month, 1)->locale('id')->isoFormat('MMMM Y') }}
+        </div>
+        <table class="recap-table">
+            <colgroup>
+                <col style="width: 50px;">
+                <col style="width: 220px;">
+                <col style="width: 90px;">
+                <col>
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>NO</th>
+                    <th>NAMA SPAREPART</th>
+                    <th>TOTAL KELUAR</th>
+                    <th>KELUAR DI CUSTOMER</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php $noCust = 1; @endphp
+                @foreach ($partCustomers as $partNameCust => $customerList)
+                    <tr>
+                        <td class="tc">{{ $noCust++ }}</td>
+                        <td class="tl font-bold part-list">{{ $partNameCust }}</td>
+                        <td class="tc part-qty-red" style="font-size: 11px;">{{ array_sum($customerList) }}</td>
+                        <td class="tl">
+                            <div class="customer-list">
+                                @foreach ($customerList as $custNameLoop => $custQtyLoop)
+                                    {{ $custNameLoop }}@if ($custQtyLoop > 1)
+                                        <span class="part-qty-red">({{ $custQtyLoop }})</span>
+                                    @endif
+                                    @if (!$loop->last)
+                                        ,
+                                    @endif
+                                @endforeach
+                            </div>
+                        </td>
                     </tr>
                 @endforeach
             </tbody>
