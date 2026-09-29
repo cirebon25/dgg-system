@@ -1,157 +1,177 @@
-<x-filament-panels::page>
+<x-filament::page>
+    <div class="space-y-6">
+        {{-- FILTER --}}
+        <x-filament::section>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div>
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Bulan</label>
+                    <x-filament::input.wrapper class="mt-1">
+                        <x-filament::input.select wire:model.live="month">
+                            @foreach ([
+                                '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
+                                '04' => 'April', '05' => 'Mei', '06' => 'Juni',
+                                '07' => 'Juli', '08' => 'Agustus', '09' => 'September',
+                                '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+                            ] as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </x-filament::input.select>
+                    </x-filament::input.wrapper>
+                </div>
 
-    {{-- FILTER --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <div>
-            <label class="text-xs text-slate-400 mb-1 block">Bulan</label>
-            <x-filament::input.wrapper>
-                <x-filament::input.select wire:model.live="month">
-                    @foreach (range(1, 12) as $m)
-                        <option value="{{ str_pad($m, 2, '0', STR_PAD_LEFT) }}">
-                            {{ \Carbon\Carbon::create(null, $m)->translatedFormat('F') }}
-                        </option>
-                    @endforeach
-                </x-filament::input.select>
-            </x-filament::input.wrapper>
-        </div>
-        <div>
-            <label class="text-xs text-slate-400 mb-1 block">Tahun</label>
-            <x-filament::input.wrapper>
-                <x-filament::input.select wire:model.live="year">
-                    @foreach (range(date('Y'), 2024) as $y)
-                        <option value="{{ $y }}">{{ $y }}</option>
-                    @endforeach
-                </x-filament::input.select>
-            </x-filament::input.wrapper>
-        </div>
-        <div>
-            <label class="text-xs text-slate-400 mb-1 block">Teknisi</label>
-            <x-filament::input.wrapper>
-                <x-filament::input.select wire:model.live="technician_id">
-                    <option value="">Semua Teknisi</option>
-                    @foreach ($this->technicians as $id => $nama)
-                        <option value="{{ $id }}">{{ $nama }}</option>
-                    @endforeach
-                </x-filament::input.select>
-            </x-filament::input.wrapper>
-        </div>
-    </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Tahun</label>
+                    <x-filament::input.wrapper class="mt-1">
+                        <x-filament::input.select wire:model.live="year">
+                            @for ($y = now()->year + 1; $y >= now()->year - 4; $y--)
+                                <option value="{{ $y }}">{{ $y }}</option>
+                            @endfor
+                        </x-filament::input.select>
+                    </x-filament::input.wrapper>
+                </div>
 
-    {{-- RINGKASAN --}}
-    @php
-        $totalMasuk = collect($historyData)
-            ->whereIn('tipe', ['MASUK', 'RETUR'])
-            ->sum('jumlah');
-        $totalKeluar = collect($historyData)
-            ->whereIn('tipe', ['PINJAM', 'PAKAI', 'DEPLOY'])
-            ->sum('jumlah');
-        $totalTrx = collect($historyData)->count();
-    @endphp
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div
-            style="background:#064e3b22;border:1px solid #065f46;border-radius:8px;padding:12px 16px;text-align:center">
-            <div style="font-size:11px;color:#6ee7b7">Total Masuk</div>
-            <div style="font-size:20px;font-weight:bold;color:#34d399">+{{ number_format($totalMasuk) }}</div>
-        </div>
-        <div
-            style="background:#4c051922;border:1px solid #9f1239;border-radius:8px;padding:12px 16px;text-align:center">
-            <div style="font-size:11px;color:#fca5a5">Total Keluar</div>
-            <div style="font-size:20px;font-weight:bold;color:#f87171">-{{ number_format($totalKeluar) }}</div>
-        </div>
-        <div style="background:#1e293b;border:1px solid #553a33;border-radius:8px;padding:12px 16px;text-align:center">
-            <div style="font-size:11px;color:#94a3b8">Total Transaksi</div>
-            <div style="font-size:20px;font-weight:bold;color:#e2e8f0">{{ $totalTrx }}</div>
-        </div>
-    </div>
-
-    {{-- TABEL --}}
-    <div style="background:#191c22;border:1px solid #334155;border-radius:12px;padding:16px">
-        @if (empty($historyData) || count($historyData) === 0)
-            <div style="text-align:center;padding:48px;color:#64748b">
-                <p>Tidak ada data mutasi untuk periode ini.</p>
+                <div>
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Teknisi</label>
+                    <x-filament::input.wrapper class="mt-1">
+                        <x-filament::input.select wire:model.live="technician_id">
+                            <option value="">Semua Teknisi</option>
+                            @foreach ($this->technicians as $id => $nama)
+                                <option value="{{ $id }}">{{ $nama }}</option>
+                            @endforeach
+                        </x-filament::input.select>
+                    </x-filament::input.wrapper>
+                </div>
             </div>
-        @else
-            <table style="width:100%;border-collapse:collapse;color:#e2e8f0;font-size:13px">
-                <thead>
-                    <tr style="background:#0f172a;color:#94a3b8;font-size:11px;text-transform:uppercase">
-                        <th style="padding:10px 12px;border-bottom:1px solid #554c33;text-align:left">Tanggal</th>
-                        <th style="padding:10px 12px;border-bottom:1px solid #334155;text-align:left">Nama Sparepart
-                        </th>
-                        <th style="padding:10px 12px;border-bottom:1px solid #334155;text-align:left">Tipe</th>
-                        <th style="padding:10px 12px;border-bottom:1px solid #334155;text-align:center">Jumlah</th>
-                        <th style="padding:10px 12px;border-bottom:1px solid #553339;text-align:left">Detail Alur</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($historyData as $item)
-                        @php
-                            $badgeStyle = match ($item->tipe) {
-                                'MASUK' => 'background:#064e3b;color:#6ee7b7;border:1px solid #065f46',
-                                'PINJAM' => 'background:#1e3a5f;color:#93c5fd;border:1px solid #1e40af',
-                                'PAKAI' => 'background:#4c0519;color:#fca5a5;border:1px solid #9f1239',
-                                'DEPLOY' => 'background:#431407;color:#fdba74;border:1px solid #9a3412',
-                                'ROLLING' => 'background:#1e293b;color:#94a3b8;border:1px solid #475569',
-                                'RETUR' => 'background:#422006;color:#fde68a;border:1px solid #92400e',
-                                default => 'background:#1e293b;color:#94a3b8;border:1px solid #475569',
-                            };
-                            $isKeluar = in_array($item->tipe, ['PINJAM', 'PAKAI', 'DEPLOY']);
-                            $isMasuk = in_array($item->tipe, ['MASUK', 'RETUR']);
-                        @endphp
-                        <tr style="border-bottom:1px solid #1e293b" onmouseover="this.style.background='#0f172a'"
-                            onmouseout="this.style.background='transparent'">
-                            <td style="padding:10px 12px;color:#dddee0">
-                                {{ \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y') }}
-                            </td>
-                            <td style="padding:10px 12px;font-weight:600">
-                                @if ($item->part === '-')
-                                    <span style="color:#475569;font-style:italic">—</span>
-                                @else
-                                    {{ $item->part }}
-                                @endif
-                            </td>
-                            <td style="padding:10px 12px">
-                                <span
-                                    style="{{ $badgeStyle }};padding:3px 8px;border-radius:4px;font-size:11px;font-weight:bold">
-                                    {{ $item->tipe }}
+        </x-filament::section>
+
+        {{-- RINGKASAN --}}
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <x-filament::section>
+                <div class="flex items-center gap-3">
+                    <x-filament::icon icon="heroicon-o-arrow-down-circle" class="h-8 w-8 text-success-500" />
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Stok Masuk ke Gudang</p>
+                        <p class="text-2xl font-bold text-success-600 dark:text-success-400">
+                            +{{ number_format($this->summary['masuk'], 0, ',', '.') }}
+                        </p>
+                    </div>
+                </div>
+                <p class="mt-2 text-xs text-gray-400">Barang baru dari supplier + part yang diretur teknisi</p>
+            </x-filament::section>
+
+            <x-filament::section>
+                <div class="flex items-center gap-3">
+                    <x-filament::icon icon="heroicon-o-arrow-right-circle" class="h-8 w-8 text-info-500" />
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Sedang Dipinjam Teknisi</p>
+                        <p class="text-2xl font-bold text-info-600 dark:text-info-400">
+                            {{ number_format($this->summary['dipinjamkan'], 0, ',', '.') }}
+                        </p>
+                    </div>
+                </div>
+                <p class="mt-2 text-xs text-gray-400">Masih milik perusahaan, belum tentu terpakai</p>
+            </x-filament::section>
+
+            <x-filament::section>
+                <div class="flex items-center gap-3">
+                    <x-filament::icon icon="heroicon-o-wrench-screwdriver" class="h-8 w-8 text-danger-500" />
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Terpakai Permanen</p>
+                        <p class="text-2xl font-bold text-danger-600 dark:text-danger-400">
+                            -{{ number_format($this->summary['terpakai'], 0, ',', '.') }}
+                        </p>
+                    </div>
+                </div>
+                <p class="mt-2 text-xs text-gray-400">Habis dipakai servis atau terpasang di mesin baru</p>
+            </x-filament::section>
+        </div>
+
+        {{-- LEGENDA --}}
+        <x-filament::section>
+            <x-slot name="heading">Keterangan Jenis Transaksi</x-slot>
+            <div class="flex flex-wrap gap-2">
+                @foreach (['MASUK', 'PINJAM', 'PAKAI', 'DEPLOY', 'RETUR', 'ROLLING'] as $tipe)
+                    @php($meta = $this->typeMeta($tipe))
+                    <x-filament::badge :color="$meta['color']" :icon="$meta['icon']">
+                        {{ $meta['label'] }}
+                    </x-filament::badge>
+                @endforeach
+            </div>
+        </x-filament::section>
+
+        {{-- RIWAYAT PER TANGGAL --}}
+        @forelse ($this->groupedHistory as $tanggal => $items)
+            <x-filament::section>
+                <x-slot name="heading">
+                    {{ \Illuminate\Support\Carbon::parse($tanggal)->translatedFormat('l, d F Y') }}
+                </x-slot>
+
+                <div class="divide-y divide-gray-100 dark:divide-white/10">
+                    @foreach ($items as $item)
+                        @php($meta = $this->typeMeta($item->tipe))
+                        <div class="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="flex items-start gap-3">
+                                <x-filament::icon
+                                    :icon="$meta['icon']"
+                                    class="mt-0.5 h-5 w-5 flex-shrink-0 text-{{ $meta['color'] }}-500"
+                                />
+                                <div>
+                                    <p class="font-semibold text-gray-900 dark:text-white">{{ $item->part }}</p>
+                                    <div class="mt-1 flex flex-wrap items-center gap-2">
+                                        <x-filament::badge :color="$meta['color']" size="sm">
+                                            {{ $meta['label'] }}
+                                        </x-filament::badge>
+                                        @if ($item->nama_teknisi && $item->nama_teknisi !== '-')
+                                            <x-filament::badge color="gray" size="sm" icon="heroicon-o-user">
+                                                {{ $item->nama_teknisi }}
+                                            </x-filament::badge>
+                                        @endif
+                                    </div>
+                                    @if ($item->keterangan)
+                                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $item->keterangan }}</p>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="text-right sm:min-w-[90px]">
+                                <span @class([
+                                    'text-lg font-bold',
+                                    'text-success-600 dark:text-success-400' => $meta['sign'] === '+',
+                                    'text-danger-600 dark:text-danger-400' => $meta['sign'] === '-',
+                                    'text-gray-400' => $meta['sign'] === '',
+                                ])>
+                                    @if ($item->jumlah > 0)
+                                        {{ $meta['sign'] }}{{ number_format($item->jumlah, 0, ',', '.') }}
+                                    @else
+                                        —
+                                    @endif
                                 </span>
-                            </td>
-                            <td style="padding:10px 12px;text-align:center;font-weight:bold">
-                                @if ($item->jumlah == 0)
-                                    <span style="color:#475569">—</span>
-                                @elseif($isKeluar)
-                                    <span style="color:#f87171">-{{ $item->jumlah }}</span>
-                                @elseif($isMasuk)
-                                    <span style="color:#34d399">+{{ $item->jumlah }}</span>
-                                @else
-                                    <span style="color:#94a3b8">{{ $item->jumlah }}</span>
-                                @endif
-                            </td>
-                            <td style="padding:10px 12px;color:#d2dae6;font-size:12px">
-                                @php
-                                    $detail = $item->detail;
-                                    $detail = preg_replace(
-                                        '/(TEKNISI:\s*[^|]+)/i',
-                                        '<span style="background:#a7f3d0;color:#000000;padding:2px 6px;border-radius:4px;font-weight:bold;font-size:11px">$1</span>',
-                                        $detail,
-                                    );
-                                    $detail = preg_replace(
-                                        '/(KE TEKNISI:\s*[^|]+)/i',
-                                        '<span style="background:#a7f3d0;color:#000000;padding:2px 6px;border-radius:4px;font-weight:bold;font-size:11px">$1</span>',
-                                        $detail,
-                                    );
-                                    $detail = preg_replace(
-                                        '/(RETUR DARI:\s*[^|]+)/i',
-                                        '<span style="background:#a7f3d0;color:#000000;padding:2px 6px;border-radius:4px;font-weight:bold;font-size:11px">$1</span>',
-                                        $detail,
-                                    );
-                                @endphp
-                                {!! $detail !!}
-                            </td>
-                        </tr>
+                            </div>
+                        </div>
                     @endforeach
-                </tbody>
-            </table>
+                </div>
+            </x-filament::section>
+        @empty
+            <x-filament::section>
+                <div class="py-10 text-center text-gray-400">
+                    <x-filament::icon icon="heroicon-o-inbox" class="mx-auto h-10 w-10" />
+                    <p class="mt-2">Tidak ada mutasi sparepart pada periode yang dipilih.</p>
+                </div>
+            </x-filament::section>
+        @endforelse
+
+        {{-- MUAT LEBIH BANYAK --}}
+        <div class="text-center text-sm text-gray-500 dark:text-gray-400">
+            Menampilkan {{ min($this->displayLimit, $this->summary['total_transaksi']) }}
+            dari {{ $this->summary['total_transaksi'] }} transaksi
+        </div>
+
+        @if ($this->hasMore)
+            <div class="text-center">
+                <x-filament::button wire:click="loadMore" color="gray" icon="heroicon-o-arrow-down">
+                    Muat {{ min(30, $this->historyData->count() - $this->displayLimit) }} Transaksi Lagi
+                </x-filament::button>
+            </div>
         @endif
     </div>
-
-</x-filament-panels::page>
+</x-filament::page>
