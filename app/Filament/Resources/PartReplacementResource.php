@@ -24,6 +24,7 @@ class PartReplacementResource extends Resource
     protected static ?string $navigationLabel = 'Riwayat Ganti Part Setiap Mesin';
     protected static ?string $navigationGroup = 'Gudang & Stok';
     protected static ?int $navigationSort = 9;
+    public static bool $shouldRegisterNavigation = false;
 
     public static function form(Form $form): Form
     {
