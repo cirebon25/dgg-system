@@ -7,6 +7,7 @@ use App\Models\MachineReturn;
 use App\Models\MachineWithdrawal;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class PrintWithdrawalReturController extends Controller
 {
@@ -35,10 +36,30 @@ class PrintWithdrawalReturController extends Controller
     }
 
     // dipindah dari: Route::get('/cetak-surat-retur/{id}', ...)->name('cetak.surat-retur')
+    // public function suratRetur($id)
+    // {
+    //     $retur = MachineReturn::with(['machine'])->findOrFail($id);
+    //     return view('print.surat-retur', compact('retur'));
+    // }
+
     public function suratRetur($id)
     {
-        $retur = MachineReturn::with(['machine'])->findOrFail($id);
-        return view('print.surat-retur', compact('retur'));
+        $query = MachineReturn::with('machine');
+
+        // UUID = batch dari form retur, angka = id satu retur (link lama)
+        if (Str::isUuid($id)) {
+            $query->where('batch_id', $id);
+        } else {
+            $query->whereKey($id);
+        }
+
+        $returns = $query->orderBy('created_at')->get();
+
+        abort_if($returns->isEmpty(), 404);
+
+        $tanggal = Carbon::parse($returns->first()->tanggal_retur)->toDateString();
+
+        return view('cetak.surat-retur-tanggal', compact('returns', 'tanggal'));
     }
 
     // dipindah dari: Route::get('/cetak-surat-retur-tanggal/{tanggal}', ...)->name('cetak.surat-retur-tanggal')

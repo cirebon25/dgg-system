@@ -227,10 +227,10 @@ Route::get('/sparepart/pemakaian-matrix', [PrintRekapSparepartController::class,
 
 
 
-Route::get('/cetak-surat-retur/{id}', function ($id) {
-    $retur = \App\Models\MachineReturn::with(['machine'])->findOrFail($id);
-    return view('print.surat-retur', compact('retur'));
-})->name('cetak.surat-retur')->middleware('auth');
+// Route::get('/cetak-surat-retur/{id}', function ($id) {
+//     $retur = \App\Models\MachineReturn::with(['machine'])->findOrFail($id);
+//     return view('print.surat-retur', compact('retur'));
+// })->name('cetak.surat-retur')->middleware('auth');
 
 Route::get('/cetak/part-per-mesin/{machine_id}', [PrintServiceController::class, 'partPerMesin'])
     ->name('cetak.part-per-mesin');
