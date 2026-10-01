@@ -99,17 +99,46 @@ class MachineResource extends Resource
                             ->default('Ready')
                             ->required(),
 
+                        // Forms\Components\Select::make('asal_mesin')
+                        //     ->label('Asal / Kondisi Mesin')
+                        //     ->options([
+                        //         'BARU'       => 'Baru',
+                        //         'EX LUAR'    => 'Ex Luar',
+                        //         'EX RENTAL'  => 'Ex Rental (Tarikan dari Customer)',
+                        //         'KANIBAL'    => 'Kanibal',
+                        //         'INVENTARIS' => 'Inventaris',
+                        //     ])
+                        //     ->default('EX LUAR')
+                        //     ->required(),
+
                         Forms\Components\Select::make('asal_mesin')
                             ->label('Asal / Kondisi Mesin')
-                            ->options([
-                                'BARU'       => 'Baru',
-                                'EX LUAR'    => 'Ex Luar',
-                                'EX RENTAL'  => 'Ex Rental (Tarikan dari Customer)',
-                                'KANIBAL'    => 'Kanibal',
-                                'INVENTARIS' => 'Inventaris',
-                            ])
+                            ->options(function () {
+                                $bawaan = ['BARU', 'EX LUAR', 'EX RENTAL', 'KANIBAL', 'INVENTARIS'];
+
+                                // Nilai custom yang sudah pernah dipakai mesin lain ikut muncul
+                                $custom = \App\Models\Machine::query()
+                                    ->whereNotNull('asal_mesin')
+                                    ->distinct()
+                                    ->pluck('asal_mesin')
+                                    ->all();
+
+                                $semua = array_values(array_unique(array_merge($bawaan, $custom)));
+
+                                return array_combine($semua, $semua);
+                            })
+                            ->getOptionLabelUsing(fn($value) => $value)
+                            ->searchable()
                             ->default('EX LUAR')
-                            ->required(),
+                            ->required()
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('nama')
+                                    ->label('Asal / Kondisi Baru')
+                                    ->placeholder('Contoh: EX PROYEK')
+                                    ->required()
+                                    ->maxLength(100),
+                            ])
+                            ->createOptionUsing(fn(array $data): string => strtoupper(trim($data['nama']))),
 
                         Forms\Components\Textarea::make('keterangan_awal')
                             ->label('Keterangan Mesin')

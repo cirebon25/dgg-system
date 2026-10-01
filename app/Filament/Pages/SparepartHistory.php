@@ -314,8 +314,8 @@ class SparepartHistory extends Page
                 'nama_teknisi' => $item->nama_technician ?? '-',
                 'keterangan'   => "Ganti mesin {$item->sn_lama} → {$item->sn_baru} milik {$item->nama_customer}",
             ]);
-
-        $this->historyData = $masuk
+        $this->historyData = collect()
+            ->concat($masuk)
             ->concat($pinjam)
             ->concat($pakai)
             ->concat($retur)

@@ -14,22 +14,12 @@
     <p class="text-sm text-gray-500 mb-4">{{ $description }}</p>
 
     @if ($href)
-        <x-filament::button
-            tag="a"
-            :href="$href"
-            target="_blank"
-            :icon="$buttonIcon"
-            :color="$color"
-        >
+        <x-filament::button tag="a" :href="$href" target="_blank" :icon="$buttonIcon" :color="$color">
             {{ $buttonLabel }}
         </x-filament::button>
     @else
-        <x-filament::button
-            type="button"
-            x-on:click="buka(@js($urlTemplate), @js($title))"
-            :icon="$buttonIcon"
-            :color="$color"
-        >
+        <x-filament::button type="button" :data-url="$urlTemplate" :data-title="$title"
+            x-on:click="buka($el.dataset.url, $el.dataset.title)" :icon="$buttonIcon" :color="$color">
             {{ $buttonLabel }}
         </x-filament::button>
     @endif

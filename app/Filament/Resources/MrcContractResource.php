@@ -22,7 +22,7 @@ class MrcContractResource extends Resource
 
     protected static ?string $model          = MrcContract::class;
     protected static ?string $navigationIcon  = 'heroicon-o-document-currency-dollar';
-    protected static ?string $navigationLabel = 'Pemakaian MRC';
+    protected static ?string $navigationLabel = 'Input Harga SKO';
     protected static ?string $navigationGroup = 'MRC & Billing';
     protected static ?int    $navigationSort  = 3;
 

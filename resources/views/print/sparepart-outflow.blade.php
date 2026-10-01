@@ -169,6 +169,51 @@
             text-transform: uppercase;
         }
 
+        /* ── TABEL MATRIX PART x TANGGAL ── */
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            table-layout: fixed;
+        }
+
+        .matrix-table th,
+        .matrix-table td {
+            border: 1px solid #000;
+            text-align: center;
+            padding: 3px 2px;
+            font-size: 8px;
+        }
+
+        .matrix-table thead th {
+            background: #ffea31;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .matrix-table th.part-name-col,
+        .matrix-table td.part-name-col {
+            text-align: left;
+            padding-left: 6px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .matrix-table tbody tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .matrix-table td.has-qty {
+            font-weight: 700;
+            color: #dc2626;
+            background-color: #fff5f5;
+        }
+
+        .matrix-table td.total-col {
+            font-weight: 700;
+            background-color: #fffde7;
+        }
+
         /* ── TANDA TANGAN ── */
         .signature-area {
             display: flex;
@@ -207,7 +252,8 @@
             }
 
             .report-table thead th,
-            .recap-table thead th {
+            .recap-table thead th,
+            .matrix-table thead th {
                 background: #ffea31 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
@@ -225,8 +271,16 @@
                 print-color-adjust: exact;
             }
 
-            .part-qty-red {
+            .part-qty-red,
+            .matrix-table td.has-qty {
                 color: #dc2626 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .matrix-table td.has-qty,
+            .matrix-table td.total-col {
+                background-color: #fff5f5 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -388,6 +442,9 @@
             // Struktur: [NAMA PART => [NAMA CUSTOMER => total qty]]
             $partCustomers = [];
 
+            // Struktur matrix: [NAMA PART => [tanggal(int) => total qty]]
+            $partDateMatrix = [];
+
             foreach ($groupedUsages as $items) {
                 foreach ($items as $item) {
                     $qty = $item->jumlah ?? ($item->qty ?? ($item->jumlah_part ?? 1));
@@ -400,6 +457,11 @@
                     $globalAllParts->put($pName, $globalAllParts->get($pName, 0) + $qty);
 
                     $partCustomers[$pName][$custName] = ($partCustomers[$pName][$custName] ?? 0) + $qty;
+
+                    if (!empty($item->tanggal)) {
+                        $dayNum = (int) \Carbon\Carbon::parse($item->tanggal)->format('j');
+                        $partDateMatrix[$pName][$dayNum] = ($partDateMatrix[$pName][$dayNum] ?? 0) + $qty;
+                    }
                 }
             }
             $sortedGlobalParts = $globalAllParts->sortKeys();
@@ -408,6 +470,9 @@
             foreach ($partCustomers as $pKey => $custList) {
                 ksort($partCustomers[$pKey]);
             }
+
+            ksort($partDateMatrix);
+            $daysInMonth = \Carbon\Carbon::create($year, $month, 1)->daysInMonth;
         @endphp
 
         <!-- TABEL REKAP BERDASARKAN NAMA SPAREPART -->
@@ -476,6 +541,46 @@
                                 @endforeach
                             </div>
                         </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        {{-- ======================================================= --}}
+        {{-- TABEL MATRIX: NAMA PART (BARIS) x TANGGAL 1 s/d 31 (KOLOM) --}}
+        {{-- ======================================================= --}}
+        <div class="recap-section-title page-break">
+            Matrix Pemakaian Sparepart Per Tanggal —
+            {{ \Carbon\Carbon::create(null, $month, 1)->locale('id')->isoFormat('MMMM Y') }}
+        </div>
+        <table class="matrix-table">
+            <colgroup>
+                <col style="width: 140px;">
+                @for ($d = 1; $d <= $daysInMonth; $d++)
+                    <col>
+                @endfor
+                <col style="width: 45px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th class="part-name-col">NAMA SPAREPART</th>
+                    @for ($d = 1; $d <= $daysInMonth; $d++)
+                        <th>{{ $d }}</th>
+                    @endfor
+                    <th>TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($partDateMatrix as $partNameMx => $dateQtyMap)
+                    <tr>
+                        <td class="part-name-col">{{ $partNameMx }}</td>
+                        @for ($d = 1; $d <= $daysInMonth; $d++)
+                            @php $qtyOnDay = $dateQtyMap[$d] ?? 0; @endphp
+                            <td class="{{ $qtyOnDay > 0 ? 'has-qty' : '' }}">
+                                {{ $qtyOnDay > 0 ? $qtyOnDay : '' }}
+                            </td>
+                        @endfor
+                        <td class="total-col">{{ array_sum($dateQtyMap) }}</td>
                     </tr>
                 @endforeach
             </tbody>

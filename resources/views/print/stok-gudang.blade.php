@@ -181,6 +181,8 @@
             font-weight: 600;
             font-size: 8.5px;
             display: inline-block;
+            white-space: normal;
+            word-break: break-word;
         }
 
         .badge-ready {
@@ -279,9 +281,16 @@
                 @php $totalUnitP1 = 0; @endphp
 
                 @foreach ($stocks as $s)
-                    @php
+                    {{-- @php
                         $statusDisplay = strtoupper($s->asal_mesin ?: $s->status);
                         $isHighlight = strtolower($s->asal_mesin) === 'kanibal';
+                        $totalUnitP1 += $s->total_unit;
+                        $kasetDisplay = $s->kaset_4_count > 0 ? $s->kaset_4_count : '';
+                    @endphp --}}
+                    @php
+                        $asal = strtoupper(trim($s->asal_mesin ?? ''));
+                        $statusDisplay = $asal !== '' ? $asal : strtoupper($s->status);
+                        $isHighlight = $asal === 'KANIBAL';
                         $totalUnitP1 += $s->total_unit;
                         $kasetDisplay = $s->kaset_4_count > 0 ? $s->kaset_4_count : '';
                     @endphp
@@ -482,7 +491,7 @@
                 @endphp
 
                 @foreach ($stocks as $s)
-                    @php
+                    {{-- @php
                         $isNewType = $s->tipe_model !== $prevTipe;
                         $statusLowerP2 = strtolower($s->status);
                         $badgeClass = match ($statusLowerP2) {
@@ -491,6 +500,19 @@
                             'inventaris' => 'badge-inventaris',
                             'ex luar' => 'badge-ex-luar',
                             default => 'badge-other',
+                        };
+                        $rowNum++;
+                    @endphp --}}
+
+                    @php
+                        $isNewType = $s->tipe_model !== $prevTipe;
+                        $asal = strtoupper(trim($s->asal_mesin ?? ''));
+                        $badgeClass = match ($asal) {
+                            'BARU' => 'badge-ready',
+                            'EX LUAR' => 'badge-ex-luar',
+                            'INVENTARIS' => 'badge-inventaris',
+                            'KANIBAL' => 'badge-perbaikan',
+                            default => 'badge-other', // EX RENTAL dan teks custom
                         };
                         $rowNum++;
                     @endphp
