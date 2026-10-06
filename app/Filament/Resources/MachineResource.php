@@ -187,6 +187,11 @@ class MachineResource extends Resource
                     ->icon('heroicon-o-plus'),
             ])
             ->columns([
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Tgl Input')
+                    ->dateTime('d/m/Y')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('serial_number')
                     ->label('Serial Number')
                     ->searchable()

@@ -94,7 +94,7 @@ class CashMutationResource extends Resource
 
                     Forms\Components\TextInput::make('pembuat')
                         ->label('Dibuat Oleh')
-                        ->default(' '),
+                        ->default(' YATI '),
 
                     Forms\Components\TextInput::make('pemeriksa')
                         ->label('Diketahui / Diperiksa Oleh')
