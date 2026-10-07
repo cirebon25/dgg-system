@@ -21,7 +21,7 @@ class PoPartResource extends Resource
     protected static array $allowedRoles = ['admin', 'admin_teknik'];
     protected static ?string $model = PoPart::class;
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
-    protected static ?string $navigationGroup = 'Master Data';
+    protected static ?string $navigationGroup = 'Gudang & Stok';
     protected static ?string $navigationLabel = 'PO ke Bandung';
     protected static ?string $modelLabel = 'PO Part';
     protected static ?int $navigationSort = 5;
