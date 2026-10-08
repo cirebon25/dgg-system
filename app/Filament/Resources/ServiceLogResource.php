@@ -148,10 +148,27 @@ class ServiceLogResource extends Resource
                             ->default(now())
                             ->required(),
 
-                        Forms\Components\Grid::make(2)->schema([
-                            Forms\Components\TimePicker::make('jam_mulai'),
-                            Forms\Components\TimePicker::make('jam_selesai'),
-                        ]),
+                        //     Forms\Components\Grid::make(2)->schema([
+                        //         Forms\Components\TimePicker::make('jam_mulai'),
+                        //         Forms\Components\TimePicker::make('jam_selesai'),
+                        //     ]),
+                    ])->columns(2),
+                Forms\Components\Section::make('Detail Teknisi & Perbaikan')
+                    ->schema([
+
+
+                        Forms\Components\Select::make('technician_id')
+                            ->relationship('technician', 'nama_technician')
+                            ->label('Teknisi Utama')
+                            ->required()
+                            ->live(),
+
+                        Forms\Components\TextInput::make('nama_teknisi_2')
+                            ->label('Teknisi Pembantu (Ketik Manual)')
+                            ->placeholder('Contoh: Rudi / Ahmad'),
+
+                        Forms\Components\Textarea::make('kerusakan')->required(),
+                        Forms\Components\Textarea::make('perbaikan')->required(),
                     ])->columns(2),
 
                 Forms\Components\Section::make('Pencatatan Counter')
@@ -314,11 +331,11 @@ class ServiceLogResource extends Resource
                                             $currentStock = $stock ? $stock->jumlah : 0;
 
                                             if ((int)$value > (int)$currentStock) {
-                                                $fail("❌ STOK TIDAK CUKUP! Saldo di tas teknisi hanya ada {$currentStock} pcs.");
+                                                $fail(" STOK TIDAK CUKUP! Saldo di tas teknisi hanya ada {$currentStock} pcs.");
                                             }
 
                                             if ((int)$value <= 0) {
-                                                $fail("❌ Minimal pemakaian adalah 1 pcs.");
+                                                $fail(" Minimal pemakaian adalah 1 pcs.");
                                             }
                                         },
                                     ]),
@@ -331,21 +348,21 @@ class ServiceLogResource extends Resource
                             ->reorderable(false),
                     ]),
 
-                Forms\Components\Section::make('Detail Teknisi & Perbaikan')
-                    ->schema([
-                        Forms\Components\Textarea::make('kerusakan')->required(),
-                        Forms\Components\Textarea::make('perbaikan')->required(),
+                // Forms\Components\Section::make('Detail Teknisi & Perbaikan')
+                //     ->schema([
+                //         Forms\Components\Textarea::make('kerusakan')->required(),
+                //         Forms\Components\Textarea::make('perbaikan')->required(),
 
-                        Forms\Components\Select::make('technician_id')
-                            ->relationship('technician', 'nama_technician')
-                            ->label('Teknisi Utama')
-                            ->required()
-                            ->live(),
+                //         Forms\Components\Select::make('technician_id')
+                //             ->relationship('technician', 'nama_technician')
+                //             ->label('Teknisi Utama')
+                //             ->required()
+                //             ->live(),
 
-                        Forms\Components\TextInput::make('nama_teknisi_2')
-                            ->label('Teknisi Pembantu (Ketik Manual)')
-                            ->placeholder('Contoh: Rudi / Ahmad'),
-                    ])->columns(2),
+                //         Forms\Components\TextInput::make('nama_teknisi_2')
+                //             ->label('Teknisi Pembantu (Ketik Manual)')
+                //             ->placeholder('Contoh: Rudi / Ahmad'),
+                //     ])->columns(2),
             ]);
     }
 

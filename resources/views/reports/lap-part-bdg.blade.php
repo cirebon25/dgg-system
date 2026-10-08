@@ -156,10 +156,10 @@
             <thead>
                 <tr>
                     <th class="center" style="width:34px;">No</th>
-                    <th style="width:115px;">No Part</th>
+                    <th style="width:60px;">No Part</th>
                     <th>Nama Part</th>
-                    <th style="width:95px;">Kode Part</th>
-                    <th class="center" style="width:70px;">Jumlah</th>
+                    <th style="width:70px;">Kode Part</th>
+                    <th class="center" style="width:50px;">Jumlah</th>
                 </tr>
             </thead>
             <tbody>

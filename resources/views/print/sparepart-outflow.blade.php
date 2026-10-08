@@ -243,6 +243,11 @@
         .page-break {
             page-break-before: always;
             break-before: page;
+            margin-top: 0;
+        }
+
+        thead {
+            display: table-header-group;
         }
 
         @media print {
@@ -476,7 +481,8 @@
         @endphp
 
         <!-- TABEL REKAP BERDASARKAN NAMA SPAREPART -->
-        <div class="recap-section-title">Rekapitulasi Total Pemakaian Sparepart</div>
+        {{-- <div class="recap-section-title">Rekapitulasi Total Pemakaian Sparepart</div> --}}
+        <div class="recap-section-title page-break">Rekapitulasi Total Pemakaian Sparepart</div>
         <table class="recap-table">
             <colgroup>
                 <col style="width: 50px;">
@@ -503,7 +509,7 @@
         </table>
 
         <!-- TABEL LIST CUSTOMER PER SPAREPART (1 BULAN) -->
-        <div class="recap-section-title">
+        <div class="recap-section-title page-break">
             Daftar Customer Per Sparepart —
             {{ \Carbon\Carbon::create(null, $month, 1)->locale('id')->isoFormat('MMMM Y') }}
         </div>
