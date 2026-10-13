@@ -43,7 +43,6 @@
             margin-bottom: 5px;
         }
 
-        /* Sub-Header Periode & Rayon */
         .sub-header-info {
             display: flex;
             justify-content: space-between;
@@ -72,7 +71,6 @@
             table-layout: fixed;
         }
 
-        /* Header Kuning Terang Sesuai Lampiran */
         .report-table thead tr.h1 th,
         .report-table thead tr.h2 th,
         .recap-table thead th {
@@ -99,7 +97,6 @@
             background: #f9f9f9;
         }
 
-        /* Pembatas visual jika ganti kelompok Rayon */
         .row-rayon-divider {
             background-color: #cbd5e1 !important;
             font-weight: 700;
@@ -116,7 +113,14 @@
             word-wrap: break-word;
         }
 
-        /* ── TABEL REKAP PER SPAREPART DI BAWAH ── */
+        /* ── BARIS TOTAL ── */
+        .row-grand-total td {
+            background-color: #fffde7 !important;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        /* ── TABEL REKAP ── */
         .recap-section-title {
             font-size: 12px;
             font-weight: 700;
@@ -139,13 +143,16 @@
             text-align: left;
         }
 
+        .font-bold {
+            font-weight: 700;
+        }
+
         .mono {
             font-family: 'Courier New', monospace;
             font-size: 9px;
             font-weight: 600;
         }
 
-        /* ── FORMAT LIST SPAREPART INTERNAL CELL ── */
         .part-list {
             line-height: 1.4;
             font-weight: bold;
@@ -162,7 +169,6 @@
             font-weight: bold;
         }
 
-        /* ── LIST CUSTOMER PER SPAREPART ── */
         .customer-list {
             line-height: 1.5;
             font-weight: 600;
@@ -210,6 +216,11 @@
         }
 
         .matrix-table td.total-col {
+            font-weight: 700;
+            background-color: #fffde7;
+        }
+
+        .matrix-table tfoot td {
             font-weight: 700;
             background-color: #fffde7;
         }
@@ -283,9 +294,14 @@
                 print-color-adjust: exact;
             }
 
-            .matrix-table td.has-qty,
-            .matrix-table td.total-col {
+            .matrix-table td.has-qty {
                 background-color: #fff5f5 !important;
+            }
+
+            .matrix-table td.total-col,
+            .matrix-table tfoot td,
+            .row-grand-total td {
+                background-color: #fffde7 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -300,6 +316,76 @@
 <body>
 
     {{-- ======================================================= --}}
+    {{-- NORMALISASI DATA (SATU SUMBER KEBENARAN UNTUK SEMUA TABEL) --}}
+    {{-- ======================================================= --}}
+    @php
+        /**
+         * Pisahkan nama part bersih & qty.
+         * - "TONER X BLACK (3 PCS)" => ["TONER X BLACK", 3]
+         * - Jika nama tidak memuat "(N PCS)", pakai kolom jumlah/qty/jumlah_part, default 1.
+         */
+        $parsePart = function ($item) {
+            $raw = strtoupper(trim((string) ($item->nama_part ?? '-')));
+
+            $qtyFromName = null;
+            if (preg_match('/\(\s*(\d+)\s*PCS\s*\)/i', $raw, $m)) {
+                $qtyFromName = (int) $m[1];
+            }
+
+            $clean = preg_replace('/\(\s*\d+\s*PCS\s*\)/i', '', $raw);
+            $clean = trim(preg_replace('/\s+/', ' ', $clean));
+            if ($clean === '') {
+                $clean = '-';
+            }
+
+            $explicit = $item->jumlah ?? ($item->qty ?? ($item->jumlah_part ?? null));
+            $qty = $qtyFromName ?? ($explicit !== null ? (int) $explicit : 1);
+
+            return [$clean, max(1, $qty)];
+        };
+
+        // Label part + qty merah bila > 1 (nama sudah di-escape)
+        $partLabel = function ($name, $qty) {
+            return e($name) . ($qty > 1 ? ' <span class="part-qty-red">(' . $qty . ')</span>' : '');
+        };
+
+        // Ratakan semua data jadi satu koleksi baris yang sudah bersih
+        $rows = collect();
+        foreach ($groupedUsages as $rayonName => $items) {
+            foreach ($items as $item) {
+                [$cleanName, $qty] = $parsePart($item);
+
+                $custName = trim((string) ($item->nama_customer ?? ''));
+
+                $rows->push(
+                    (object) [
+                        'rayon' => strtoupper((string) $rayonName),
+                        'date_key' => !empty($item->tanggal)
+                            ? \Carbon\Carbon::parse($item->tanggal)->format('Y-m-d')
+                            : null,
+                        'customer' => $custName === '' ? '-' : $custName,
+                        'tipe' => $item->tipe_model ?? '-',
+                        'serial' => $item->serial_number ?? '-',
+                        'part' => $cleanName,
+                        'qty' => $qty,
+                        'usage_bw' => $item->usage_bw ?? 0,
+                        'usage_color' => $item->usage_color ?? 0,
+                        'counter_bw' => $item->counter_bw ?? 0,
+                        'counter_color' => $item->counter_color ?? 0,
+                        'teknisi' => $item->nama_technician ?? ($item->teknisi ?? '-'),
+                    ],
+                );
+            }
+        }
+
+        $rows = $rows->sortBy(fn($r) => $r->date_key ?? '9999-12-31')->values();
+
+        $periodeLabel = \Carbon\Carbon::create(null, $month, 1)->locale('id')->isoFormat('MMMM Y');
+        $daysInMonth = \Carbon\Carbon::create($year, $month, 1)->daysInMonth;
+        $tanggalCetak = \Carbon\Carbon::now()->locale('id')->isoFormat('D MMMM Y');
+    @endphp
+
+    {{-- ======================================================= --}}
     {{-- HALAMAN 1 — DAFTAR GANTI PART                            --}}
     {{-- ======================================================= --}}
 
@@ -308,7 +394,7 @@
 
         <div class="sub-header-info">
             <div class="periode-box">
-                Periode Bulan: {{ \Carbon\Carbon::create(null, $month, 1)->locale('id')->isoFormat('MMMM Y') }}
+                Periode Bulan: {{ $periodeLabel }}
             </div>
             <div class="rayon-box">
                 PT. DINAMIKA GLOBAL GEMILANG
@@ -344,69 +430,45 @@
             </tr>
         </thead>
         <tbody>
-            @forelse ($groupedUsages as $rayonName => $items)
-
+            @forelse ($rows->groupBy('rayon') as $rayonName => $rayonRows)
                 <tr class="row-rayon-divider">
                     <td colspan="8" class="tl" style="padding: 6px 10px;">
-                        📍 RAYON: {{ strtoupper($rayonName) }}
+                        📍 RAYON: {{ $rayonName }}
                     </td>
                 </tr>
 
-                @php
-                    $sortedItems = collect($items)->sortBy(function ($item) {
-                        return $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('Y-m-d') : '9999-12-31';
-                    });
-
-                    $groupedBySerialAndDate = $sortedItems->groupBy(function ($item) {
-                        return $item->serial_number .
-                            '_' .
-                            ($item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('Ymd') : 'nodate');
-                    });
-                @endphp
-
-                @foreach ($groupedBySerialAndDate as $combinedKey => $partsGroup)
+                @foreach ($rayonRows->groupBy(fn($r) => $r->serial . '_' . ($r->date_key ?? 'nodate')) as $partsGroup)
                     @php
                         $first = $partsGroup->first();
+
+                        // Gabung part yang namanya sama (qty dijumlahkan)
                         $combinedParts = $partsGroup
-                            ->groupBy('nama_part')
-                            ->map(function ($g) {
-                                $firstPart = $g->first();
-
-                                // Mengambil nilai kuantitas dari berbagai kemungkinan nama kolom data
-                                $qty = $g->sum(function ($item) {
-                                    return $item->jumlah ?? ($item->qty ?? ($item->jumlah_part ?? 1));
-                                });
-
-                                $partName = strtoupper($firstPart->nama_part ?? '-');
-
-                                return $qty > 1
-                                    ? "{$partName} <span class=\"part-qty-red\">({$qty})</span>"
-                                    : "{$partName}";
-                            })
+                            ->groupBy('part')
+                            ->map(fn($g, $name) => $partLabel($name, $g->sum('qty')))
                             ->implode(', ');
                     @endphp
                     <tr>
                         <td class="tc">
-                            {{ $first->tanggal ? \Carbon\Carbon::parse($first->tanggal)->format('d/m/Y') : '-' }}
+                            {{ $first->date_key ? \Carbon\Carbon::parse($first->date_key)->format('d/m/Y') : '-' }}
                         </td>
 
-                        <td class="tl font-bold">{{ $first->nama_customer ?? '-' }}</td>
+                        <td class="tl font-bold">{{ $first->customer }}</td>
 
-                        <td class="tc">{{ $first->tipe_model ?? '-' }}</td>
+                        <td class="tc">{{ $first->tipe }}</td>
 
-                        <td class="tc mono font-bold">{{ $first->serial_number ?? '-' }}</td>
+                        <td class="tc mono font-bold">{{ $first->serial }}</td>
 
                         <td class="tl">
                             <div class="part-list">{!! $combinedParts !!}</div>
                         </td>
 
                         <td class="tc mono">
-                            @if (($first->usage_color ?? 0) > 0 || ($first->usage_bw ?? 0) > 0)
-                                @if (($first->usage_color ?? 0) > 0)
-                                    BW: {{ number_format($first->usage_bw ?? 0) }}<br><span class="text-cl-blue">CL:
+                            @if ($first->usage_color > 0 || $first->usage_bw > 0)
+                                @if ($first->usage_color > 0)
+                                    BW: {{ number_format($first->usage_bw) }}<br><span class="text-cl-blue">CL:
                                         {{ number_format($first->usage_color) }}</span>
                                 @else
-                                    {{ number_format($first->usage_bw ?? 0) }}
+                                    {{ number_format($first->usage_bw) }}
                                 @endif
                             @else
                                 -
@@ -414,12 +476,12 @@
                         </td>
 
                         <td class="tc mono" style="background-color: #fffde7;">
-                            @if (($first->counter_color ?? 0) > 0 || ($first->counter_bw ?? 0) > 0)
-                                @if (($first->counter_color ?? 0) > 0)
-                                    BW: {{ number_format($first->counter_bw ?? 0) }}<br><span class="text-cl-blue">CL:
+                            @if ($first->counter_color > 0 || $first->counter_bw > 0)
+                                @if ($first->counter_color > 0)
+                                    BW: {{ number_format($first->counter_bw) }}<br><span class="text-cl-blue">CL:
                                         {{ number_format($first->counter_color) }}</span>
                                 @else
-                                    {{ number_format($first->counter_bw ?? 0) }}
+                                    {{ number_format($first->counter_bw) }}
                                 @endif
                             @else
                                 -
@@ -427,7 +489,7 @@
                         </td>
 
                         <td class="tc" style="text-transform: uppercase;">
-                            {{ $first->nama_technician ?? ($first->teknisi ?? '-') }}
+                            {{ $first->teknisi }}
                         </td>
                     </tr>
                 @endforeach
@@ -441,47 +503,34 @@
         </tbody>
     </table>
 
-    @if (count($groupedUsages) > 0)
+    @if ($rows->isNotEmpty())
         @php
-            $globalAllParts = collect();
-            // Struktur: [NAMA PART => [NAMA CUSTOMER => total qty]]
-            $partCustomers = [];
+            // [NAMA PART => total qty]
+            $sortedGlobalParts = $rows->groupBy('part')->map(fn($g) => $g->sum('qty'))->sortKeys();
 
-            // Struktur matrix: [NAMA PART => [tanggal(int) => total qty]]
-            $partDateMatrix = [];
+            // [NAMA PART => [NAMA CUSTOMER => total qty]]
+            $partCustomers = $rows
+                ->groupBy('part')
+                ->map(fn($g) => $g->groupBy('customer')->map(fn($c) => $c->sum('qty'))->sortKeys())
+                ->sortKeys();
 
-            foreach ($groupedUsages as $items) {
-                foreach ($items as $item) {
-                    $qty = $item->jumlah ?? ($item->qty ?? ($item->jumlah_part ?? 1));
-                    $pName = strtoupper($item->nama_part ?? '-');
-                    $custName = trim($item->nama_customer ?? '-');
-                    if ($custName === '') {
-                        $custName = '-';
-                    }
+            // [NAMA PART => [tanggal(1..31) => total qty]]  (hanya baris yang punya tanggal)
+            $partDateMatrix = $rows
+                ->whereNotNull('date_key')
+                ->groupBy('part')
+                ->map(fn($g) => $g->groupBy(fn($r) => (int) substr($r->date_key, 8, 2))->map(fn($d) => $d->sum('qty')))
+                ->sortKeys();
 
-                    $globalAllParts->put($pName, $globalAllParts->get($pName, 0) + $qty);
-
-                    $partCustomers[$pName][$custName] = ($partCustomers[$pName][$custName] ?? 0) + $qty;
-
-                    if (!empty($item->tanggal)) {
-                        $dayNum = (int) \Carbon\Carbon::parse($item->tanggal)->format('j');
-                        $partDateMatrix[$pName][$dayNum] = ($partDateMatrix[$pName][$dayNum] ?? 0) + $qty;
-                    }
+            // Total per tanggal (baris paling bawah matrix)
+            $dayTotals = [];
+            foreach ($partDateMatrix as $map) {
+                foreach ($map as $day => $q) {
+                    $dayTotals[$day] = ($dayTotals[$day] ?? 0) + $q;
                 }
             }
-            $sortedGlobalParts = $globalAllParts->sortKeys();
-
-            ksort($partCustomers);
-            foreach ($partCustomers as $pKey => $custList) {
-                ksort($partCustomers[$pKey]);
-            }
-
-            ksort($partDateMatrix);
-            $daysInMonth = \Carbon\Carbon::create($year, $month, 1)->daysInMonth;
         @endphp
 
-        <!-- TABEL REKAP BERDASARKAN NAMA SPAREPART -->
-        {{-- <div class="recap-section-title">Rekapitulasi Total Pemakaian Sparepart</div> --}}
+        <!-- ═══ REKAPITULASI TOTAL PEMAKAIAN SPAREPART ═══ -->
         <div class="recap-section-title page-break">Rekapitulasi Total Pemakaian Sparepart</div>
         <table class="recap-table">
             <colgroup>
@@ -497,21 +546,23 @@
                 </tr>
             </thead>
             <tbody>
-                @php $no = 1; @endphp
                 @foreach ($sortedGlobalParts as $partName => $totalQty)
                     <tr>
-                        <td class="tc">{{ $no++ }}</td>
+                        <td class="tc">{{ $loop->iteration }}</td>
                         <td class="tl font-bold">{{ $partName }}</td>
                         <td class="tc part-qty-red" style="font-size: 11px;">{{ $totalQty }}</td>
                     </tr>
                 @endforeach
+                <tr class="row-grand-total">
+                    <td colspan="2" class="tc">TOTAL SELURUH SPAREPART</td>
+                    <td class="tc" style="font-size: 11px;">{{ $sortedGlobalParts->sum() }}</td>
+                </tr>
             </tbody>
         </table>
 
-        <!-- TABEL LIST CUSTOMER PER SPAREPART (1 BULAN) -->
+        <!-- ═══ DAFTAR CUSTOMER PER SPAREPART ═══ -->
         <div class="recap-section-title page-break">
-            Daftar Customer Per Sparepart —
-            {{ \Carbon\Carbon::create(null, $month, 1)->locale('id')->isoFormat('MMMM Y') }}
+            Daftar Customer Per Sparepart — {{ $periodeLabel }}
         </div>
         <table class="recap-table">
             <colgroup>
@@ -529,12 +580,11 @@
                 </tr>
             </thead>
             <tbody>
-                @php $noCust = 1; @endphp
                 @foreach ($partCustomers as $partNameCust => $customerList)
                     <tr>
-                        <td class="tc">{{ $noCust++ }}</td>
+                        <td class="tc">{{ $loop->iteration }}</td>
                         <td class="tl font-bold part-list">{{ $partNameCust }}</td>
-                        <td class="tc part-qty-red" style="font-size: 11px;">{{ array_sum($customerList) }}</td>
+                        <td class="tc part-qty-red" style="font-size: 11px;">{{ $customerList->sum() }}</td>
                         <td class="tl">
                             <div class="customer-list">
                                 @foreach ($customerList as $custNameLoop => $custQtyLoop)
@@ -552,12 +602,9 @@
             </tbody>
         </table>
 
-        {{-- ======================================================= --}}
-        {{-- TABEL MATRIX: NAMA PART (BARIS) x TANGGAL 1 s/d 31 (KOLOM) --}}
-        {{-- ======================================================= --}}
+        <!-- ═══ MATRIX: NAMA PART (BARIS) x TANGGAL (KOLOM) ═══ -->
         <div class="recap-section-title page-break">
-            Matrix Pemakaian Sparepart Per Tanggal —
-            {{ \Carbon\Carbon::create(null, $month, 1)->locale('id')->isoFormat('MMMM Y') }}
+            Matrix Pemakaian Sparepart Per Tanggal — {{ $periodeLabel }}
         </div>
         <table class="matrix-table">
             <colgroup>
@@ -586,25 +633,33 @@
                                 {{ $qtyOnDay > 0 ? $qtyOnDay : '' }}
                             </td>
                         @endfor
-                        <td class="total-col">{{ array_sum($dateQtyMap) }}</td>
+                        <td class="total-col">{{ $dateQtyMap->sum() }}</td>
                     </tr>
                 @endforeach
             </tbody>
+            <tfoot>
+                <tr>
+                    <td class="part-name-col">TOTAL PER TANGGAL</td>
+                    @for ($d = 1; $d <= $daysInMonth; $d++)
+                        <td>{{ ($dayTotals[$d] ?? 0) > 0 ? $dayTotals[$d] : '' }}</td>
+                    @endfor
+                    <td>{{ array_sum($dayTotals) }}</td>
+                </tr>
+            </tfoot>
         </table>
     @endif
 
     <div class="signature-area">
         <div class="signature-box">
             <div class="lbl">
-                Cirebon, {{ \Carbon\Carbon::now()->locale('id')->isoFormat('D MMMM Y') }}
+                Cirebon, {{ $tanggalCetak }}
             </div>
             <div class="line">ADMIN GUDANG</div>
         </div>
     </div>
 
     {{-- ======================================================= --}}
-    {{-- HALAMAN 2 — DAFTAR PENGELUARAN PART (Tgl 1 s/d 31)       --}}
-    {{-- Pakai data $groupedUsages yang sama, disusun harian.     --}}
+    {{-- HALAMAN 2 — DAFTAR PENGELUARAN PART (Tgl 1 s/d akhir)    --}}
     {{-- ======================================================= --}}
 
     <div class="kop page-break">
@@ -612,27 +667,13 @@
 
         <div class="sub-header-info">
             <div class="periode-box">
-                Periode Tanggal 1 s/d {{ \Carbon\Carbon::create($year, $month, 1)->endOfMonth()->format('d') }}
-                — {{ \Carbon\Carbon::create(null, $month, 1)->locale('id')->isoFormat('MMMM Y') }}
+                Periode Tanggal 1 s/d {{ $daysInMonth }} — {{ $periodeLabel }}
             </div>
             <div class="rayon-box">
                 PT. DINAMIKA GLOBAL GEMILANG
             </div>
         </div>
     </div>
-
-    @php
-        // Ratakan semua item dari seluruh rayon jadi satu koleksi, lalu urutkan per tanggal (1 s/d akhir bulan)
-        $allItemsFlat = collect($groupedUsages)->flatten(1);
-
-        $sortedByDate = $allItemsFlat->sortBy(function ($item) {
-            return $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('Y-m-d') : '9999-12-31';
-        });
-
-        $groupedByDate = $sortedByDate->groupBy(function ($item) {
-            return $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('Y-m-d') : 'Tanpa Tanggal';
-        });
-    @endphp
 
     <!-- TABEL PENGELUARAN PART HARIAN -->
     <table class="report-table">
@@ -655,49 +696,32 @@
             </tr>
         </thead>
         <tbody>
-            @forelse ($groupedByDate as $tanggalKey => $itemsOnDate)
+            @forelse ($rows->groupBy(fn($r) => $r->date_key ?? 'Tanpa Tanggal') as $tanggalKey => $itemsOnDate)
                 @php
                     $tanggalLabel =
                         $tanggalKey !== 'Tanpa Tanggal' ? \Carbon\Carbon::parse($tanggalKey)->format('d/m/Y') : '-';
-
-                    $rowsForDate = collect($itemsOnDate)->groupBy(function ($item) {
-                        return $item->serial_number . '_' . ($item->nama_customer ?? '-');
-                    });
                 @endphp
 
-                @foreach ($rowsForDate as $rowKey => $partsGroup)
+                @foreach ($itemsOnDate->groupBy(fn($r) => $r->serial . '_' . $r->customer) as $partsGroup)
                     @php
                         $first = $partsGroup->first();
-                        $combinedParts = $partsGroup->groupBy('nama_part')->map(function ($g) {
-                            $firstPart = $g->first();
-                            $qty = $g->sum(function ($item) {
-                                return $item->jumlah ?? ($item->qty ?? ($item->jumlah_part ?? 1));
-                            });
-                            $partName = strtoupper($firstPart->nama_part ?? '-');
 
-                            return [
-                                'label' =>
-                                    $qty > 1
-                                        ? "{$partName} <span class=\"part-qty-red\">({$qty})</span>"
-                                        : "{$partName}",
-                                'qty' => $qty,
-                            ];
-                        });
-
-                        $totalQtyRow = $combinedParts->sum('qty');
-                        $combinedPartsLabel = $combinedParts->pluck('label')->implode(', ');
+                        // Gabung part sama (qty dijumlahkan), lalu hitung total baris dari qty yang sudah benar
+                        $mergedParts = $partsGroup->groupBy('part')->map(fn($g) => $g->sum('qty'));
+                        $totalQtyRow = $mergedParts->sum();
+                        $combinedPartsLabel = $mergedParts
+                            ->map(fn($qty, $name) => $partLabel($name, $qty))
+                            ->implode(', ');
                     @endphp
                     <tr>
                         <td class="tc">{{ $tanggalLabel }}</td>
-                        <td class="tl font-bold">{{ $first->nama_customer ?? '-' }}</td>
-                        <td class="tc mono font-bold">{{ $first->serial_number ?? '-' }}</td>
+                        <td class="tl font-bold">{{ $first->customer }}</td>
+                        <td class="tc mono font-bold">{{ $first->serial }}</td>
                         <td class="tl">
                             <div class="part-list">{!! $combinedPartsLabel !!}</div>
                         </td>
                         <td class="tc part-qty-red" style="font-size: 11px;">{{ $totalQtyRow }}</td>
-                        <td class="tc" style="text-transform: uppercase;">
-                            {{ $first->nama_technician ?? ($first->teknisi ?? '-') }}
-                        </td>
+                        <td class="tc" style="text-transform: uppercase;">{{ $first->teknisi }}</td>
                     </tr>
                 @endforeach
             @empty
@@ -707,43 +731,21 @@
                     </td>
                 </tr>
             @endforelse
+
+            @if ($rows->isNotEmpty())
+                <tr class="row-grand-total">
+                    <td colspan="4" class="tc">TOTAL PART KELUAR</td>
+                    <td class="tc" style="font-size: 11px;">{{ $rows->sum('qty') }}</td>
+                    <td></td>
+                </tr>
+            @endif
         </tbody>
     </table>
-
-    {{-- @if (count($groupedUsages) > 0)
-        <!-- REKAP TOTAL PENGELUARAN PART (sama seperti rekap halaman 1) -->
-        <div class="recap-section-title">Rekapitulasi Total Pengeluaran Sparepart (Tgl 1 s/d
-            {{ \Carbon\Carbon::create($year, $month, 1)->endOfMonth()->format('d') }})</div>
-        <table class="recap-table">
-            <colgroup>
-                <col style="width: 50px;">
-                <col>
-                <col style="width: 120px;">
-            </colgroup>
-            <thead>
-                <tr>
-                    <th>NO</th>
-                    <th>NAMA SPAREPART</th>
-                    <th>TOTAL KELUAR</th>
-                </tr>
-            </thead>
-            <tbody>
-                @php $no2 = 1; @endphp
-                @foreach ($sortedGlobalParts as $partName => $totalQty)
-                    <tr>
-                        <td class="tc">{{ $no2++ }}</td>
-                        <td class="tl font-bold">{{ $partName }}</td>
-                        <td class="tc part-qty-red" style="font-size: 11px;">{{ $totalQty }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @endif --}}
 
     <div class="signature-area">
         <div class="signature-box">
             <div class="lbl">
-                Cirebon, {{ \Carbon\Carbon::now()->locale('id')->isoFormat('D MMMM Y') }}
+                Cirebon, {{ $tanggalCetak }}
             </div>
             <div class="line">ADMIN GUDANG</div>
         </div>

@@ -16,8 +16,14 @@ class Sparepart extends Model
         'code_part',
         'no_part',
         'stok',
+        'stok_minimum',
+        'auto_order',
         'harga_beli',
         'keterangan',
+    ];
+
+    protected $casts = [
+        'auto_order' => 'boolean',
     ];
 
     // Helper: tampilkan nama lengkap + alias untuk dropdown
@@ -27,6 +33,14 @@ class Sparepart extends Model
             return "{$this->nama_sparepart} ({$this->nama_alias})";
         }
         return $this->nama_sparepart;
+    }
+
+    // Scope: stok <= stok minimum DAN ikut order otomatis
+    public function scopeStokMenipis($query)
+    {
+        return $query
+            ->where('auto_order', true)
+            ->whereColumn('stok', '<=', 'stok_minimum');
     }
 
     // --- RELASI ---
@@ -52,8 +66,13 @@ class Sparepart extends Model
             ->withTimestamps();
     }
 
-        public function technicianStocks()
-{
-    return $this->hasMany(\App\Models\TechnicianStock::class, 'sparepart_id');
-}
+    public function technicianStocks()
+    {
+        return $this->hasMany(\App\Models\TechnicianStock::class, 'sparepart_id');
     }
+
+    public function orderPartItems()
+    {
+        return $this->hasMany(\App\Models\OrderPartItem::class, 'sparepart_id');
+    }
+}

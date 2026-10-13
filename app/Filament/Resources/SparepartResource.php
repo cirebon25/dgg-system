@@ -10,8 +10,10 @@ use Filament\Resources\Resource;
 use App\Filament\Traits\HasRoleAccess;
 
 use Filament\Tables;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 use Maatwebsite\Excel\Facades\Excel;
 
 class SparepartResource extends Resource
@@ -82,6 +84,21 @@ class SparepartResource extends Resource
                             ->required()
                             ->default(0),
 
+                        // Batas stok minimum untuk Order Part otomatis
+                        Forms\Components\TextInput::make('stok_minimum')
+                            ->label('Stok Minimum')
+                            ->helperText('Di bawah/sama dengan angka ini, part masuk daftar order otomatis.')
+                            ->numeric()
+                            ->required()
+                            ->default(5),
+
+                        // Pengecualian: matikan untuk part yang jarang keluar
+                        Forms\Components\Toggle::make('auto_order')
+                            ->label('Ikut Order Otomatis')
+                            ->helperText('Matikan untuk part yang jarang terpakai (mis. setahun sekali), agar tidak muncul di draft Order Part.')
+                            ->default(true)
+                            ->inline(false),
+
                         Forms\Components\Textarea::make('keterangan')
                             ->label('Keterangan')
                             ->nullable()
@@ -132,6 +149,23 @@ class SparepartResource extends Resource
                     })
                     ->weight('bold')
                     ->sortable(),
+
+                TextColumn::make('stok_minimum')
+                    ->label('Min')
+                    ->sortable()
+                    ->toggleable(),
+
+                IconColumn::make('auto_order')
+                    ->label('Auto Order')
+                    ->boolean()
+                    ->sortable()
+                    ->toggleable(),
+            ])
+            ->filters([
+                Tables\Filters\TernaryFilter::make('auto_order')
+                    ->label('Order Otomatis')
+                    ->trueLabel('Ikut order otomatis')
+                    ->falseLabel('Dikecualikan'),
             ])
             ->headerActions([
                 Tables\Actions\Action::make('rekapKeluar')
@@ -244,6 +278,23 @@ class SparepartResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    // Pengecualian massal: pilih banyak part sekaligus
+                    Tables\Actions\BulkAction::make('matikanAutoOrder')
+                        ->label('Kecualikan dari Order Otomatis')
+                        ->icon('heroicon-o-bell-slash')
+                        ->color('gray')
+                        ->requiresConfirmation()
+                        ->action(fn(Collection $records) => $records->each->update(['auto_order' => false]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    Tables\Actions\BulkAction::make('aktifkanAutoOrder')
+                        ->label('Ikutkan ke Order Otomatis')
+                        ->icon('heroicon-o-bell')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->action(fn(Collection $records) => $records->each->update(['auto_order' => true]))
+                        ->deselectRecordsAfterCompletion(),
+
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
