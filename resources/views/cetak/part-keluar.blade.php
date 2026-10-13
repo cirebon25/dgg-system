@@ -4,127 +4,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Kebutuhan Part {{ $bulan }} {{ $tahun }}</title>
+    <title>Pencarian Part Keluar {{ $bulan }} {{ $tahun }}</title>
     <style>
         * {
             box-sizing: border-box;
         }
 
+        @page {
+            size: A4 landscape;
+            margin: 10mm;
+        }
+
         body {
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 13px;
-            color: #000;
-            margin: 30px;
-        }
-
-        .kop {
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-        .kop h2 {
-            margin: 0;
-            font-size: 18px;
-            letter-spacing: 1px;
-        }
-
-        .kop h4 {
-            margin: 4px 0 0;
-            font-weight: normal;
-            font-size: 14px;
-        }
-
-        .filter {
-            text-align: center;
-            font-size: 12px;
-            color: #333;
-            margin-top: 6px;
-        }
-
-        .garis {
-            border: 0;
-            border-top: 2px solid #000;
-            margin: 12px 0 18px;
-        }
-
-        .cust-title {
-            margin: 22px 0 6px;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        table.data {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        table.data th,
-        table.data td {
-            border: 1px solid #000;
-            padding: 5px 8px;
-        }
-
-        table.data th {
-            background: #e9e9e9;
-            text-align: center;
-        }
-
-        tr.part-head td {
-            background: #f0f0f0;
-            font-weight: bold;
-        }
-
-        tr.part-sub td {
-            background: #fafafa;
-            font-weight: bold;
-        }
-
-        table.data tfoot th {
-            background: #e9e9e9;
-        }
-
-        .center {
-            text-align: center;
-        }
-
-        .right {
-            text-align: right;
-        }
-
-        .grand {
-            margin-top: 20px;
-            text-align: right;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        .ttd {
-            width: 100%;
-            margin-top: 50px;
-            border-collapse: collapse;
-        }
-
-        .ttd td {
-            width: 50%;
-            text-align: center;
-            vertical-align: bottom;
-            height: 100px;
-            border: none;
-        }
-
-        .tgl-cetak {
-            margin-top: 25px;
             font-size: 11px;
-            color: #555;
+            color: #000;
+            margin: 20px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
 
         .toolbar {
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
 
         .toolbar button {
-            padding: 8px 18px;
-            font-size: 13px;
+            padding: 7px 16px;
+            font-size: 12px;
             cursor: pointer;
             border: 1px solid #333;
             background: #fff;
@@ -135,13 +41,126 @@
             background: #eee;
         }
 
+        .judul {
+            background: #1f4e79;
+            color: #fff;
+            font-weight: bold;
+            font-size: 13px;
+            padding: 6px 8px;
+        }
+
+        .part-block {
+            margin-bottom: 25px;
+        }
+
+        /* Kotak info: Nama Part | Tahun | Bulan | Total Qty */
+        table.info {
+            border-collapse: collapse;
+            margin: 0 0 14px;
+        }
+
+        table.info th {
+            background: #dbe5f1;
+            border: 1px solid #8ea9c8;
+            padding: 3px 8px;
+            font-size: 10px;
+        }
+
+        table.info td {
+            border: 1px solid #8ea9c8;
+            padding: 4px 8px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        table.info td.part {
+            background: #fff2cc;
+            text-align: left;
+            min-width: 280px;
+        }
+
+        table.info td.total {
+            background: #dbe5f1;
+        }
+
+        .kolom {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        .kolom .a {
+            width: 40%;
+        }
+
+        .kolom .b {
+            width: 60%;
+        }
+
+        .sub {
+            font-weight: bold;
+            font-size: 11px;
+            margin: 0 0 4px;
+        }
+
+        table.data {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table.data th {
+            background: #1f4e79;
+            color: #fff;
+            padding: 4px 6px;
+            font-size: 10px;
+            text-align: center;
+        }
+
+        table.data td {
+            padding: 3px 6px;
+            border-bottom: 1px solid #d9d9d9;
+        }
+
+        table.data tfoot td {
+            border-top: 2px solid #1f4e79;
+            font-weight: bold;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .right {
+            text-align: right;
+        }
+
+        .ns {
+            display: block;
+            font-size: 9px;
+            color: #555;
+        }
+
+        .tgl-cetak {
+            margin-top: 12px;
+            font-size: 10px;
+            color: #555;
+        }
+
         @media print {
             body {
-                margin: 15mm;
+                margin: 0;
             }
 
             .no-print {
                 display: none !important;
+            }
+
+            .part-block {
+                page-break-after: always;
+            }
+
+            .part-block:last-of-type {
+                page-break-after: auto;
             }
 
             table.data tr {
@@ -162,96 +181,103 @@
         <button onclick="window.close()">Tutup</button>
     </div>
 
-    <div class="kop">
-        <h2>LAPORAN KEBUTUHAN PART</h2>
-        <h4>Periode: {{ $bulan }} {{ $tahun }}</h4>
-        @if ($filterCustomer || $filterParts)
-            <div class="filter">
-                @if ($filterCustomer)
-                    Customer: <strong>{{ $filterCustomer }}</strong>
-                @endif
-                @if ($filterCustomer && $filterParts)
-                    &nbsp;|&nbsp;
-                @endif
-                @if ($filterParts)
-                    Part: <strong>{{ $filterParts }}</strong>
-                @endif
-            </div>
+    <div class="judul">
+        PENCARIAN PART KELUAR
+        @if ($filterCustomer)
+            &nbsp;|&nbsp; Customer: {{ $filterCustomer }}
         @endif
     </div>
+    <div style="height:10px"></div>
 
-    <hr class="garis">
+    @forelse ($perPart as $p)
+        <div class="part-block">
 
-    @forelse ($perCustomer as $c)
-        <div class="cust-title">{{ $loop->iteration }}. {{ $c->nama }}</div>
-
-        <table class="data">
-            <thead>
+            <table class="info">
                 <tr>
-                    <th style="width:40px">No</th>
-                    <th>No Seri</th>
-                    <th style="width:100px">Dipakai (x)</th>
-                    <th style="width:120px">Jumlah (unit)</th>
+                    <th>Nama Part</th>
+                    <th>Tahun</th>
+                    <th>Bulan</th>
+                    <th>Total Qty keluar</th>
                 </tr>
-            </thead>
-            <tbody>
-                @foreach ($c->parts as $p)
-                    <tr class="part-head">
-                        <td colspan="4">
-                            {{ $p->sparepart->nama_sparepart ?? '-' }}
-                            @if (!empty($p->sparepart->no_part))
-                                &nbsp;(No Part: {{ $p->sparepart->no_part }})
-                            @endif
-                        </td>
-                    </tr>
+                <tr>
+                    <td class="part">{{ $p->sparepart->nama_sparepart ?? '-' }}</td>
+                    <td>{{ $tahun }}</td>
+                    <td>{{ $bulan }}</td>
+                    <td class="total">{{ number_format($p->total) }}</td>
+                </tr>
+            </table>
 
-                    @foreach ($p->machines as $i => $m)
-                        <tr>
-                            <td class="center">{{ $i + 1 }}</td>
-                            <td>{{ $m->sn }}</td>
-                            <td class="center">{{ $m->kali }}</td>
-                            <td class="center">{{ number_format($m->total) }}</td>
-                        </tr>
-                    @endforeach
+            <div class="kolom">
 
-                    <tr class="part-sub">
-                        <td colspan="3" class="right">Subtotal {{ $p->sparepart->nama_sparepart ?? '-' }}</td>
-                        <td class="center">{{ number_format($p->total) }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
+                {{-- A. Keluar ke customer mana saja --}}
+                <div class="a">
+                    <div class="sub">A. KELUAR KE CUSTOMER MANA SAJA</div>
+                    <table class="data">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th style="width:60px">Total Qty</th>
+                                <th style="width:80px">Jumlah Transaksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($p->ringkas as $r)
+                                <tr>
+                                    <td>{{ $r->customer }}</td>
+                                    <td class="right">{{ number_format($r->total) }}</td>
+                                    <td class="right">{{ $r->transaksi }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                        @if ($p->ringkas->count() > 1)
+                            <tfoot>
+                                <tr>
+                                    <td>Total</td>
+                                    <td class="right">{{ number_format($p->total) }}</td>
+                                    <td class="right">{{ $p->transaksi->count() }}</td>
+                                </tr>
+                            </tfoot>
+                        @endif
+                    </table>
+                </div>
 
-            @if ($c->parts->count() > 1)
-                <tfoot>
-                    <tr>
-                        <th colspan="3" class="right">Total {{ $c->nama }}</th>
-                        <th class="center">{{ number_format($c->total) }}</th>
-                    </tr>
-                </tfoot>
-            @endif
-        </table>
+                {{-- B. Rincian transaksi --}}
+                <div class="b">
+                    <div class="sub">B. RINCIAN TRANSAKSI</div>
+                    <table class="data">
+                        <thead>
+                            <tr>
+                                <th style="width:80px">Tanggal</th>
+                                <th>Customer</th>
+                                <th style="width:50px">Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($p->transaksi as $t)
+                                <tr>
+                                    <td class="center">
+                                        {{ $t->tanggal ? \Carbon\Carbon::parse($t->tanggal)->format('d/m/Y') : '-' }}
+                                    </td>
+                                    <td>
+                                        {{ $t->customer }}
+                                        <span class="ns">NS: {{ $t->sn }}</span>
+                                    </td>
+                                    <td class="right">{{ number_format($t->qty) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
     @empty
-        <table class="data">
-            <tr>
-                <td class="center">Tidak ada part keluar pada periode ini.</td>
-            </tr>
-        </table>
+        <p style="text-align:center; margin-top:30px;">
+            Tidak ada part keluar pada {{ $bulan }} {{ $tahun }}.
+        </p>
     @endforelse
 
-    @if ($perCustomer->count() > 1)
-        <div class="grand">Total Keseluruhan: {{ number_format($grand) }} unit</div>
-    @endif
-
-    <table class="ttd">
-        <tr>
-            <td>Dibuat oleh,<br><br><br><br>( ____________________ )</td>
-            <td>Mengetahui,<br><br><br><br>( ____________________ )</td>
-        </tr>
-    </table>
-
-    <div class="tgl-cetak">
-        Dicetak: {{ now()->format('d-m-Y H:i') }}
-    </div>
+    <div class="tgl-cetak">Dicetak: {{ now()->format('d-m-Y H:i') }}</div>
 
 </body>
 

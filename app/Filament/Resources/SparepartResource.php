@@ -177,6 +177,7 @@ class SparepartResource extends Resource
                         Forms\Components\Select::make('month')
                             ->label('Bulan')
                             ->options([
+                                'all' => 'Satu Tahun Penuh',
                                 '01' => 'Januari',
                                 '02' => 'Februari',
                                 '03' => 'Maret',
@@ -192,18 +193,17 @@ class SparepartResource extends Resource
                             ])
                             ->required()
                             ->default(date('m')),
-
                         Forms\Components\Select::make('year')
                             ->label('Tahun')
                             ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
                             ->required()
                             ->default(date('Y')),
 
-                        Forms\Components\Select::make('customer_id')
-                            ->label('Customer (opsional)')
-                            ->options(fn() => \App\Models\Customer::orderBy('nama_customer')->pluck('nama_customer', 'id'))
-                            ->searchable()
-                            ->placeholder('Semua customer'),
+                        // Forms\Components\Select::make('customer_id')
+                        //     ->label('Customer (opsional)')
+                        //     ->options(fn() => \App\Models\Customer::orderBy('nama_customer')->pluck('nama_customer', 'id'))
+                        //     ->searchable()
+                        //     ->placeholder('Semua customer'),
 
                         // Bisa pilih lebih dari 1 part. Kosong = semua part.
                         Forms\Components\Select::make('sparepart_ids')
@@ -212,6 +212,12 @@ class SparepartResource extends Resource
                             ->multiple()
                             ->searchable()
                             ->placeholder('Semua part'),
+
+                        // Forms\Components\Select::make('customer_id')
+                        //     ->label('Customer (opsional)')
+                        //     ->options(fn() => \App\Models\Customer::orderBy('nama_customer')->pluck('nama_customer', 'id'))
+                        //     ->searchable()
+                        //     ->placeholder('Semua customer'),
                     ])
                     ->action(fn(array $data) => redirect()->route('part-keluar.cetak', array_filter($data))),
 
