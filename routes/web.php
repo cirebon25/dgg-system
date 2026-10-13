@@ -28,6 +28,8 @@ use App\Http\Controllers\TechnicianStockPrintController;
 use App\Http\Controllers\InvoicePrintController;
 use App\Models\Invoice;
 use App\Http\Controllers\MrcMrcController;
+use App\Http\Controllers\PartKeluarController;
+
 
 
 
@@ -326,3 +328,7 @@ Route::get('/mrc/cetak-semua', [MrcController::class, 'cetakSemua'])->name('mrc.
 Route::get('/mrc/rekap', [MrcController::class, 'cetak'])
     ->name('mrc.rekap')
     ->middleware(['auth']);
+
+
+Route::get('/cetak/part-keluar', [PartKeluarController::class, 'cetak'])
+    ->name('part-keluar.cetak');

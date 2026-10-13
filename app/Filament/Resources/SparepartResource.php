@@ -168,6 +168,53 @@ class SparepartResource extends Resource
                     ->falseLabel('Dikecualikan'),
             ])
             ->headerActions([
+                // ===== CETAK PART KELUAR BULANAN (dari Service Log) =====
+                Tables\Actions\Action::make('cetakPartKeluar')
+                    ->label('Cetak Part Keluar Bulanan')
+                    ->color('primary')
+                    ->icon('heroicon-o-printer')
+                    ->form([
+                        Forms\Components\Select::make('month')
+                            ->label('Bulan')
+                            ->options([
+                                '01' => 'Januari',
+                                '02' => 'Februari',
+                                '03' => 'Maret',
+                                '04' => 'April',
+                                '05' => 'Mei',
+                                '06' => 'Juni',
+                                '07' => 'Juli',
+                                '08' => 'Agustus',
+                                '09' => 'September',
+                                '10' => 'Oktober',
+                                '11' => 'November',
+                                '12' => 'Desember',
+                            ])
+                            ->required()
+                            ->default(date('m')),
+
+                        Forms\Components\Select::make('year')
+                            ->label('Tahun')
+                            ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
+                            ->required()
+                            ->default(date('Y')),
+
+                        Forms\Components\Select::make('customer_id')
+                            ->label('Customer (opsional)')
+                            ->options(fn() => \App\Models\Customer::orderBy('nama_customer')->pluck('nama_customer', 'id'))
+                            ->searchable()
+                            ->placeholder('Semua customer'),
+
+                        // Bisa pilih lebih dari 1 part. Kosong = semua part.
+                        Forms\Components\Select::make('sparepart_ids')
+                            ->label('Part (bisa pilih lebih dari 1)')
+                            ->options(fn() => static::getOptionsWithAlias())
+                            ->multiple()
+                            ->searchable()
+                            ->placeholder('Semua part'),
+                    ])
+                    ->action(fn(array $data) => redirect()->route('part-keluar.cetak', array_filter($data))),
+
                 Tables\Actions\Action::make('rekapKeluar')
                     ->label('Cetak Rekap Part Terpakai   Keluar')
                     ->color('danger')
