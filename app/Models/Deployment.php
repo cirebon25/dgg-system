@@ -30,18 +30,19 @@ class Deployment extends Model
     ];
 
     /**
-     * Logika Otomatis: Sinkronisasi Status Mesin, Lokasi, Teknisi & Auto Create Service Log
+     * Logika Otomatis: Sinkronisasi Status Mesin, Lokasi, Teknisi,
+     * Auto Create Service Log & Auto Create Kontrak MRC
      */
     protected static function booted()
     {
         // 1. SAAT DEPLOYMENT BARU DIBUAT (CREATE)
         static::created(function ($deployment) {
-            // A. UPDATE DATA MESIN (Status, Lokasi Customer, & Teknisi Penanggung Jawab)
+            // A. UPDATE DATA MESIN
             if ($deployment->machine) {
                 $deployment->machine->update([
                     'status'        => 'Rented',
-                    'customer_id'   => $deployment->customer_id,   // OTOMATIS TERISI
-                    'technician_id' => $deployment->technician_id, // OTOMATIS TERISI
+                    'customer_id'   => $deployment->customer_id,
+                    'technician_id' => $deployment->technician_id,
                 ]);
             }
 
@@ -59,28 +60,46 @@ class Deployment extends Model
                 'perbaikan'       => "INSTALASI UNIT BARU (RN) - NO KONTRAK: " . $deployment->no_kontrak,
                 'kerusakan'       => 'PEMASANGAN AWAL',
             ]);
+
+            // C. OTOMATIS BUAT KONTRAK MRC (DRAFT, admin lengkapi harga & kuota)
+            MrcContract::buatDraft(
+                $deployment->machine_id,
+                $deployment->customer_id,
+                $deployment->tanggal_instal,
+                'AUTO DARI DEPLOY - NO KONTRAK: ' . $deployment->no_kontrak
+            );
         });
 
         // 2. SAAT DATA DEPLOYMENT DIUBAH (UPDATE)
         static::updated(function ($deployment) {
             // Jika mesin diganti (Tukar Mesin lewat form Deploy)
             if ($deployment->wasChanged('machine_id')) {
-                // Mesin LAMA balik ke Gudang (Status Ready, Lokasi & Teknisi dihapus)
                 $oldMachineId = $deployment->getOriginal('machine_id');
+
+                // Mesin LAMA balik ke Gudang + kontraknya dinonaktifkan
                 if ($oldMachineId) {
                     Machine::find($oldMachineId)?->update([
                         'status'        => 'Ready',
                         'customer_id'   => null,
                         'technician_id' => null,
                     ]);
+
+                    MrcContract::nonaktifkanUntukMesin($oldMachineId);
                 }
 
-                // Mesin BARU dikirim ke Customer (Status Rented, Lokasi & Teknisi diisi)
+                // Mesin BARU dikirim ke Customer + dibuatkan kontrak draft
                 $deployment->machine?->update([
                     'status'        => 'Rented',
                     'customer_id'   => $deployment->customer_id,
                     'technician_id' => $deployment->technician_id,
                 ]);
+
+                MrcContract::buatDraft(
+                    $deployment->machine_id,
+                    $deployment->customer_id,
+                    now(),
+                    'AUTO DARI TUKAR MESIN - NO KONTRAK: ' . $deployment->no_kontrak
+                );
             }
 
             // Jika hanya Teknisi atau Customer yang berubah di form Deploy
@@ -89,6 +108,13 @@ class Deployment extends Model
                     'customer_id'   => $deployment->customer_id,
                     'technician_id' => $deployment->technician_id,
                 ]);
+
+                // Customer berubah -> samakan customer di kontrak aktif
+                if ($deployment->wasChanged('customer_id')) {
+                    MrcContract::where('machine_id', $deployment->machine_id)
+                        ->where('aktif', true)
+                        ->update(['customer_id' => $deployment->customer_id]);
+                }
             }
         });
 
@@ -100,6 +126,8 @@ class Deployment extends Model
                     'customer_id'   => null,
                     'technician_id' => null,
                 ]);
+
+                MrcContract::nonaktifkanUntukMesin($deployment->machine_id);
             }
         });
     }
@@ -118,14 +146,17 @@ class Deployment extends Model
     {
         return $this->belongsTo(Customer::class);
     }
+
     public function machine(): BelongsTo
     {
         return $this->belongsTo(Machine::class);
     }
+
     public function technician(): BelongsTo
     {
         return $this->belongsTo(Technician::class);
     }
+
     public function deploymentSpareparts()
     {
         return $this->hasMany(DeploymentSparepart::class, 'deployment_id');

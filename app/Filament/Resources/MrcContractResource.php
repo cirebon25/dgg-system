@@ -26,6 +26,29 @@ class MrcContractResource extends Resource
     protected static ?string $navigationGroup = 'MRC & Billing';
     protected static ?int    $navigationSort  = 3;
 
+    /**
+     * Badge di sidebar: jumlah kontrak aktif yang harganya belum diisi.
+     */
+    public static function getNavigationBadge(): ?string
+    {
+        $count = static::getModel()::query()
+            ->where('aktif', true)
+            ->where(fn($q) => $q->whereNull('harga_sewa')->orWhere('harga_sewa', 0))
+            ->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger'; // merah, sama seperti Order Part
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return 'Kontrak yang harga sewanya belum dilengkapi';
+    }
+
     public static function form(Form $form): Form
     {
         return $form

@@ -43,7 +43,7 @@ class PartUsageHeaderResource extends Resource
                             ->label('Sumber Pengambilan Stok')
                             ->options([
                                 'tas' => 'Tas Teknisi',
-                                'gudang' => 'Gudang Pusat',
+                                'gudang' => 'Gudang crb',
                             ])
                             ->default('tas')
                             ->required()

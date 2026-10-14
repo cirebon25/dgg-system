@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\MachineEvent;
+use App\Models\ServiceLog;
+use App\Models\ServiceLogSparepart;
 use Filament\Facades\Filament;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
@@ -41,6 +44,30 @@ class AppServiceProvider extends ServiceProvider
         // if (class_exists(\App\Models\CashMutation::class) && class_exists(\App\Observers\CashMutationObserver::class)) {
         //     \App\Models\CashMutation::observe(\App\Observers\CashMutationObserver::class);
         // }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Event Mesin (riwayat per No Seri)
+        |--------------------------------------------------------------------------
+        | Setiap Service Log / part yang dipasang otomatis dicatat ke tabel
+        | machine_events. Edit, hapus (soft delete), dan restore ikut disinkronkan.
+        */
+        if (class_exists(MachineEvent::class)) {
+            ServiceLog::saved(fn($log) => MachineEvent::syncServiceLog($log));
+
+            ServiceLog::deleted(fn($log) => MachineEvent::where('service_log_id', $log->id)->delete());
+
+            // Saat Service Log dipulihkan (restore), event dibuat ulang
+            ServiceLog::restored(function ($log) {
+                MachineEvent::syncServiceLog($log);
+
+                ServiceLogSparepart::where('service_log_id', $log->id)->get()
+                    ->each(fn($item) => MachineEvent::syncPart($item));
+            });
+
+            ServiceLogSparepart::saved(fn($item) => MachineEvent::syncPart($item));
+            ServiceLogSparepart::deleted(fn($item) => MachineEvent::where('service_log_sparepart_id', $item->id)->delete());
+        }
 
         /*
         |--------------------------------------------------------------------------

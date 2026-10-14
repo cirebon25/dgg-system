@@ -29,6 +29,8 @@ use App\Http\Controllers\InvoicePrintController;
 use App\Models\Invoice;
 use App\Http\Controllers\MrcMrcController;
 use App\Http\Controllers\PartKeluarController;
+use App\Http\Controllers\MachineRiwayatController;
+
 
 
 
@@ -332,3 +334,5 @@ Route::get('/mrc/rekap', [MrcController::class, 'cetak'])
 
 Route::get('/cetak/part-keluar', [PartKeluarController::class, 'cetak'])
     ->name('part-keluar.cetak');
+Route::get('/cetak/riwayat-mesin/{machine}', [MachineRiwayatController::class, 'show'])
+    ->name('machine.riwayat');

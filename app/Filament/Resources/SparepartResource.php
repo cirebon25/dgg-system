@@ -170,7 +170,7 @@ class SparepartResource extends Resource
             ->headerActions([
                 // ===== CETAK PART KELUAR BULANAN (dari Service Log) =====
                 Tables\Actions\Action::make('cetakPartKeluar')
-                    ->label('Cetak Part Keluar Bulanan')
+                    ->label('Hitung Part dan Cari keluar')
                     ->color('primary')
                     ->icon('heroicon-o-printer')
                     ->form([
