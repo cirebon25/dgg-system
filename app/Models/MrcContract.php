@@ -37,6 +37,41 @@ class MrcContract extends Model
         return $this->belongsTo(Customer::class);
     }
 
+    /**
+     * SCOPE: kontrak aktif yang harganya belum diisi (draft).
+     */
+    public function scopeBelumDiisi($query)
+    {
+        return $query->where('aktif', true)
+            ->where(fn($q) => $q->whereNull('harga_sewa')->orWhere('harga_sewa', 0));
+    }
+
+    /**
+     * SCOPE: kontrak aktif tapi mesinnya sudah tidak berstatus Rented (ditarik).
+     */
+    public function scopeMesinDitarik($query)
+    {
+        return $query->where('aktif', true)
+            ->whereHas('machine', fn($q) => $q->where('status', '!=', 'Rented'));
+    }
+
+    /**
+     * SCOPE: semua kontrak yang perlu perhatian admin (untuk badge sidebar).
+     */
+    public function scopePerluPerhatian($query)
+    {
+        return $query->where('aktif', true)->where(function ($q) {
+            $q->whereNull('harga_sewa')
+                ->orWhere('harga_sewa', 0)
+                ->orWhereHas('machine', fn($m) => $m->where('status', '!=', 'Rented'));
+        });
+    }
+
+    public function isMesinDitarik(): bool
+    {
+        return $this->aktif && $this->machine && $this->machine->status !== 'Rented';
+    }
+
     // Hitung tagihan berdasarkan usage
     public function hitungTagihan(int $usageBw, int $usageColor): array
     {
@@ -88,10 +123,11 @@ class MrcContract extends Model
 
     /**
      * Nonaktifkan kontrak aktif milik mesin (mesin ditarik / ditukar).
+     * Mengembalikan jumlah kontrak yang dinonaktifkan.
      */
-    public static function nonaktifkanUntukMesin(int $machineId): void
+    public static function nonaktifkanUntukMesin(int $machineId): int
     {
-        static::where('machine_id', $machineId)
+        return static::where('machine_id', $machineId)
             ->where('aktif', true)
             ->update([
                 'aktif'           => false,

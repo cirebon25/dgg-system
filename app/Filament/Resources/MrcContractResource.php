@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Support\RawJs;
+use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Traits\HasRoleAccess;
 
 class MrcContractResource extends Resource
@@ -27,14 +28,12 @@ class MrcContractResource extends Resource
     protected static ?int    $navigationSort  = 3;
 
     /**
-     * Badge di sidebar: jumlah kontrak aktif yang harganya belum diisi.
+     * Badge di sidebar: jumlah kontrak aktif yang harganya belum diisi
+     * ATAU mesinnya sudah ditarik.
      */
     public static function getNavigationBadge(): ?string
     {
-        $count = static::getModel()::query()
-            ->where('aktif', true)
-            ->where(fn($q) => $q->whereNull('harga_sewa')->orWhere('harga_sewa', 0))
-            ->count();
+        $count = MrcContract::query()->perluPerhatian()->count();
 
         return $count > 0 ? (string) $count : null;
     }
@@ -46,7 +45,12 @@ class MrcContractResource extends Resource
 
     public static function getNavigationBadgeTooltip(): ?string
     {
-        return 'Kontrak yang harga sewanya belum dilengkapi';
+        return 'Kontrak yang harganya belum diisi atau mesinnya sudah ditarik';
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['machine', 'customer']);
     }
 
     public static function form(Form $form): Form
@@ -151,6 +155,29 @@ class MrcContractResource extends Resource
                     ->label('Customer')
                     ->searchable(),
 
+                TextColumn::make('status_kontrak')
+                    ->label('Perlu Tindakan')
+                    ->badge()
+                    ->state(function (MrcContract $record): string {
+                        if (! $record->aktif) {
+                            return 'Nonaktif';
+                        }
+                        if ($record->isMesinDitarik()) {
+                            return 'Mesin ditarik';
+                        }
+                        if (! $record->harga_sewa) {
+                            return 'Harga belum diisi';
+                        }
+
+                        return 'Lengkap';
+                    })
+                    ->color(fn(string $state): string => match ($state) {
+                        'Mesin ditarik'     => 'danger',
+                        'Harga belum diisi' => 'warning',
+                        'Lengkap'           => 'success',
+                        default             => 'gray',
+                    }),
+
                 TextColumn::make('harga_sewa')
                     ->label('Harga Sewa')
                     ->money('IDR'),
@@ -178,6 +205,15 @@ class MrcContractResource extends Resource
                 TextColumn::make('tanggal_mulai')
                     ->label('Mulai')
                     ->date('d/m/Y'),
+            ])
+            ->filters([
+                Tables\Filters\Filter::make('belum_diisi')
+                    ->label('Harga belum diisi')
+                    ->query(fn(Builder $query) => $query->belumDiisi()),
+
+                Tables\Filters\Filter::make('mesin_ditarik')
+                    ->label('Mesin sudah ditarik')
+                    ->query(fn(Builder $query) => $query->mesinDitarik()),
             ])
             ->headerActions([
                 // Button existing: Cetak Tagihan per Bulan/Tahun
@@ -222,6 +258,19 @@ class MrcContractResource extends Resource
                 Tables\Actions\CreateAction::make(),
             ])
             ->actions([
+                // Jaring pengaman: mesin ditarik di luar form Deploy tapi kontrak masih aktif
+                Tables\Actions\Action::make('nonaktifkan')
+                    ->label('Nonaktifkan')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->visible(fn(MrcContract $record) => $record->isMesinDitarik())
+                    ->requiresConfirmation()
+                    ->modalDescription('Mesin ini sudah ditarik. Kontrak akan dinonaktifkan dan tidak ikut tagihan.')
+                    ->action(fn(MrcContract $record) => $record->update([
+                        'aktif'           => false,
+                        'tanggal_selesai' => now(),
+                    ])),
+
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ]);

@@ -8,6 +8,8 @@ use App\Traits\UppercaseAttributes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Filament\Notifications\Notification;
+use Filament\Notifications\Actions\Action as NotifAction;
 
 class Deployment extends Model
 {
@@ -31,7 +33,7 @@ class Deployment extends Model
 
     /**
      * Logika Otomatis: Sinkronisasi Status Mesin, Lokasi, Teknisi,
-     * Auto Create Service Log & Auto Create Kontrak MRC
+     * Auto Create Service Log, Auto Create/Nonaktif Kontrak MRC + Pengingat Admin
      */
     protected static function booted()
     {
@@ -62,12 +64,22 @@ class Deployment extends Model
             ]);
 
             // C. OTOMATIS BUAT KONTRAK MRC (DRAFT, admin lengkapi harga & kuota)
-            MrcContract::buatDraft(
+            $kontrak = MrcContract::buatDraft(
                 $deployment->machine_id,
                 $deployment->customer_id,
                 $deployment->tanggal_instal,
                 'AUTO DARI DEPLOY - NO KONTRAK: ' . $deployment->no_kontrak
             );
+
+            // D. PENGINGAT ADMIN
+            if ($kontrak->wasRecentlyCreated) {
+                static::kirimPengingat(
+                    'Kontrak MRC draft dibuat',
+                    'SN ' . ($deployment->machine?->serial_number ?? '-')
+                        . ' (' . ($deployment->customer?->nama_customer ?? '-') . ')'
+                        . ' sudah masuk Input Harga SKO. Lengkapi harga & kuota.'
+                );
+            }
         });
 
         // 2. SAAT DATA DEPLOYMENT DIUBAH (UPDATE)
@@ -75,10 +87,14 @@ class Deployment extends Model
             // Jika mesin diganti (Tukar Mesin lewat form Deploy)
             if ($deployment->wasChanged('machine_id')) {
                 $oldMachineId = $deployment->getOriginal('machine_id');
+                $snLama       = '-';
 
                 // Mesin LAMA balik ke Gudang + kontraknya dinonaktifkan
                 if ($oldMachineId) {
-                    Machine::find($oldMachineId)?->update([
+                    $oldMachine = Machine::find($oldMachineId);
+                    $snLama     = $oldMachine?->serial_number ?? '-';
+
+                    $oldMachine?->update([
                         'status'        => 'Ready',
                         'customer_id'   => null,
                         'technician_id' => null,
@@ -94,11 +110,21 @@ class Deployment extends Model
                     'technician_id' => $deployment->technician_id,
                 ]);
 
-                MrcContract::buatDraft(
+                $kontrak = MrcContract::buatDraft(
                     $deployment->machine_id,
                     $deployment->customer_id,
                     now(),
-                    'AUTO DARI TUKAR MESIN - NO KONTRAK: ' . $deployment->no_kontrak
+                    'AUTO DARI TUKAR MESIN (MENGGANTIKAN SN ' . $snLama . ') - NO KONTRAK: ' . $deployment->no_kontrak
+                );
+
+                // PENGINGAT ADMIN
+                static::kirimPengingat(
+                    'Mesin ditukar',
+                    'SN ' . $snLama . ' ditarik (kontrak lama dinonaktifkan), diganti SN '
+                        . ($deployment->machine?->serial_number ?? '-')
+                        . '. ' . ($kontrak->wasRecentlyCreated
+                            ? 'Lengkapi harga & kuota kontrak baru.'
+                            : 'Cek kontrak mesin baru.')
                 );
             }
 
@@ -127,9 +153,47 @@ class Deployment extends Model
                     'technician_id' => null,
                 ]);
 
-                MrcContract::nonaktifkanUntukMesin($deployment->machine_id);
+                $jumlah = MrcContract::nonaktifkanUntukMesin($deployment->machine_id);
+
+                // PENGINGAT ADMIN
+                static::kirimPengingat(
+                    'Mesin ditarik',
+                    'SN ' . ($deployment->machine?->serial_number ?? '-')
+                        . ' kembali ke gudang. '
+                        . ($jumlah > 0
+                            ? 'Kontrak MRC-nya otomatis dinonaktifkan.'
+                            : 'Tidak ada kontrak aktif yang perlu dinonaktifkan.')
+                );
             }
         });
+    }
+
+    /**
+     * Kirim notifikasi pop-up ke admin yang sedang login.
+     * Dilewati kalau dijalankan dari console (seeder / tinker / queue).
+     */
+    protected static function kirimPengingat(string $judul, string $isi): void
+    {
+        if (app()->runningInConsole()) {
+            return;
+        }
+
+        try {
+            Notification::make()
+                ->title($judul)
+                ->body($isi)
+                ->warning()
+                ->persistent()
+                ->actions([
+                    NotifAction::make('buka')
+                        ->label('Buka Input Harga SKO')
+                        ->button()
+                        ->url(\App\Filament\Resources\MrcContractResource::getUrl('index')),
+                ])
+                ->send();
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**
