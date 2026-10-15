@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PartUsageHeader;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -22,88 +24,44 @@ class PrintRekapSparepartController extends Controller
         */
 
         $serviceLogs = DB::table('service_logs')
-
             ->leftJoin('customers', 'service_logs.customer_id', '=', 'customers.id')
-
             ->leftJoin('machines', 'service_logs.machine_id', '=', 'machines.id')
-
             ->leftJoin('technicians', 'service_logs.technician_id', '=', 'technicians.id')
-
             ->leftJoin('rayons', 'technicians.rayon_id', '=', 'rayons.id')
-
-            // DETAIL SPAREPART SERVICE
-            ->join(
-                'service_log_spareparts',
-                'service_logs.id',
-                '=',
-                'service_log_spareparts.service_log_id'
-            )
-
-            // MASTER SPAREPART
-            ->join(
-                'spareparts',
-                'service_log_spareparts.sparepart_id',
-                '=',
-                'spareparts.id'
-            )
-
+            ->join('service_log_spareparts', 'service_logs.id', '=', 'service_log_spareparts.service_log_id')
+            ->join('spareparts', 'service_log_spareparts.sparepart_id', '=', 'spareparts.id')
             ->whereYear('service_logs.tanggal', $year)
-
             ->whereMonth('service_logs.tanggal', (int) $month)
-
             ->select([
-
                 'service_logs.tanggal',
-
                 'customers.nama_customer',
-
                 'machines.tipe_model',
                 'machines.serial_number',
-
                 'spareparts.nama_sparepart',
                 'spareparts.nama_alias',
-
-                // QTY SPAREPART
                 'service_log_spareparts.jumlah',
-
                 'service_logs.usage_bw',
                 'service_logs.usage_color',
-
                 'service_logs.counter_bw',
                 'service_logs.counter_color',
-
                 'technicians.nama_technician',
-
                 'rayons.nama_rayon'
             ])
-
             ->orderBy('service_logs.tanggal', 'asc')
-
             ->get();
 
         foreach ($serviceLogs as $log) {
-
             $masterUsages->push((object)[
-
                 'tanggal' => $log->tanggal,
-
                 'nama_customer' => $log->nama_customer ?? '-',
-
                 'tipe_model' => $log->tipe_model ?? '-',
-
                 'serial_number' => $log->serial_number ?? '-',
-
                 'nama_part' => ($log->nama_alias ? $log->nama_alias : ($log->nama_sparepart ?? '-')) . ' (' . ($log->jumlah ?? 0) . ' pcs)',
                 'usage_bw' => $log->usage_bw ?? 0,
-
                 'usage_color' => $log->usage_color ?? 0,
-
                 'counter_bw' => $log->counter_bw ?? 0,
-
                 'counter_color' => $log->counter_color ?? 0,
-
                 'nama_technician' => $log->nama_technician ?? '-',
-
                 'nama_rayon' => $log->nama_rayon ?? 'WILAYAH LAIN'
             ]);
         }
@@ -115,89 +73,89 @@ class PrintRekapSparepartController extends Controller
         */
 
         $deploymentLogs = DB::table('deployments')
-
             ->leftJoin('customers', 'deployments.customer_id', '=', 'customers.id')
-
             ->leftJoin('machines', 'deployments.machine_id', '=', 'machines.id')
-
             ->leftJoin('technicians', 'deployments.technician_id', '=', 'technicians.id')
-
             ->leftJoin('rayons', 'technicians.rayon_id', '=', 'rayons.id')
-
-            // DETAIL DEPLOYMENT SPAREPART
-            ->join(
-                'deployment_sparepart',
-                'deployments.id',
-                '=',
-                'deployment_sparepart.deployment_id'
-            )
-
-            // MASTER SPAREPART
-            ->join(
-                'spareparts',
-                'deployment_sparepart.sparepart_id',
-                '=',
-                'spareparts.id'
-            )
-
+            ->join('deployment_sparepart', 'deployments.id', '=', 'deployment_sparepart.deployment_id')
+            ->join('spareparts', 'deployment_sparepart.sparepart_id', '=', 'spareparts.id')
             ->whereYear('deployments.tanggal_instal', $year)
-
             ->whereMonth('deployments.tanggal_instal', (int) $month)
-
             ->select([
-
                 'deployments.tanggal_instal as tanggal',
-
                 'customers.nama_customer',
-
                 'machines.tipe_model',
                 'machines.serial_number',
-
                 'spareparts.nama_sparepart',
                 'spareparts.nama_alias',
-
-                // QTY
                 'deployment_sparepart.jumlah',
-
                 'deployments.counter_bw',
                 'deployments.counter_color',
-
                 'technicians.nama_technician',
-
                 'rayons.nama_rayon'
             ])
-
             ->orderBy('deployments.tanggal_instal', 'asc')
-
             ->get();
 
         foreach ($deploymentLogs as $log) {
-
             $masterUsages->push((object)[
-
                 'tanggal' => $log->tanggal,
-
                 'nama_customer' => $log->nama_customer ?? '-',
-
                 'tipe_model' => $log->tipe_model ?? '-',
-
                 'serial_number' => $log->serial_number ?? '-',
-
                 'nama_part' => ($log->nama_alias ? $log->nama_alias : ($log->nama_sparepart ?? '-')) . ' (' . ($log->jumlah ?? 0) . ' pcs) [New Install]',
-
-
                 'usage_bw' => 0,
-
                 'usage_color' => 0,
-
                 'counter_bw' => $log->counter_bw ?? 0,
-
                 'counter_color' => $log->counter_color ?? 0,
-
                 'nama_technician' => $log->nama_technician ?? '-',
-
                 'nama_rayon' => $log->nama_rayon ?? 'WILAYAH LAIN'
             ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | KANAL 3 — PEMAKAIAN PART WS (Transaksi > Pemakaian Part Ws)
+        |--------------------------------------------------------------------------
+        | Sumber stok tas + gudang dua-duanya dihitung.
+        | Kalau hanya mau yang dari gudang, tambahkan: ->where('sumber_stok', 'gudang')
+        */
+
+        // Teknisi + rayon (tanpa mengandalkan relasi model)
+        $teknisi = DB::table('technicians')
+            ->leftJoin('rayons', 'technicians.rayon_id', '=', 'rayons.id')
+            ->select('technicians.id', 'technicians.nama_technician', 'rayons.nama_rayon')
+            ->get()
+            ->keyBy('id');
+
+        $wsHeaders = PartUsageHeader::query()
+            ->with(['items.sparepart', 'items.machine.customer'])
+            ->whereYear('tanggal', $year)
+            ->whereMonth('tanggal', (int) $month)
+            ->orderBy('tanggal', 'asc')
+            ->get();
+
+        foreach ($wsHeaders as $header) {
+            $tek = $teknisi[$header->technician_id] ?? null;
+
+            foreach ($header->items as $item) {
+                $sp      = $item->sparepart;
+                $machine = $item->machine;
+
+                $masterUsages->push((object)[
+                    'tanggal' => Carbon::parse($header->tanggal)->format('Y-m-d'),
+                    'nama_customer' => $machine?->customer?->nama_customer ?? '-',
+                    'tipe_model' => $machine?->tipe_model ?? '-',
+                    'serial_number' => $machine?->serial_number ?? '-',
+                    'nama_part' => (($sp?->nama_alias) ? $sp->nama_alias : ($sp?->nama_sparepart ?? '-')) . ' (' . ($item->jumlah ?? 0) . ' pcs) [Part WS]',
+                    'usage_bw' => 0,
+                    'usage_color' => 0,
+                    'counter_bw' => 0,
+                    'counter_color' => 0,
+                    'nama_technician' => $tek->nama_technician ?? '-',
+                    'nama_rayon' => $tek->nama_rayon ?? 'WILAYAH LAIN'
+                ]);
+            }
         }
 
         /*

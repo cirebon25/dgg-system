@@ -159,9 +159,16 @@ class OrderPartResource extends Resource
 
                         return redirect(static::getUrl('edit', ['record' => $order]));
                     }),
+
                 Tables\Actions\CreateAction::make(),
             ])
             ->actions([
+                Tables\Actions\Action::make('cetak')
+                    ->label('Cetak')
+                    ->icon('heroicon-o-printer')
+                    ->color('gray')
+                    ->url(fn(OrderPart $record) => route('print.order-part', $record))
+                    ->openUrlInNewTab(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

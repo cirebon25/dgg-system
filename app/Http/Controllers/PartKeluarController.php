@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\PartUsageHeader;
 use App\Models\ServiceLogSparepart;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class PartKeluarController extends Controller
@@ -20,10 +22,10 @@ class PartKeluarController extends Controller
 
         $setahun = $data['month'] === 'all';
 
+        // ===== SUMBER 1: SERVICE LOG =====
         $logs = ServiceLogSparepart::query()
             ->with(['sparepart', 'serviceLog.machine.customer'])
             ->whereHas('serviceLog', function ($q) use ($data, $setahun) {
-                // GANTI 'tanggal' dengan nama kolom tanggal di tabel service_logs
                 $q->whereYear('tanggal', $data['year']);
 
                 if (!$setahun) {
@@ -31,7 +33,6 @@ class PartKeluarController extends Controller
                 }
             })
             ->when($data['customer_id'] ?? null, function ($q, $id) {
-                // GANTI 'customer_id' jika nama kolom di tabel machines berbeda
                 $q->whereHas('serviceLog.machine', fn($m) => $m->where('customer_id', $id));
             })
             ->when(
@@ -40,15 +41,54 @@ class PartKeluarController extends Controller
             )
             ->get();
 
-        // Per part -> ringkasan per customer + rincian transaksi
-        $perPart = $logs
+        $rows = $logs->map(fn($l) => (object) [
+            'sparepart_id' => $l->sparepart_id,
+            'sparepart'    => $l->sparepart,
+            'tanggal'      => $l->serviceLog?->tanggal ? Carbon::parse($l->serviceLog->tanggal) : null,
+            'customer'     => $l->serviceLog?->machine?->customer?->nama_customer ?? 'Tanpa Customer',
+            'sn'           => $l->serviceLog?->machine?->serial_number ?? '-',
+            'qty'          => $l->jumlah,
+        ]);
+
+        // ===== SUMBER 2: PEMAKAIAN PART WS (tas + gudang) =====
+        // Kalau hanya mau yang dari gudang, tambahkan: ->where('sumber_stok', 'gudang')
+        $wsRows = PartUsageHeader::query()
+            ->with(['items.sparepart', 'items.machine.customer'])
+            ->whereYear('tanggal', $data['year'])
+            ->when(!$setahun, fn($q) => $q->whereMonth('tanggal', $data['month']))
+            ->get()
+            ->flatMap(function ($header) {
+                return $header->items->map(fn($item) => (object) [
+                    'sparepart_id' => $item->sparepart_id,
+                    'sparepart'    => $item->sparepart,
+                    'tanggal'      => Carbon::parse($header->tanggal),
+                    'customer'     => $item->machine?->customer?->nama_customer ?? 'Tanpa Customer',
+                    'customer_id'  => $item->machine?->customer?->getKey(),
+                    'sn'           => $item->machine?->serial_number ?? '-',
+                    'qty'          => $item->jumlah,
+                ]);
+            })
+            ->filter(fn($r) => $r->sparepart)
+            ->when(
+                !empty($data['sparepart_ids']),
+                fn($c) => $c->filter(fn($r) => in_array($r->sparepart_id, $data['sparepart_ids']))
+            )
+            ->when(
+                $data['customer_id'] ?? null,
+                fn($c, $id) => $c->filter(fn($r) => (int) $r->customer_id === (int) $id)
+            );
+
+        $rows = $rows->concat($wsRows);
+
+        // ===== Per part -> ringkasan per customer + rincian transaksi =====
+        $perPart = $rows
             ->groupBy('sparepart_id')
             ->map(function ($g) {
-                $transaksi = $g->map(fn($l) => (object) [
-                    'tanggal'  => $l->serviceLog?->tanggal,
-                    'customer' => $l->serviceLog?->machine?->customer?->nama_customer ?? 'Tanpa Customer',
-                    'sn'       => $l->serviceLog?->machine?->serial_number ?? '-',
-                    'qty'      => $l->jumlah,
+                $transaksi = $g->map(fn($r) => (object) [
+                    'tanggal'  => $r->tanggal,
+                    'customer' => $r->customer,
+                    'sn'       => $r->sn,
+                    'qty'      => $r->qty,
                 ])->sortBy('tanggal')->values();
 
                 $ringkas = $transaksi

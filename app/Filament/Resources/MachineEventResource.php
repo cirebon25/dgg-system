@@ -120,19 +120,19 @@ class MachineEventResource extends Resource
                     ->searchable()
                     ->placeholder('-'),
 
-                TextColumn::make('sparepart.nama_sparepart')
-                    ->label('Part')
-                    ->placeholder('-'),
+                // TextColumn::make('sparepart.nama_sparepart')
+                //     ->label('Part')
+                //     ->placeholder('-'),
 
-                TextColumn::make('jumlah')
-                    ->label('Qty')
-                    ->placeholder('-'),
+                // TextColumn::make('jumlah')
+                //     ->label('Qty')
+                //     ->placeholder('-'),
 
-                TextColumn::make('keterangan')
-                    ->label('Keterangan')
-                    ->limit(50)
-                    ->tooltip(fn($record) => $record->keterangan)
-                    ->placeholder('-'),
+                // TextColumn::make('keterangan')
+                //     ->label('Keterangan')
+                //     ->limit(50)
+                //     ->tooltip(fn($record) => $record->keterangan)
+                //     ->placeholder('-'),
 
                 TextColumn::make('sumber')
                     ->label('Sumber')
