@@ -135,7 +135,7 @@ class MrcController extends Controller
             'free_bw',
             'harga_bw',
             'free_color',
-            'harga_color'
+            'harga_color',
         ])
             ->with([
                 'machine:id,serial_number,tipe_model',
@@ -147,52 +147,65 @@ class MrcController extends Controller
         $tanggalAwalBulan = Carbon::createFromDate((int) $year, (int) $month, 1)->startOfMonth();
 
         $tagihans = $contracts->map(function ($contract) use ($month, $year, $tanggalAwalBulan) {
-            // Log MRC bulan ini (paling akhir di bulan tersebut)
+            // Input MRC bulan ini (paling akhir di bulan tersebut)
             $logSekarang = ServiceLog::where('machine_id', $contract->machine_id)
+                ->where('is_mrc', true)
                 ->whereMonth('tanggal', $month)
-                ->whereYear('tanggal',  $year)
+                ->whereYear('tanggal', $year)
                 ->orderBy('tanggal', 'desc')
                 ->orderBy('id', 'desc')
                 ->first();
 
-            // Log MRC sebelum bulan ini (paling akhir sebelum periode ini) sebagai counter bulan lalu
+            // Input MRC sebelum bulan ini (cadangan kalau Counter Lalu tidak diisi)
             $logSebelumnya = ServiceLog::where('machine_id', $contract->machine_id)
+                ->where('is_mrc', true)
                 ->where('tanggal', '<', $tanggalAwalBulan)
                 ->orderBy('tanggal', 'desc')
                 ->orderBy('id', 'desc')
                 ->first();
 
+            $isMrcTercatat = $logSekarang !== null;
+
+            $bwLalu    = null;
+            $colorLalu = null;
+
+            if ($isMrcTercatat) {
+                // Prioritas: Counter Lalu yang diinput. Kalau kosong/0, pakai log bulan sebelumnya.
+                $bwLalu = ($logSekarang->counter_bw_lalu ?? 0) > 0
+                    ? (int) $logSekarang->counter_bw_lalu
+                    : ($logSebelumnya ? (int) $logSebelumnya->counter_bw : null);
+
+                $colorLalu = ($logSekarang->counter_color_lalu ?? 0) > 0
+                    ? (int) $logSekarang->counter_color_lalu
+                    : ($logSebelumnya ? (int) ($logSebelumnya->counter_color ?? 0) : null);
+            }
+
+            $adaBaseline = $bwLalu !== null;
+
             $usageBw    = 0;
             $usageColor = 0;
 
-            $isMrcTercatat = $logSekarang !== null;
-            $adaBaseline   = $logSebelumnya !== null;
-
             if ($isMrcTercatat && $adaBaseline) {
-                $bwLalu    = $logSebelumnya->counter_bw    ?? 0;
-                $colorLalu = $logSebelumnya->counter_color ?? 0;
-
-                $usageBw    = max(0, (int) $logSekarang->counter_bw    - (int) $bwLalu);
-                $usageColor = max(0, (int) $logSekarang->counter_color - (int) $colorLalu);
+                $usageBw    = max(0, (int) $logSekarang->counter_bw - (int) $bwLalu);
+                $usageColor = max(0, (int) ($logSekarang->counter_color ?? 0) - (int) ($colorLalu ?? 0));
             }
 
-            // Pastikan method hitungTagihan tersedia di model MrcContract
             $tagihan = method_exists($contract, 'hitungTagihan')
                 ? $contract->hitungTagihan($usageBw, $usageColor)
                 : 0;
 
             return [
-                'contract'              => $contract,
-                'log'                   => $logSekarang,
-                'tagihan'               => $tagihan,
-                'usage_bw'              => $usageBw,
-                'usage_color'           => $usageColor,
-                'is_mrc_tercatat'       => $isMrcTercatat,
-                'is_baseline_pertama'   => $isMrcTercatat && !$adaBaseline,
-                'counter_bw_lalu'       => $isMrcTercatat ? (int) ($logSebelumnya->counter_bw ?? 0) : null,
-                'counter_bw_akhir'      => $isMrcTercatat ? (int) $logSekarang->counter_bw : null,
-                'counter_color_lalu'    => $isMrcTercatat ? (int) ($logSebelumnya->counter_color ?? 0) : null,
-                'counter_color_akhir'   => $isMrcTercatat ? (int) $logSekarang->counter_color : null,
+                'contract'            => $contract,
+                'log'                 => $logSekarang,
+                'tagihan'             => $tagihan,
+                'usage_bw'            => $usageBw,
+                'usage_color'         => $usageColor,
+                'is_mrc_tercatat'     => $isMrcTercatat,
+                'is_baseline_pertama' => $isMrcTercatat && ! $adaBaseline,
+                'counter_bw_lalu'     => $isMrcTercatat ? (int) ($bwLalu ?? 0) : null,
+                'counter_bw_akhir'    => $isMrcTercatat ? (int) $logSekarang->counter_bw : null,
+                'counter_color_lalu'  => $isMrcTercatat ? (int) ($colorLalu ?? 0) : null,
+                'counter_color_akhir' => $isMrcTercatat ? (int) ($logSekarang->counter_color ?? 0) : null,
             ];
         });
 

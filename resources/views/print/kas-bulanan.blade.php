@@ -214,7 +214,9 @@
                         {{-- REVISI UTAMA: Menggunakan $loop->iteration agar nomor urut pasti rapi 1, 2, 3... --}}
                         <td class="text-center">{{ $loop->iteration }}</td>
                         <td class="text-center">{{ \Carbon\Carbon::parse($row['tanggal'])->format('d/m/Y') }}</td>
-                        <td class="text-center">{{ $row['no_surat'] ?? '-' }}</td>
+                        <td class="text-center">
+                            {{ ($row['uang_masuk'] ?? 0) > 0 ? '-' : $row['no_surat'] ?? '-' }}
+                        </td>
 
                         {{-- KOLOM KETERANGAN (UPPERCASE & DIPISAH KOMA) --}}
                         <td>

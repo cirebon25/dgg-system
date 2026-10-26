@@ -37,6 +37,7 @@ class MachineReturnResource extends Resource
                 ->description('Catat pengiriman mesin dari Gudang Cirebon ke Bandung untuk servis / perbaikan.')
                 ->schema([
 
+                    // ===== CREATE: banyak mesin, tiap mesin punya keterangan sendiri =====
                     Forms\Components\Repeater::make('machine_list')
                         ->label('Mesin yang Diretur')
                         ->schema([
@@ -53,12 +54,16 @@ class MachineReturnResource extends Resource
                                 ->searchable()
                                 ->required()
                                 ->distinct()
-                                ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                ->columnSpanFull(),
+                                ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+
+                            Forms\Components\Textarea::make('keterangan_kerusakan')
+                                ->label('Keterangan Kerusakan Mesin Ini')
+                                ->rows(2),
                         ])
                         ->addActionLabel('Tambah Mesin')
                         ->minItems(1)
                         ->maxItems(10)
+                        ->hiddenOn('edit')
                         ->columnSpanFull(),
 
                     Forms\Components\Grid::make(2)->schema([
@@ -82,8 +87,12 @@ class MachineReturnResource extends Resource
                     Forms\Components\TextInput::make('dikirim_oleh')
                         ->label('Dikirim Oleh')->nullable(),
 
+                    // ===== EDIT: satu record = satu keterangan =====
                     Forms\Components\Textarea::make('keterangan_kerusakan')
-                        ->label('Keterangan Kerusakan')->columnSpanFull()->nullable(),
+                        ->label('Keterangan Kerusakan')
+                        ->columnSpanFull()
+                        ->nullable()
+                        ->hiddenOn('create'),
 
                 ])->columns(2),
 
@@ -147,6 +156,13 @@ class MachineReturnResource extends Resource
                         'Cek Rutin'    => 'info',
                         default        => 'gray',
                     }),
+
+                Tables\Columns\TextColumn::make('keterangan_kerusakan')
+                    ->label('Keterangan')
+                    ->limit(40)
+                    ->tooltip(fn(MachineReturn $record): ?string => $record->keterangan_kerusakan)
+                    ->placeholder('-')
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('status_retur')
                     ->label('Progress')->badge()

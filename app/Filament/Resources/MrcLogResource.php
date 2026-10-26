@@ -3,13 +3,19 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\MrcLogResource\Pages;
+use App\Filament\Traits\HasRoleAccess;
+use App\Models\Customer;
+use App\Models\Machine;
 use App\Models\ServiceLog;
+use Carbon\Carbon;
 use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use App\Filament\Traits\HasRoleAccess;
 
 class MrcLogResource extends Resource
 {
@@ -22,6 +28,62 @@ class MrcLogResource extends Resource
     protected static ?string $navigationGroup = 'MRC & Billing';
     protected static ?string $slug            = 'mrc-log';
     protected static ?int    $navigationSort  = 2;
+
+    public static function bulanOptions(): array
+    {
+        return [
+            '01' => 'Januari',
+            '02' => 'Februari',
+            '03' => 'Maret',
+            '04' => 'April',
+            '05' => 'Mei',
+            '06' => 'Juni',
+            '07' => 'Juli',
+            '08' => 'Agustus',
+            '09' => 'September',
+            '10' => 'Oktober',
+            '11' => 'November',
+            '12' => 'Desember',
+        ];
+    }
+
+    public static function tahunOptions(): array
+    {
+        $range = range((int) date('Y'), 2024);
+
+        return array_combine($range, $range);
+    }
+
+    /**
+     * Counter bulan lalu otomatis:
+     * 1) input MRC terakhir sebelum bulan yang dipilih,
+     * 2) kalau belum ada, counter yang tersimpan di mesin.
+     *
+     * @return array{0:int,1:int} [bw, color]
+     */
+    public static function counterLalu($machineId, $tanggal = null): array
+    {
+        if (! $machineId) {
+            return [0, 0];
+        }
+
+        $awalBulan = Carbon::parse($tanggal ?: now())->startOfMonth();
+
+        $prev = ServiceLog::where('machine_id', $machineId)
+            ->where('is_mrc', true)
+            ->where('tanggal', '<', $awalBulan)
+            ->orderByDesc('tanggal')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($prev) {
+            return [(int) $prev->counter_bw, (int) ($prev->counter_color ?? 0)];
+        }
+
+        $machine = Machine::find($machineId);
+
+        return [(int) ($machine?->counter_bw ?? 0), (int) ($machine?->counter_color ?? 0)];
+    }
 
     public static function getEloquentQuery(): Builder
     {
@@ -40,7 +102,7 @@ class MrcLogResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('machine.serial_number')
-                    ->label('SN Mesin')
+                    ->label('No Seri')
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('customer.nama_customer')
@@ -52,12 +114,12 @@ class MrcLogResource extends Resource
                     ->placeholder('-'),
 
                 Tables\Columns\TextColumn::make('counter_bw_lalu')
-                    ->label('Counter BW Lalu')
+                    ->label('BW Lalu')
                     ->numeric()
                     ->placeholder('-'),
 
                 Tables\Columns\TextColumn::make('counter_bw')
-                    ->label('Counter BW')
+                    ->label('BW Sekarang')
                     ->numeric()
                     ->sortable(),
 
@@ -68,12 +130,12 @@ class MrcLogResource extends Resource
                     ->color('info'),
 
                 Tables\Columns\TextColumn::make('counter_color_lalu')
-                    ->label('Counter Color Lalu')
+                    ->label('Color Lalu')
                     ->numeric()
                     ->placeholder('-'),
 
                 Tables\Columns\TextColumn::make('counter_color')
-                    ->label('Counter Color')
+                    ->label('Color Sekarang')
                     ->numeric()
                     ->placeholder('-'),
 
@@ -83,89 +145,24 @@ class MrcLogResource extends Resource
                     ->badge()
                     ->color('warning')
                     ->placeholder('-'),
-
-                Tables\Columns\TextColumn::make('technician.nama_technician')
-                    ->label('Teknisi'),
             ])
-            ->headerActions([
-                Tables\Actions\CreateAction::make()
-                    ->label('Tambah Data MRC'),
-
-                Tables\Actions\Action::make('cetakMrc')
-                    ->label('Cetak Rekap MRC')
-                    ->icon('heroicon-o-printer')
-                    ->color('success')
-                    ->form([
-                        Forms\Components\Select::make('month')
-                            ->label('Bulan')
-                            ->options([
-                                '01' => 'Januari',
-                                '02' => 'Februari',
-                                '03' => 'Maret',
-                                '04' => 'April',
-                                '05' => 'Mei',
-                                '06' => 'Juni',
-                                '07' => 'Juli',
-                                '08' => 'Agustus',
-                                '09' => 'September',
-                                '10' => 'Oktober',
-                                '11' => 'November',
-                                '12' => 'Desember',
-                            ])
-                            ->required()
-                            ->default(date('m')),
-
-                        Forms\Components\Select::make('year')
-                            ->label('Tahun')
-                            ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
-                            ->required()
-                            ->default(date('Y')),
-
-                        // Tambahan Input Counter Pembanding (Opsional jika ingin kalkulasi manual saat cetak)
-                        Forms\Components\Section::make('Parameter Tambahan Cetak')
-                            ->schema([
-                                Forms\Components\TextInput::make('counter_bw_lalu')
-                                    ->label('Default Counter BW Bulan Lalu')
-                                    ->numeric()
-                                    ->default(0),
-                                Forms\Components\TextInput::make('counter_color_lalu')
-                                    ->label('Default Counter Color Bulan Lalu')
-                                    ->numeric()
-                                    ->default(0),
-                            ])
-                            ->columns(2),
-                    ])
-                    ->action(fn(array $data) => redirect()->route('mrc.rekap', $data)),
-            ])
+            // Tombol Cetak dan Tambah ada di ListMrcLogs::getHeaderActions()
             ->filters([
                 Tables\Filters\Filter::make('bulan')
                     ->form([
                         Forms\Components\Select::make('month')
                             ->label('Bulan')
-                            ->options([
-                                '01' => 'Januari',
-                                '02' => 'Februari',
-                                '03' => 'Maret',
-                                '04' => 'April',
-                                '05' => 'Mei',
-                                '06' => 'Juni',
-                                '07' => 'Juli',
-                                '08' => 'Agustus',
-                                '09' => 'September',
-                                '10' => 'Oktober',
-                                '11' => 'November',
-                                '12' => 'Desember',
-                            ])
+                            ->options(static::bulanOptions())
                             ->default(date('m')),
                         Forms\Components\Select::make('year')
                             ->label('Tahun')
-                            ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
+                            ->options(static::tahunOptions())
                             ->default(date('Y')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
-                            ->when($data['month'], fn($q) => $q->whereMonth('tanggal', $data['month']))
-                            ->when($data['year'],  fn($q) => $q->whereYear('tanggal',  $data['year']));
+                            ->when($data['month'] ?? null, fn($q, $v) => $q->whereMonth('tanggal', $v))
+                            ->when($data['year'] ?? null, fn($q, $v) => $q->whereYear('tanggal', $v));
                     }),
             ])
             ->defaultSort('tanggal', 'desc')
@@ -174,112 +171,107 @@ class MrcLogResource extends Resource
             ]);
     }
 
-    public static function form(\Filament\Forms\Form $form): \Filament\Forms\Form
+    public static function form(Form $form): Form
     {
+        $hitungBw = fn(Set $set, Get $get) => $set(
+            'usage_bw',
+            max(0, (int) $get('counter_bw') - (int) $get('counter_bw_lalu'))
+        );
+
+        $hitungColor = fn(Set $set, Get $get) => $set(
+            'usage_color',
+            max(0, (int) $get('counter_color') - (int) $get('counter_color_lalu'))
+        );
+
+        // Isi ulang customer + counter lalu otomatis
+        $isiOtomatis = function (Set $set, Get $get) use ($hitungBw, $hitungColor) {
+            $machineId = $get('machine_id');
+
+            if (! $machineId) {
+                $set('customer_id', null);
+
+                return;
+            }
+
+            $set('customer_id', Machine::find($machineId)?->customer_id);
+
+            [$bwLalu, $colorLalu] = static::counterLalu($machineId, $get('tanggal'));
+
+            $set('counter_bw_lalu', $bwLalu);
+            $set('counter_color_lalu', $colorLalu);
+
+            $hitungBw($set, $get);
+            $hitungColor($set, $get);
+        };
+
         return $form->schema([
             Forms\Components\DatePicker::make('tanggal')
-                ->label('Tanggal Input')
+                ->label('Tanggal')
                 ->required()
-                ->default(now()),
+                ->default(now())
+                ->live()
+                ->afterStateUpdated($isiOtomatis),
 
             Forms\Components\Select::make('machine_id')
                 ->relationship('machine', 'serial_number')
-                ->label('Mesin')
+                ->label('No Seri')
                 ->searchable()
                 ->preload()
                 ->required()
                 ->live()
-                ->afterStateUpdated(function (callable $set, callable $get, $state) {
-                    if (! $state) {
-                        return;
-                    }
+                ->afterStateUpdated($isiOtomatis),
 
-                    $machine = \App\Models\Machine::find($state);
+            Forms\Components\Hidden::make('customer_id'),
 
-                    if ($machine && $machine->customer_id) {
-                        $set('customer_id', $machine->customer_id);
-                    }
-
-                    $counterBwLalu    = $machine->counter_bw ?? 0;
-                    $counterColorLalu = $machine->counter_color ?? 0;
-
-                    $set('counter_bw_lalu', $counterBwLalu);
-                    $set('counter_color_lalu', $counterColorLalu);
-                    $set('usage_bw', max(0, (int) $get('counter_bw') - (int) $counterBwLalu));
-                    $set('usage_color', max(0, (int) $get('counter_color') - (int) $counterColorLalu));
-                }),
-
-            Forms\Components\Select::make('customer_id')
-                ->relationship('customer', 'nama_customer')
+            Forms\Components\Placeholder::make('nama_customer')
                 ->label('Customer')
-                ->searchable()
-                ->preload(),
-
-            Forms\Components\Select::make('technician_id')
-                ->relationship('technician', 'nama_technician')
-                ->label('Teknisi')
-                ->searchable()
-                ->preload()
-                ->required(),
+                ->content(fn(Get $get) => $get('customer_id')
+                    ? (Customer::find($get('customer_id'))?->nama_customer ?? '-')
+                    : '-'),
 
             Forms\Components\Fieldset::make('Counter BW')
                 ->schema([
                     Forms\Components\TextInput::make('counter_bw_lalu')
-                        ->label('Counter BW Lalu')
+                        ->label('Counter Lalu (otomatis)')
                         ->numeric()
                         ->default(0)
-                        ->disabled()
-                        ->dehydrated(false)
-                        ->live()
-                        ->afterStateUpdated(function (callable $set, callable $get) {
-                            $set('usage_bw', max(0, (int) $get('counter_bw') - (int) $get('counter_bw_lalu')));
-                        }),
+                        ->required()
+                        ->live(onBlur: true)
+                        ->afterStateUpdated($hitungBw),
 
                     Forms\Components\TextInput::make('counter_bw')
-                        ->label('Counter BW Sekarang')
+                        ->label('Counter Sekarang')
                         ->numeric()
                         ->required()
-                        ->live()
-                        ->afterStateUpdated(function (callable $set, callable $get) {
-                            $set('usage_bw', max(0, (int) $get('counter_bw') - (int) $get('counter_bw_lalu')));
-                        }),
+                        ->live(onBlur: true)
+                        ->afterStateUpdated($hitungBw),
 
-                    Forms\Components\TextInput::make('usage_bw')
-                        ->label('Selisih BW')
-                        ->numeric()
-                        ->disabled()
+                    Forms\Components\Hidden::make('usage_bw')
+                        ->default(0)
                         ->dehydrated(),
                 ])
-                ->columns(3),
+                ->columns(2),
 
             Forms\Components\Fieldset::make('Counter Color')
                 ->schema([
                     Forms\Components\TextInput::make('counter_color_lalu')
-                        ->label('Counter Color Lalu')
+                        ->label('Counter Lalu (otomatis)')
                         ->numeric()
                         ->default(0)
-                        ->disabled()
-                        ->dehydrated(false)
-                        ->live()
-                        ->afterStateUpdated(function (callable $set, callable $get) {
-                            $set('usage_color', max(0, (int) $get('counter_color') - (int) $get('counter_color_lalu')));
-                        }),
+                        ->live(onBlur: true)
+                        ->afterStateUpdated($hitungColor),
 
                     Forms\Components\TextInput::make('counter_color')
-                        ->label('Counter Color Sekarang')
+                        ->label('Counter Sekarang')
                         ->numeric()
-                        ->live()
-                        ->afterStateUpdated(function (callable $set, callable $get) {
-                            $set('usage_color', max(0, (int) $get('counter_color') - (int) $get('counter_color_lalu')));
-                        }),
+                        ->live(onBlur: true)
+                        ->afterStateUpdated($hitungColor),
 
-                    Forms\Components\TextInput::make('usage_color')
-                        ->label('Selisih Color')
-                        ->numeric()
-                        ->disabled()
+                    Forms\Components\Hidden::make('usage_color')
+                        ->default(0)
                         ->dehydrated(),
                 ])
-                ->columns(3),
+                ->columns(2),
         ]);
     }
 

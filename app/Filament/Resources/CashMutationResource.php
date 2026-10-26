@@ -3,11 +3,11 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CashMutationResource\Pages;
+use App\Filament\Traits\HasRoleAccess;
 use App\Models\CashMutation;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
-use App\Filament\Traits\HasRoleAccess;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -15,7 +15,7 @@ class CashMutationResource extends Resource
 {
     use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin', 'keuangan', 'manager', 'teknisi', 'admin_teknik'];
+    protected static array $allowedRoles = ['admin'];
 
     protected static ?string $model           = CashMutation::class;
     protected static ?string $navigationIcon  = 'heroicon-o-arrow-up-circle';
@@ -32,7 +32,22 @@ class CashMutationResource extends Resource
                     Forms\Components\DatePicker::make('tanggal')
                         ->label('Tanggal Pengeluaran')
                         ->default(now())
-                        ->required(),
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(function ($state, callable $set, string $operation) {
+                            // Hanya saat membuat baru; saat edit, nomor tidak diubah otomatis
+                            if ($operation === 'create') {
+                                $set('no_voucher', CashMutation::generateNoVoucher($state)['no_voucher']);
+                            }
+                        }),
+
+                    Forms\Components\TextInput::make('no_voucher')
+                        ->label('No. Voucher')
+                        ->default(fn() => CashMutation::generateNoVoucher(now())['no_voucher'])
+                        ->helperText('Terisi otomatis, bisa diubah manual. Kosongkan untuk dibuat otomatis.')
+                        ->unique(ignoreRecord: true)
+                        ->maxLength(50),
+
                     Forms\Components\Hidden::make('jenis_pembayaran')->default('Tunai'),
                 ]),
 
@@ -112,9 +127,7 @@ class CashMutationResource extends Resource
         $items = $get('items') ?? [];
         $total = collect($items)->sum(fn($item) => (float) ($item['jumlah'] ?? 0));
         $set('total_jumlah', $total);
-        if (class_exists(CashMutation::class)) {
-            $set('terbilang', CashMutation::konversiTerbilang($total) . ' rupiah');
-        }
+        $set('terbilang', CashMutation::konversiTerbilang($total) . ' rupiah');
     }
 
     public static function table(Table $table): Table
@@ -123,6 +136,7 @@ class CashMutationResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('no_voucher')
                     ->label('No. Voucher')
+                    ->searchable()
                     ->sortable()
                     ->default('-'),
 

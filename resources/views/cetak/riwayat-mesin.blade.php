@@ -150,11 +150,13 @@
 
         /* Tagihan */
         th.tagihan {
+            text-align: center;
             background: #548235 !important;
             border-color: #548235 !important;
         }
 
         td.total-tagihan {
+            text-align: center;
             text-align: right;
             font-weight: bold;
             background: #e2efda;

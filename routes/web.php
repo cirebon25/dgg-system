@@ -220,7 +220,8 @@ Route::get('/mrc/rekap', [MrcController::class, 'rekap'])
     ->name('mrc.rekap');
 
 Route::get('/mrc/tagihan', [MrcController::class, 'tagihan'])
-    ->name('mrc.tagihan');
+    ->name('mrc.tagihan')
+    ->middleware(['auth']);
 
 Route::get('/prospect/laporan', [ProspectController::class, 'laporan'])
     ->name('prospect.laporan');
@@ -325,13 +326,17 @@ Route::get('/admin/invoices/print-all', function (Request $request) {
     return view('invoices.print-all', ['invoices' => $invoices]);
 })->name('invoice.print-all')->middleware(['web', 'auth']);
 
+Route::get('/mrc/cetak-rekap', [MrcController::class, 'cetakRekap'])
+    ->name('mrc.cetak-rekap')
+    ->middleware(['auth']);
+
 
 Route::get('/mrc/cetak-semua', [MrcController::class, 'cetakSemua'])->name('mrc.cetak-semua');
 
 
-Route::get('/mrc/rekap', [MrcController::class, 'cetak'])
-    ->name('mrc.rekap')
-    ->middleware(['auth']);
+// Route::get('/mrc/rekap', [MrcController::class, 'cetak'])
+//     ->name('mrc.rekap')
+//     ->middleware(['auth']);
 
 
 Route::get('/cetak/part-keluar', [PartKeluarController::class, 'cetak'])

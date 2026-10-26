@@ -11,18 +11,9 @@ use Illuminate\Http\Request;
 class MachineRiwayatController extends Controller
 {
     private const NAMA_BULAN = [
-        1 => 'Januari',
-        2 => 'Februari',
-        3 => 'Maret',
-        4 => 'April',
-        5 => 'Mei',
-        6 => 'Juni',
-        7 => 'Juli',
-        8 => 'Agustus',
-        9 => 'September',
-        10 => 'Oktober',
-        11 => 'November',
-        12 => 'Desember',
+        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
     ];
 
     /**
@@ -37,6 +28,9 @@ class MachineRiwayatController extends Controller
         'harga_color' => null,
         'ppn'         => null,
     ];
+
+    // PPN default jika kontrak tidak punya kolom PPN / nilainya 0
+    private const PPN_DEFAULT = 11.0;
 
     // Kata kunci pencarian kolom kontrak (semua kata dalam satu grup harus ada di nama kolom)
     private const KONTRAK_CARI = [
@@ -84,19 +78,19 @@ class MachineRiwayatController extends Controller
 
         // Daftar tahun untuk dropdown filter
         $daftarTahun = $logsMesin->pluck('tanggal')->filter()
-            ->map(fn($t) => Carbon::parse($t)->year)
-            ->merge($events->map(fn($e) => $e->tanggal->year))
+            ->map(fn ($t) => Carbon::parse($t)->year)
+            ->merge($events->map(fn ($e) => $e->tanggal->year))
             ->push(now()->year)
             ->unique()->sortDesc()->values();
 
         // ===== Event pada tahun terpilih (untuk riwayat kejadian) =====
         $eventsTahun = $events
-            ->filter(fn($e) => !$tahun || $e->tanggal->year === $tahun)
+            ->filter(fn ($e) => !$tahun || $e->tanggal->year === $tahun)
             ->values();
 
         $kembar = $eventsTahun
-            ->groupBy(fn($e) => $e->tanggal->toDateString())
-            ->filter(fn($g) => $g->count() > 1);
+            ->groupBy(fn ($e) => $e->tanggal->toDateString())
+            ->filter(fn ($g) => $g->count() > 1);
 
         $urutKembar = $kembar->keys()->values();
 
@@ -108,8 +102,8 @@ class MachineRiwayatController extends Controller
 
         $dobel = $eventsTahun
             ->where('tipe', 'service')
-            ->groupBy(fn($e) => $e->tanggal->toDateString() . '|' . ($e->keterangan ?? '') . '|' . ($e->cbw ?? ''))
-            ->filter(fn($g) => $g->count() > 1);
+            ->groupBy(fn ($e) => $e->tanggal->toDateString() . '|' . ($e->keterangan ?? '') . '|' . ($e->cbw ?? ''))
+            ->filter(fn ($g) => $g->count() > 1);
 
         foreach ($dobel as $grup) {
             foreach ($grup as $e) {
@@ -126,7 +120,7 @@ class MachineRiwayatController extends Controller
                 $nama = $g->first()->sparepart->nama_sparepart ?? '-';
 
                 $rows = $g
-                    ->groupBy(fn($e) => $e->service_log_id ?: 'e' . $e->id)
+                    ->groupBy(fn ($e) => $e->service_log_id ?: 'e' . $e->id)
                     ->map(function ($items) use ($nama) {
                         $first = $items->first();
 
@@ -143,7 +137,7 @@ class MachineRiwayatController extends Controller
                             'hari'         => null,
                         ];
                     })
-                    ->sortBy(fn($r) => $r->tanggal->timestamp)
+                    ->sortBy(fn ($r) => $r->tanggal->timestamp)
                     ->values();
 
                 $rows->each(function ($r, $i) use ($rows) {
@@ -166,14 +160,14 @@ class MachineRiwayatController extends Controller
             ->values();
 
         $gantiTahun = $semuaGanti
-            ->filter(fn($r) => !$tahun || $r->tanggal->year === $tahun)
-            ->sort(fn($a, $b) => [$a->tanggal->timestamp, $a->part] <=> [$b->tanggal->timestamp, $b->part])
+            ->filter(fn ($r) => !$tahun || $r->tanggal->year === $tahun)
+            ->sort(fn ($a, $b) => [$a->tanggal->timestamp, $a->part] <=> [$b->tanggal->timestamp, $b->part])
             ->values();
 
         $totalPart = $gantiTahun
             ->groupBy('sparepart_id')
             ->map(function ($g) {
-                $valid = $g->pluck('selisih_bw')->filter(fn($v) => $v !== null && $v >= 0);
+                $valid = $g->pluck('selisih_bw')->filter(fn ($v) => $v !== null && $v >= 0);
 
                 return (object) [
                     'nama'     => $g->first()->part,
@@ -186,8 +180,8 @@ class MachineRiwayatController extends Controller
             ->sortByDesc('total')
             ->values();
 
-        $grandPart     = $gantiTahun->sum('qty');
-        $adaColorPart  = $gantiTahun->contains(fn($r) => !empty($r->color));
+        $grandPart    = $gantiTahun->sum('qty');
+        $adaColorPart = $gantiTahun->contains(fn ($r) => !empty($r->color));
 
         // ===== Pemakaian counter per bulan + tagihan =====
         $kontrak   = $this->bacaKontrak($machine);
@@ -208,24 +202,24 @@ class MachineRiwayatController extends Controller
             }
         });
 
-        $baris = $deret->filter(fn($r) => !$r->kosong);
+        $baris = $deret->filter(fn ($r) => !$r->kosong);
         $penuh = $baris->where('penuh', true);
 
         $tot = (object) [
             'bw'       => $baris->sum('bw'),
             'color'    => $baris->sum('color'),
-            'sewa'     => $baris->sum(fn($r) => $r->tagihan->sewa ?? 0),
-            'biaya'    => $baris->sum(fn($r) => $r->tagihan->biaya ?? 0),
-            'subtotal' => $baris->sum(fn($r) => $r->tagihan->subtotal ?? 0),
-            'ppn'      => $baris->sum(fn($r) => $r->tagihan->ppn ?? 0),
-            'total'    => $baris->sum(fn($r) => $r->tagihan->total ?? 0),
+            'sewa'     => $baris->sum(fn ($r) => $r->tagihan->sewa ?? 0),
+            'biaya'    => $baris->sum(fn ($r) => $r->tagihan->biaya ?? 0),
+            'subtotal' => $baris->sum(fn ($r) => $r->tagihan->subtotal ?? 0),
+            'ppn'      => $baris->sum(fn ($r) => $r->tagihan->ppn ?? 0),
+            'total'    => $baris->sum(fn ($r) => $r->tagihan->total ?? 0),
         ];
 
         $rata = (object) [
             'n'     => $penuh->count(),
             'bw'    => $penuh->isNotEmpty() ? (int) round($penuh->avg('bw')) : null,
             'color' => $penuh->isNotEmpty() ? (int) round($penuh->avg('color')) : null,
-            'total' => $penuh->isNotEmpty() ? (int) round($penuh->avg(fn($r) => $r->tagihan->total ?? 0)) : null,
+            'total' => $penuh->isNotEmpty() ? (int) round($penuh->avg(fn ($r) => $r->tagihan->total ?? 0)) : null,
         ];
 
         $bulanIni = $baris->firstWhere('key', now()->format('Y-m'));
@@ -268,7 +262,7 @@ class MachineRiwayatController extends Controller
             'tot'           => $tot,
             'rata'          => $rata,
             'bulanIni'      => $bulanIni,
-            'adaColor'      => $baris->contains(fn($r) => $r->color > 0),
+            'adaColor'      => $baris->contains(fn ($r) => $r->color > 0),
             'anomali'       => $pemakaian->anomali,
 
             'gantiTahun'    => $gantiTahun,
@@ -286,14 +280,14 @@ class MachineRiwayatController extends Controller
     private function hitungPemakaian($logs): object
     {
         $perTgl = $logs
-            ->filter(fn($l) => $l->tanggal)
-            ->groupBy(fn($l) => Carbon::parse($l->tanggal)->toDateString())
-            ->map(fn($g, $tgl) => (object) [
+            ->filter(fn ($l) => $l->tanggal)
+            ->groupBy(fn ($l) => Carbon::parse($l->tanggal)->toDateString())
+            ->map(fn ($g, $tgl) => (object) [
                 'tgl'   => Carbon::parse($tgl)->startOfDay(),
                 'bw'    => $g->max('counter_bw') ?: null,
                 'color' => $g->max('counter_color') ?: null,
             ])
-            ->sortBy(fn($r) => $r->tgl->timestamp)
+            ->sortBy(fn ($r) => $r->tgl->timestamp)
             ->values();
 
         $bulan = [];
@@ -362,7 +356,7 @@ class MachineRiwayatController extends Controller
                     'tagihan'      => null,
                 ];
             })
-            ->filter(fn($r) => $r->hari > 0);
+            ->filter(fn ($r) => $r->hari > 0);
 
         return (object) ['rows' => $rows, 'anomali' => $anomali];
     }
@@ -440,12 +434,17 @@ class MachineRiwayatController extends Controller
             $sumber[$field] = $nama;
         }
 
-        // PPN: 11 (persen), 0.11 (pecahan), atau 1/0 (kena PPN atau tidak)
+        // PPN: pakai nilai kontrak jika ada (mis. 11 atau 0.11), selain itu default 11%
         $p = $hasil['ppn'];
-        if ($p === null)            $p = 0.0;
-        elseif ($p > 0 && $p < 1)   $p = $p * 100;
-        elseif ($p == 1)            $p = 11.0;
-        elseif ($p > 100)           $p = 0.0;
+
+        if ($p !== null && $p > 0 && $p < 1) {
+            $p = $p * 100;
+        }
+
+        if ($p === null || $p <= 1 || $p > 100) {
+            $p = self::PPN_DEFAULT;
+        }
+
         $hasil['ppn'] = $p;
 
         $noKontrak = null;
@@ -475,7 +474,7 @@ class MachineRiwayatController extends Controller
                     if (str_contains($k, $x)) continue 2;
                 }
 
-                if (collect($kata)->every(fn($w) => str_contains($k, $w))) {
+                if (collect($kata)->every(fn ($w) => str_contains($k, $w))) {
                     return $key;
                 }
             }

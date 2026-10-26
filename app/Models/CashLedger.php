@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class CashLedger extends Model
 {
@@ -27,27 +27,57 @@ class CashLedger extends Model
     ];
 
     // -------------------------------------------------------
-    // Auto-generate no_surat & no_urut saat creating
-    // Format: 01/VI/26
+    // Semi otomatis:
+    // - Kas masuk  : no_surat SELALU kosong
+    // - Kas keluar : no_surat boleh diisi manual, kalau kosong
+    //                digenerate otomatis (format 01/X/26)
     // -------------------------------------------------------
     protected static function booted(): void
     {
         static::creating(function (self $model) {
-            $bulanRomawi = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+            $tgl = $model->tanggal ? Carbon::parse($model->tanggal) : now();
 
-            $tgl = $model->tanggal
-                ? Carbon::parse($model->tanggal)
-                : now();
-
-            $bln    = $bulanRomawi[$tgl->month - 1];
-            $thn    = $tgl->format('y');
-            $urutan = self::whereYear('tanggal', $tgl->year)
+            // No. urut baris (kas masuk + keluar) untuk kolom "No."
+            $model->no_urut = ((int) self::whereYear('tanggal', $tgl->year)
                 ->whereMonth('tanggal', $tgl->month)
-                ->count() + 1;
-
-            $model->no_urut  = $urutan;
-            $model->no_surat = str_pad($urutan, 2, '0', STR_PAD_LEFT) . '/' . $bln . '/' . $thn;
+                ->max('no_urut')) + 1;
         });
+
+        static::saving(function (self $model) {
+            // Kas masuk: tidak boleh ada no surat
+            if ((int) $model->uang_masuk > 0) {
+                $model->no_surat = null;
+                return;
+            }
+
+            // Kas keluar: isi otomatis kalau kosong
+            if (blank($model->no_surat)) {
+                $tgl = $model->tanggal ? Carbon::parse($model->tanggal) : now();
+                $model->no_surat = self::nomorSuratBerikutnya($tgl);
+            }
+        });
+    }
+
+    // -------------------------------------------------------
+    // Nomor surat berikutnya untuk bulan dari $tanggal
+    // Ambil angka terbesar yang sudah dipakai di bulan itu + 1
+    // (aman dari duplikat kalau ada data dihapus)
+    // -------------------------------------------------------
+    public static function nomorSuratBerikutnya($tanggal = null): string
+    {
+        $bulanRomawi = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+
+        $tgl = $tanggal ? Carbon::parse($tanggal) : now();
+
+        $maks = (int) self::whereYear('tanggal', $tgl->year)
+            ->whereMonth('tanggal', $tgl->month)
+            ->whereNotNull('no_surat')
+            ->selectRaw("MAX(CAST(SUBSTRING_INDEX(no_surat, '/', 1) AS UNSIGNED)) as maks")
+            ->value('maks');
+
+        return str_pad($maks + 1, 2, '0', STR_PAD_LEFT)
+            . '/' . $bulanRomawi[$tgl->month - 1]
+            . '/' . $tgl->format('y');
     }
 
     // -------------------------------------------------------
@@ -56,7 +86,7 @@ class CashLedger extends Model
     // -------------------------------------------------------
     public static function saldoAwalBulan(int $year, int $month): int
     {
-        $batas = \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $batas = Carbon::createFromDate($year, $month, 1)->startOfMonth();
 
         return (int) (
             self::where('tanggal', '<', $batas)->sum('uang_masuk') -

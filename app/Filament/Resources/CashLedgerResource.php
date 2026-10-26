@@ -3,15 +3,17 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CashLedgerResource\Pages;
+use App\Filament\Traits\HasRoleAccess;
 use App\Models\CashLedger;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
 use Filament\Tables\Columns\Summarizers\Sum;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use App\Filament\Traits\HasRoleAccess;
 
 class CashLedgerResource extends Resource
 {
@@ -26,10 +28,36 @@ class CashLedgerResource extends Resource
     protected static ?string $pluralModelLabel = 'Buku Kas Umum';
     protected static array   $allowedRoles     = ['admin', 'keuangan', 'manager'];
 
+    protected static function bulanOptions(): array
+    {
+        return [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember',
+        ];
+    }
+
+    protected static function tahunOptions(): array
+    {
+        return array_combine(
+            range(now()->year, now()->year - 3),
+            range(now()->year, now()->year - 3)
+        );
+    }
+
     public static function canCreate(): bool
     {
-        // Diaktifkan kembali — Buku Kas sekarang adalah satu-satunya tempat
-        // pencatatan saldo resmi, diisi manual oleh admin (kas masuk & keluar).
+        // Buku Kas adalah satu-satunya tempat pencatatan saldo resmi,
+        // diisi manual oleh admin (kas masuk & keluar).
         return true;
     }
 
@@ -43,11 +71,29 @@ class CashLedgerResource extends Resource
                         ->label('Tanggal Transaksi')
                         ->required()
                         ->default(now())
-                        ->native(false),
+                        ->native(false)
+                        ->live()
+                        ->afterStateUpdated(function (Set $set, Get $get, $state, string $operation) {
+                            // Saat buat baru & kas keluar, usulan nomor mengikuti bulan tanggal
+                            if ($operation === 'create' && (float) $get('uang_masuk') <= 0 && $state) {
+                                $set('no_surat', CashLedger::nomorSuratBerikutnya($state));
+                            }
+                        }),
 
                     Forms\Components\TextInput::make('no_surat')
-                        ->label('No. Bukti / Referensi')
-                        ->placeholder('Opsional, misal No. Voucher SPM atau No. Bukti Kas Masuk'),
+                        ->label('No. Surat')
+                        ->placeholder('Otomatis, bisa diubah manual')
+                        ->helperText('Kosongkan untuk diisi otomatis. Kas masuk tidak memakai no. surat.')
+                        ->default(fn() => CashLedger::nomorSuratBerikutnya(now()))
+                        ->hidden(fn(Get $get) => (float) $get('uang_masuk') > 0)
+                        ->suffixAction(
+                            Forms\Components\Actions\Action::make('isiOtomatis')
+                                ->icon('heroicon-o-arrow-path')
+                                ->tooltip('Isi nomor otomatis')
+                                ->action(function (Set $set, Get $get) {
+                                    $set('no_surat', CashLedger::nomorSuratBerikutnya($get('tanggal') ?: now()));
+                                })
+                        ),
 
                     Forms\Components\Textarea::make('keterangan')
                         ->label('Uraian Transaksi')
@@ -59,7 +105,15 @@ class CashLedgerResource extends Resource
                         ->label('Pemasukan Kas (Rp)')
                         ->numeric()
                         ->default(0)
-                        ->prefix('Rp'),
+                        ->prefix('Rp')
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (Set $set, Get $get, $state) {
+                            if ((float) $state > 0) {
+                                $set('no_surat', null);
+                            } elseif (blank($get('no_surat'))) {
+                                $set('no_surat', CashLedger::nomorSuratBerikutnya($get('tanggal') ?: now()));
+                            }
+                        }),
 
                     Forms\Components\TextInput::make('uang_keluar')
                         ->label('Pengeluaran Kas (Rp)')
@@ -89,24 +143,26 @@ class CashLedgerResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('no_surat')
-                    ->label('No. Bukti')
+                    ->label('No. Surat')
+                    ->formatStateUsing(
+                        fn($state, CashLedger $record) => $record->uang_masuk > 0 ? '-' : ($state ?: '-')
+                    )
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('uraian_transaksi')
                     ->label('Uraian Transaksi')
                     ->state(function (CashLedger $record) {
-                        // 1. Jika berasal dari Mutasi Kas lama (data historis sebelum
-                        //    perubahan ini), ambil URAIAN MURNI dari items
+                        // 1. Data historis dari Mutasi Kas lama
                         if ($record->cashMutation && $record->cashMutation->items->isNotEmpty()) {
                             return $record->cashMutation->items->pluck('uraian')->filter()->implode(', ');
                         }
 
-                        // 2. Jika berasal dari Kas Masuk lama (relasi historis)
+                        // 2. Data historis dari Kas Masuk lama
                         if ($record->cashReceipt) {
                             return $record->cashReceipt->uraian ?? $record->cashReceipt->keterangan ?? '-';
                         }
 
-                        // 3. Entry manual (kondisi normal sekarang) — tampilkan keterangan asli
+                        // 3. Entry manual
                         return $record->keterangan ?? '-';
                     })
                     ->searchable(query: function (Builder $query, string $search) {
@@ -149,27 +205,25 @@ class CashLedgerResource extends Resource
                             $record->tanggal->year,
                             $record->tanggal->month
                         );
+
+                        $sampaiBarisIni = function ($q) use ($record) {
+                            $q->where('tanggal', '<', $record->tanggal)
+                                ->orWhere(function ($q) use ($record) {
+                                    $q->whereDate('tanggal', $record->tanggal)
+                                        ->where('id', '<=', $record->id);
+                                });
+                        };
+
                         $totalMasuk = CashLedger::whereYear('tanggal', $record->tanggal->year)
                             ->whereMonth('tanggal', $record->tanggal->month)
-                            ->where(function ($q) use ($record) {
-                                $q->where('tanggal', '<', $record->tanggal)
-                                    ->orWhere(function ($q) use ($record) {
-                                        $q->whereDate('tanggal', $record->tanggal)
-                                            ->where('id', '<=', $record->id);
-                                    });
-                            })
+                            ->where($sampaiBarisIni)
                             ->sum('uang_masuk');
 
                         $totalKeluar = CashLedger::whereYear('tanggal', $record->tanggal->year)
                             ->whereMonth('tanggal', $record->tanggal->month)
-                            ->where(function ($q) use ($record) {
-                                $q->where('tanggal', '<', $record->tanggal)
-                                    ->orWhere(function ($q) use ($record) {
-                                        $q->whereDate('tanggal', $record->tanggal)
-                                            ->where('id', '<=', $record->id);
-                                    });
-                            })
+                            ->where($sampaiBarisIni)
                             ->sum('uang_keluar');
+
                         return $saldoAwal + $totalMasuk - $totalKeluar;
                     })
                     ->formatStateUsing(fn($state) => 'Rp ' . number_format($state, 0, ',', '.'))
@@ -209,27 +263,11 @@ class CashLedgerResource extends Resource
                     ->form([
                         Forms\Components\Select::make('bulan')
                             ->label('Bulan')
-                            ->options([
-                                1 => 'Januari',
-                                2 => 'Februari',
-                                3 => 'Maret',
-                                4 => 'April',
-                                5 => 'Mei',
-                                6 => 'Juni',
-                                7 => 'Juli',
-                                8 => 'Agustus',
-                                9 => 'September',
-                                10 => 'Oktober',
-                                11 => 'November',
-                                12 => 'Desember',
-                            ])
+                            ->options(static::bulanOptions())
                             ->default(now()->month),
                         Forms\Components\Select::make('tahun')
                             ->label('Tahun')
-                            ->options(array_combine(
-                                range(now()->year, now()->year - 3),
-                                range(now()->year, now()->year - 3)
-                            ))
+                            ->options(static::tahunOptions())
                             ->default(now()->year),
                     ])
                     ->query(function ($query, array $data) {
@@ -240,21 +278,7 @@ class CashLedgerResource extends Resource
                     })
                     ->indicateUsing(function (array $data): ?string {
                         if (filled($data['bulan']) && filled($data['tahun'])) {
-                            $namaBulan = [
-                                1 => 'Januari',
-                                2 => 'Februari',
-                                3 => 'Maret',
-                                4 => 'April',
-                                5 => 'Mei',
-                                6 => 'Juni',
-                                7 => 'Juli',
-                                8 => 'Agustus',
-                                9 => 'September',
-                                10 => 'Oktober',
-                                11 => 'November',
-                                12 => 'Desember',
-                            ];
-                            return 'Periode: ' . $namaBulan[$data['bulan']] . ' ' . $data['tahun'];
+                            return 'Periode: ' . static::bulanOptions()[$data['bulan']] . ' ' . $data['tahun'];
                         }
                         return null;
                     }),
@@ -292,29 +316,13 @@ class CashLedgerResource extends Resource
                     ->form([
                         Forms\Components\Select::make('bulan')
                             ->label('Pilih Bulan')
-                            ->options([
-                                1 => 'Januari',
-                                2 => 'Februari',
-                                3 => 'Maret',
-                                4 => 'April',
-                                5 => 'Mei',
-                                6 => 'Juni',
-                                7 => 'Juli',
-                                8 => 'Agustus',
-                                9 => 'September',
-                                10 => 'Oktober',
-                                11 => 'November',
-                                12 => 'Desember',
-                            ])
+                            ->options(static::bulanOptions())
                             ->default(now()->month)
                             ->required(),
 
                         Forms\Components\Select::make('tahun')
                             ->label('Pilih Tahun')
-                            ->options(array_combine(
-                                range(now()->year, now()->year - 3),
-                                range(now()->year, now()->year - 3)
-                            ))
+                            ->options(static::tahunOptions())
                             ->default(now()->year)
                             ->required(),
                     ])

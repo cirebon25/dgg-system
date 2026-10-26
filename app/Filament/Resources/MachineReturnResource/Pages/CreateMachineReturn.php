@@ -24,15 +24,16 @@ class CreateMachineReturn extends CreateRecord
             throw new \Exception('Tidak ada mesin yang dipilih.');
         }
 
-        // Generate 1 batch_id untuk semua mesin dalam sesi ini
+        // 1 batch_id untuk semua mesin dalam sesi ini
         $this->batchId = (string) Str::uuid();
 
         $firstRecord = null;
 
         foreach ($machineList as $item) {
             $record = MachineReturn::create(array_merge($data, [
-                'machine_id' => $item['machine_id'],
-                'batch_id'   => $this->batchId,
+                'machine_id'           => $item['machine_id'],
+                'keterangan_kerusakan' => $item['keterangan_kerusakan'] ?? null, // per mesin
+                'batch_id'             => $this->batchId,
             ]));
 
             if (!$firstRecord) {
@@ -49,7 +50,7 @@ class CreateMachineReturn extends CreateRecord
         return $firstRecord;
     }
 
-    // ✅ Redirect ke halaman cetak setelah create
+    // Redirect ke halaman cetak setelah create
     protected function getRedirectUrl(): string
     {
         return route('cetak.surat-retur', $this->batchId);

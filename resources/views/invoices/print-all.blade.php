@@ -44,6 +44,15 @@
             text-align: center;
         }
 
+        .text-right {
+            text-align: right;
+        }
+
+        .total-row td {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
         .badge-belum {
             color: #d9534f;
             font-weight: bold;
@@ -54,6 +63,11 @@
             font-weight: bold;
         }
 
+        @page {
+            size: A4 landscape;
+            margin: 12mm;
+        }
+
         @media print {
             .no-print {
                 display: none;
@@ -61,6 +75,16 @@
 
             body {
                 padding: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            thead {
+                display: table-header-group;
+            }
+
+            tr {
+                page-break-inside: avoid;
             }
         }
     </style>
@@ -86,6 +110,9 @@
                 <th>No. Invoice</th>
                 <th>Nama Customer</th>
                 <th>Tanggal</th>
+                <th class="text-right">Nominal</th>
+                <th>Pengirim</th>
+                <th>Penerima</th>
                 <th class="text-center">Status Diterima</th>
                 <th>Tgl & Waktu Diterima</th>
             </tr>
@@ -95,9 +122,11 @@
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ $invoice->invoice_number }}</td>
-                    <!-- Memastikan nama customer terpanggil dengan aman -->
                     <td>{{ $invoice->customer->nama_customer ?? 'Belum ada Customer' }}</td>
                     <td>{{ $invoice->tanggal ? \Carbon\Carbon::parse($invoice->tanggal)->format('d/m/Y') : '-' }}</td>
+                    <td class="text-right">Rp {{ number_format($invoice->nominal ?? 0, 0, ',', '.') }}</td>
+                    <td>{{ $invoice->nama_pengirim ?: '-' }}</td>
+                    <td>{{ $invoice->nama_penerima ?: '-' }}</td>
                     <td class="text-center">
                         @if ($invoice->is_received)
                             <span class="badge-sudah">Sudah</span>
@@ -111,9 +140,17 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="text-center">Tidak ada data invoice.</td>
+                    <td colspan="9" class="text-center">Tidak ada data invoice.</td>
                 </tr>
             @endforelse
+
+            @if ($invoices->isNotEmpty())
+                <tr class="total-row">
+                    <td colspan="4" class="text-right">TOTAL NOMINAL</td>
+                    <td class="text-right">Rp {{ number_format($invoices->sum('nominal'), 0, ',', '.') }}</td>
+                    <td colspan="4"></td>
+                </tr>
+            @endif
         </tbody>
     </table>
 
