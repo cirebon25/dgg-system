@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Rekap Horizontal Per Rayon - DGG System</title>
+    <title>Laporan Teknisi Cirebon - DGG System</title>
     <style>
         body {
             font-family: 'Helvetica', Arial, sans-serif;

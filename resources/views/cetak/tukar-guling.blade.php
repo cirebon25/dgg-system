@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Laporan Tukar Guling DGG</title>
+    <title>Laporan Tukar Mesin DGG</title>
     <style>
         @page {
             size: landscape;
