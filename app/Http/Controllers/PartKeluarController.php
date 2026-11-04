@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Deployment;
 use App\Models\PartUsageHeader;
 use App\Models\ServiceLogSparepart;
+use App\Models\Sparepart;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -119,7 +120,7 @@ class PartKeluarController extends Controller
 
         $rows = $rows->concat($deploymentRows);
 
-        // ===== Per part -> ringkasan per customer + rincian transaksi =====
+        // ===== PER PART -> RINGKASAN CUSTOMER, RINGKASAN TANGGAL, & TRANSAKSI =====
         $perPart = $rows
             ->groupBy('sparepart_id')
             ->map(function ($g) {
@@ -140,11 +141,24 @@ class PartKeluarController extends Controller
                     ->sortByDesc('total')
                     ->values();
 
+                $ringkasTanggal = $transaksi
+                    ->groupBy(function ($item) {
+                        return $item->tanggal ? Carbon::parse($item->tanggal)->format('Y-m-d') : 'Tanpa Tanggal';
+                    })
+                    ->map(fn($t, $tgl) => (object) [
+                        'tanggal'   => $tgl === 'Tanpa Tanggal' ? null : $tgl,
+                        'total'     => $t->sum('qty'),
+                        'transaksi' => $t->count(),
+                    ])
+                    ->sortBy('tanggal')
+                    ->values();
+
                 return (object) [
-                    'sparepart' => $g->first()->sparepart,
-                    'transaksi' => $transaksi,
-                    'ringkas'   => $ringkas,
-                    'total'     => $transaksi->sum('qty'),
+                    'sparepart'       => $g->first()->sparepart,
+                    'transaksi'       => $transaksi,
+                    'ringkas'         => $ringkas,
+                    'ringkas_tanggal' => $ringkasTanggal,
+                    'total'           => $transaksi->sum('qty'),
                 ];
             })
             ->sortBy(fn($p) => $p->sparepart->nama_sparepart ?? '')
@@ -154,11 +168,20 @@ class PartKeluarController extends Controller
             ? 'Januari - Desember'
             : Carbon::create()->month((int)$month)->translatedFormat('F');
 
+        $filterPart = !empty($sparepartIds)
+            ? Sparepart::whereIn('id', $sparepartIds)->pluck('nama_sparepart')->implode(', ')
+            : null;
+
+        // Ambil daftar seluruh sparepart untuk dropdown ganti part di halaman cetak
+        $semuaPart = Sparepart::orderBy('nama_sparepart', 'asc')->get();
+
         return view('cetak.part-keluar', [
             'perPart'        => $perPart,
             'bulan'          => $namaBulan,
             'tahun'          => $year,
             'filterCustomer' => $customerId ? Customer::find($customerId)?->nama_customer : null,
+            'filterPart'     => $filterPart,
+            'semuaPart'      => $semuaPart,
         ]);
     }
 }

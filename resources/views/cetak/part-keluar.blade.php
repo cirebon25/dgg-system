@@ -26,15 +26,25 @@
 
         .toolbar {
             margin-bottom: 12px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
-        .toolbar button {
-            padding: 7px 16px;
+        .toolbar button,
+        .toolbar select {
+            padding: 7px 12px;
             font-size: 12px;
             cursor: pointer;
             border: 1px solid #333;
             background: #fff;
             border-radius: 4px;
+        }
+
+        .toolbar select {
+            background: #f9f9f9;
+            min-width: 220px;
         }
 
         .toolbar button:hover {
@@ -84,16 +94,20 @@
 
         .kolom {
             display: flex;
-            gap: 24px;
+            gap: 16px;
             align-items: flex-start;
         }
 
         .kolom .a {
-            width: 40%;
+            width: 28%;
         }
 
         .kolom .b {
-            width: 60%;
+            width: 28%;
+        }
+
+        .kolom .c {
+            width: 44%;
         }
 
         .sub {
@@ -173,16 +187,39 @@
     </style>
 </head>
 
-<body onload="window.print()">
+<body>
 
     <div class="toolbar no-print">
         <button onclick="window.print()">🖨 Cetak</button>
+
+        <!-- Dropdown Pilih Part Langsung di atas -->
+        <select id="gantiPart" onchange="gantiPartFilter(this.value)">
+            <option value="">-- Pilih / Ganti Part --</option>
+            @foreach ($semuaPart ?? [] as $sp)
+                <option value="{{ $sp->id }}" {{ request('sparepart_ids.0') == $sp->id ? 'selected' : '' }}>
+                    {{ $sp->nama_sparepart }}
+                </option>
+            @endforeach
+        </select>
+
         <button onclick="window.close()">Tutup</button>
     </div>
 
+    <script>
+        function gantiPartFilter(partId) {
+            if (!partId) return;
+            let url = new URL(window.location.href);
+            url.searchParams.set('sparepart_ids[0]', partId);
+            window.location.href = url.toString();
+        }
+    </script>
+
     <div class="judul">
         PENCARIAN PART KELUAR
-        @if ($filterCustomer)
+        @if (!empty($filterPart))
+            &nbsp;|&nbsp; Part: {{ $filterPart }}
+        @endif
+        @if (!empty($filterCustomer))
             &nbsp;|&nbsp; Customer: {{ $filterCustomer }}
         @endif
     </div>
@@ -196,7 +233,7 @@
                     <th>Nama Part</th>
                     <th>Tahun</th>
                     <th>Bulan</th>
-                    <th>Total Qty keluar</th>
+                    <th>Total Qty Keluar</th>
                 </tr>
                 <tr>
                     <td class="part">{{ $p->sparepart->nama_sparepart ?? '-' }}</td>
@@ -208,15 +245,15 @@
 
             <div class="kolom">
 
-                {{-- A. Keluar ke customer mana saja --}}
+                {{-- A. Keluar ke customer --}}
                 <div class="a">
-                    <div class="sub">A. KELUAR KE CUSTOMER MANA SAJA</div>
+                    <div class="sub">A. KELUAR KE CUSTOMER</div>
                     <table class="data">
                         <thead>
                             <tr>
                                 <th>Customer</th>
-                                <th style="width:60px">Total Qty</th>
-                                <th style="width:80px">Jumlah Transaksi</th>
+                                <th style="width:45px">Qty</th>
+                                <th style="width:55px">Trans</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -233,22 +270,56 @@
                                 <tr>
                                     <td>Total</td>
                                     <td class="right">{{ number_format($p->total) }}</td>
-                                    <td class="right">{{ $p->transaksi->count() }}</td>
+                                    <td class="right">{{ $p->ringkas->sum('transaksi') }}</td>
                                 </tr>
                             </tfoot>
                         @endif
                     </table>
                 </div>
 
-                {{-- B. Rincian transaksi --}}
+                {{-- B. Keluar per Tanggal --}}
                 <div class="b">
-                    <div class="sub">B. RINCIAN TRANSAKSI</div>
+                    <div class="sub">B. KELUAR PER TANGGAL</div>
                     <table class="data">
                         <thead>
                             <tr>
-                                <th style="width:80px">Tanggal</th>
+                                <th style="width:75px">Tanggal</th>
+                                <th style="width:45px">Qty</th>
+                                <th style="width:55px">Trans</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($p->ringkas_tanggal as $d)
+                                <tr>
+                                    <td class="center">
+                                        {{ $d->tanggal ? \Carbon\Carbon::parse($d->tanggal)->format('d/m/Y') : '-' }}
+                                    </td>
+                                    <td class="right">{{ number_format($d->total) }}</td>
+                                    <td class="right">{{ $d->transaksi }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                        @if ($p->ringkas_tanggal->count() > 1)
+                            <tfoot>
+                                <tr>
+                                    <td>Total</td>
+                                    <td class="right">{{ number_format($p->total) }}</td>
+                                    <td class="right">{{ $p->ringkas_tanggal->sum('transaksi') }}</td>
+                                </tr>
+                            </tfoot>
+                        @endif
+                    </table>
+                </div>
+
+                {{-- C. Rincian transaksi --}}
+                <div class="c">
+                    <div class="sub">C. RINCIAN TRANSAKSI</div>
+                    <table class="data">
+                        <thead>
+                            <tr>
+                                <th style="width:75px">Tanggal</th>
                                 <th>Customer</th>
-                                <th style="width:50px">Qty</th>
+                                <th style="width:45px">Qty</th>
                             </tr>
                         </thead>
                         <tbody>

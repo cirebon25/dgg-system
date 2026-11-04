@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Traits\UppercaseAttributes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\ServiceLog;
+use App\Traits\LogInputan;
 
 class ServiceLogSparepart extends Model
 {
