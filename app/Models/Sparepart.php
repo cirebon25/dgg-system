@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\UppercaseAttributes;
+use App\Traits\LogInputan;
 
 class Sparepart extends Model
 {
-    use HasFactory, UppercaseAttributes;
+    use HasFactory, UppercaseAttributes, LogInputan;
 
     protected $fillable = [
         'nama_sparepart',

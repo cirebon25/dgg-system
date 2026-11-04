@@ -31,8 +31,9 @@ use App\Http\Controllers\MrcMrcController;
 use App\Http\Controllers\PartKeluarController;
 use App\Http\Controllers\MachineRiwayatController;
 use App\Http\Controllers\OrderPartPrintController;
-
-
+use App\Http\Controllers\BukuKontrakController;
+use App\Http\Controllers\AbsensiCetakController;
+use App\Http\Controllers\RincianHarianController;
 
 
 
@@ -347,3 +348,19 @@ Route::get('/cetak/riwayat-mesin/{machine}', [MachineRiwayatController::class, '
 
 Route::get('/print/order-part/{orderPart}', [OrderPartPrintController::class, 'show'])
     ->name('print.order-part');
+
+
+Route::middleware('auth')->group(function () {
+    Route::resource('buku-kontrak', BukuKontrakController::class)
+        ->parameters(['buku-kontrak' => 'bukuKontrak'])
+        ->except('show');
+});
+
+// Route::get('/cetak/absensi', AbsensiCetakController::class)
+//     ->name('cetak.absensi')
+//     ->middleware('auth');
+
+
+Route::get('/cetak/rincian-harian', RincianHarianController::class)
+    ->name('cetak.rincian-harian')
+    ->middleware('auth');

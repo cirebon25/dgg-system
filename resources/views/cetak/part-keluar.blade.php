@@ -53,7 +53,6 @@
             margin-bottom: 25px;
         }
 
-        /* Kotak info: Nama Part | Tahun | Bulan | Total Qty */
         table.info {
             border-collapse: collapse;
             margin: 0 0 14px;

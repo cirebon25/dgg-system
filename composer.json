@@ -15,7 +15,8 @@
         "maatwebsite/excel": "^3.1",
         "pelmered/filament-money-field": "^1.4",
         "pxlrbt/filament-excel": "^2.5",
-        "simplesoftwareio/simple-qrcode": "^4.2"
+        "simplesoftwareio/simple-qrcode": "^4.2",
+        "spatie/laravel-activitylog": "4.8"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",
