@@ -7,6 +7,7 @@ use App\Models\Prospect;
 use App\Models\ProspectVisit;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -137,7 +138,16 @@ class ProspectResource extends Resource
                                         'Gagal'      => 'Gagal',
                                     ])
                                     ->default('Follow Up')
-                                    ->required(),
+                                    ->required()
+                                    ->live(),
+
+                                Forms\Components\DatePicker::make('tanggal_followup')
+                                    ->label('Tanggal Follow-up')
+                                    ->helperText('Marketing akan menerima WA pengingat pada tanggal ini.')
+                                    ->native(false)
+                                    ->displayFormat('d/m/Y')
+                                    ->afterOrEqual('tanggal_kunjungan')
+                                    ->required(fn(Get $get): bool => $get('hasil_kunjungan') === 'Follow Up'),
 
                                 Forms\Components\Textarea::make('catatan')
                                     ->label('Catatan')
@@ -191,6 +201,11 @@ class ProspectResource extends Resource
                 Tables\Columns\TextColumn::make('lastVisit.tanggal_kunjungan')
                     ->label('Tgl Visit Terakhir')
                     ->date('d/m/Y'),
+
+                Tables\Columns\TextColumn::make('lastVisit.tanggal_followup')
+                    ->label('Follow-up Berikutnya')
+                    ->date('d/m/Y')
+                    ->placeholder('-'),
             ])
             ->headerActions([
                 Tables\Actions\Action::make('cetakLaporan')

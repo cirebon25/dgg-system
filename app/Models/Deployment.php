@@ -10,9 +10,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Filament\Notifications\Notification;
 use Filament\Notifications\Actions\Action as NotifAction;
+use App\Models\Concerns\DetectsDuplicate;
+
 
 class Deployment extends Model
 {
+    use DetectsDuplicate;
     use HasFactory, SoftDeletes, UppercaseAttributes;
 
     protected $fillable = [
@@ -224,5 +227,15 @@ class Deployment extends Model
     public function deploymentSpareparts()
     {
         return $this->hasMany(DeploymentSparepart::class, 'deployment_id');
+    }
+
+    public static function duplicateKeys(): array
+    {
+        return ['customer_id', 'machine_id', 'counter_bw', 'counter_color'];
+    }
+
+    public static function duplicateDateKeys(): array
+    {
+        return ['tanggal_instal'];
     }
 }

@@ -2,15 +2,72 @@
 
 namespace App\Filament\Resources\ServiceLogResource\Pages;
 
+use App\Filament\Concerns\WarnsOnDuplicate;
 use App\Filament\Resources\ServiceLogResource;
 use App\Models\ServiceLog;
 use App\Models\PartReplacement;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\DB;
+use App\Models\Deployment;
+use Illuminate\Database\Eloquent\Model;
 
 class CreateServiceLog extends CreateRecord
 {
+
+    use WarnsOnDuplicate;
+
     protected static string $resource = ServiceLogResource::class;
+
+    protected function findDuplicateRecord(array $data): ?Model
+    {
+        $machineId  = $data['machine_id'] ?? null;
+        $customerId = $data['customer_id'] ?? null;
+        $tanggal    = $data['tanggal'] ?? null;
+
+        if (! $machineId || ! $tanggal) {
+            return null;
+        }
+
+        $partIds = collect($data['serviceLogSpareparts'] ?? [])
+            ->pluck('sparepart_id')
+            ->filter()
+            ->values();
+
+        // 1. ServiceLog lain (termasuk RN otomatis dari Deployment)
+        $log = ServiceLog::query()
+            ->where('machine_id', $machineId)
+            ->where('customer_id', $customerId)
+            ->whereDate('tanggal', $tanggal)
+            ->whereRaw('COALESCE(counter_bw, 0) = ?', [(int) ($data['counter_bw'] ?? 0)])
+            ->whereRaw('COALESCE(counter_color, 0) = ?', [(int) ($data['counter_color'] ?? 0)])
+            ->when($partIds->isNotEmpty(), function ($q) use ($partIds) {
+                // log tanpa part tetap cocok; log dengan part harus punya part yang sama
+                $q->where(function ($q) use ($partIds) {
+                    $q->doesntHave('serviceLogSpareparts')
+                        ->orWhereHas('serviceLogSpareparts', fn($p) => $p->whereIn('sparepart_id', $partIds));
+                });
+            })
+            ->latest()
+            ->first();
+
+        if ($log) {
+            return $log;
+        }
+
+        // 2. Deployment (pemasangan) di mesin, customer, dan tanggal yang sama
+        return Deployment::query()
+            ->where('machine_id', $machineId)
+            ->where('customer_id', $customerId)
+            ->whereDate('tanggal_instal', $tanggal)
+            ->when($partIds->isNotEmpty(), function ($q) use ($partIds) {
+                $q->where(function ($q) use ($partIds) {
+                    $q->doesntHave('deploymentSpareparts')
+                        ->orWhereHas('deploymentSpareparts', fn($p) => $p->whereIn('sparepart_id', $partIds));
+                });
+            })
+            ->latest()
+            ->first();
+    }
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {

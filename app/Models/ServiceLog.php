@@ -9,9 +9,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\LogInputan;
+use App\Models\Concerns\DetectsDuplicate;
+
 
 class ServiceLog extends Model
 {
+    use DetectsDuplicate;
     use SoftDeletes;
     use HasFactory, UppercaseAttributes;
 
@@ -65,5 +68,15 @@ class ServiceLog extends Model
     public function serviceLogSpareparts(): HasMany
     {
         return $this->hasMany(ServiceLogSparepart::class, 'service_log_id');
+    }
+
+    public static function duplicateKeys(): array
+    {
+        return ['customer_id', 'machine_id', 'sparepart_id', 'counter_bw', 'counter_color'];
+    }
+
+    public static function duplicateDateKeys(): array
+    {
+        return ['tanggal'];
     }
 }

@@ -14,9 +14,14 @@ class ProspectVisit extends Model
         'merk_mesin_existing',
         'hasil_kunjungan',
         'catatan',
+        'tanggal_followup',
     ];
 
-    protected $casts = ['tanggal_kunjungan' => 'date'];
+    protected $casts = [
+        'tanggal_kunjungan' => 'date',
+        'tanggal_followup' => 'date',
+        'followup_reminded_at' => 'datetime',
+    ];
 
     public function prospect()
     {
