@@ -11,9 +11,9 @@
         }
 
         body {
-            font-family: sans-serif;
-            font-size: 11px;
-            color: #333;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 12pt;
+            color: #000;
             margin: 0;
             padding: 0;
         }
@@ -27,14 +27,15 @@
 
         .header h2 {
             margin: 0 0 4px 0;
-            font-size: 15px;
+            font-size: 12pt;
+            font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
         .header h3 {
             margin: 0;
-            font-size: 12px;
+            font-size: 12pt;
             font-weight: normal;
         }
 
@@ -44,27 +45,30 @@
             margin-top: 10px;
         }
 
-        thead th {
-            background-color: #a59f9f;
-            color: #000000;
-        }
-
         th {
-            background-color: #af9f9f;
-            color: #000000;
-            padding: 10px 5px;
+            background-color: #d9d9d9;
+            color: #000;
+            padding: 8px 5px;
             border: 1px solid #000;
             font-weight: bold;
             text-transform: uppercase;
-            font-size: 10px;
+            font-size: 12pt;
             text-align: center;
         }
 
         td {
-            padding: 8px 5px;
-            border: 1px solid #666;
+            padding: 6px 5px;
+            border: 1px solid #000;
             vertical-align: middle;
-            font-size: 10px;
+            font-size: 12pt;
+        }
+
+        tr {
+            page-break-inside: avoid;
+        }
+
+        thead {
+            display: table-header-group;
         }
 
         .text-center {
@@ -74,13 +78,12 @@
         .empty-row td {
             text-align: center;
             padding: 20px;
-            color: #666;
             font-weight: bold;
         }
 
         ul.part-list {
             margin: 0;
-            padding-left: 14px;
+            padding-left: 16px;
         }
 
         ul.part-list li {
@@ -91,6 +94,7 @@
             margin-top: 30px;
             width: 100%;
             overflow: hidden;
+            page-break-inside: avoid;
         }
 
         .ttd-box {
@@ -147,17 +151,17 @@
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td class="text-center">
-                        {{ \Carbon\Carbon::parse($row->created_at)->format('d-m-Y') }}
+                        {{ $row->tanggal_instal ? \Carbon\Carbon::parse($row->tanggal_instal)->format('d-m-Y') : '-' }}
                     </td>
                     <td>{{ $row->customer?->nama_customer ?? '-' }}</td>
-                    <td>{{ $row->machine->tipe_model ?? '-' }}</td>
-                    <td class="text-center"><b>{{ $row->machine->serial_number ?? '-' }}</b></td>
-                    <td class="text-center">{{ $row->volt }} V</td>
+                    <td>{{ $row->machine?->tipe_model ?? '-' }}</td>
+                    <td class="text-center"><b>{{ $row->machine?->serial_number ?? '-' }}</b></td>
+                    <td class="text-center">{{ $row->volt ? $row->volt . ' V' : '-' }}</td>
                     <td class="text-center">
-                        BW: {{ number_format($row->counter_bw) }}<br>
-                        CL: {{ number_format($row->counter_color) }}
+                        BW: {{ number_format($row->counter_bw ?? 0) }}<br>
+                        CL: {{ number_format($row->counter_color ?? 0) }}
                     </td>
-                    <td>{{ $row->technician->nama_technician ?? '-' }}</td>
+                    <td>{{ $row->technician?->nama_technician ?? '-' }}</td>
                     <td>
                         @php
                             $parts = $sparepartPerDeployment->get($row->id, collect());
