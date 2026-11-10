@@ -14,6 +14,7 @@ use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use App\Filament\Traits\HasRoleAccess;
 use Illuminate\Database\Eloquent\Builder;
+use App\Models\TypeModel;
 
 class ProspectResource extends Resource
 {
@@ -24,6 +25,39 @@ class ProspectResource extends Resource
     protected static ?string $navigationIcon  = 'heroicon-o-building-storefront';
     protected static ?string $navigationLabel = 'Kunjungan Sales';
     protected static ?string $navigationGroup = 'Marketing';
+
+    /**
+     * Form pilih bulan & tahun, dipakai bersama oleh tombol
+     * "Cetak Laporan Sales" dan "Rincian Laporan Sales".
+     */
+    protected static function laporanForm(): array
+    {
+        return [
+            Forms\Components\Select::make('month')
+                ->label('Bulan')
+                ->options([
+                    '01' => 'Januari',
+                    '02' => 'Februari',
+                    '03' => 'Maret',
+                    '04' => 'April',
+                    '05' => 'Mei',
+                    '06' => 'Juni',
+                    '07' => 'Juli',
+                    '08' => 'Agustus',
+                    '09' => 'September',
+                    '10' => 'Oktober',
+                    '11' => 'November',
+                    '12' => 'Desember',
+                ])
+                ->required()
+                ->default(date('m')),
+            Forms\Components\Select::make('year')
+                ->label('Tahun')
+                ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
+                ->required()
+                ->default(date('Y')),
+        ];
+    }
 
     public static function form(Form $form): Form
     {
@@ -123,11 +157,25 @@ class ProspectResource extends Resource
 
                                 Forms\Components\TextInput::make('jenis_mesin_existing')
                                     ->label('Jenis Mesin')
+                                    ->default('Fotocopy')
                                     ->placeholder('Contoh: Fotocopy A3'),
 
-                                Forms\Components\TextInput::make('merk_mesin_existing')
-                                    ->label('Merk Mesin Existing')
-                                    ->placeholder('Contoh: Kyocera, Canon'),
+                                Forms\Components\Select::make('merk_mesin_existing')
+                                    ->label('Merk / Tipe Mesin Existing')
+                                    ->options(fn() => TypeModel::query()
+                                        ->orderBy('nama_tipe')
+                                        ->pluck('nama_tipe', 'nama_tipe')
+                                        ->toArray())
+                                    ->searchable()
+                                    ->getOptionLabelUsing(fn($value) => $value) // data lama yang tidak ada di daftar tetap tampil
+                                    ->createOptionForm([
+                                        Forms\Components\TextInput::make('nama_tipe')
+                                            ->label('Nama Tipe')
+                                            ->required()
+                                            ->unique('type_models', 'nama_tipe'),
+                                    ])
+                                    ->createOptionUsing(fn(array $data) => TypeModel::create($data)->nama_tipe)
+                                    ->placeholder('Pilih atau cari tipe mesin'),
 
                                 Forms\Components\Select::make('hasil_kunjungan')
                                     ->label('Hasil Kunjungan')
@@ -208,36 +256,21 @@ class ProspectResource extends Resource
                     ->placeholder('-'),
             ])
             ->headerActions([
+                // Ringkasan eksekutif untuk keputusan manajemen
                 Tables\Actions\Action::make('cetakLaporan')
                     ->label('Cetak Laporan Sales')
                     ->icon('heroicon-o-printer')
                     ->color('success')
-                    ->form([
-                        Forms\Components\Select::make('month')
-                            ->label('Bulan')
-                            ->options([
-                                '01' => 'Januari',
-                                '02' => 'Februari',
-                                '03' => 'Maret',
-                                '04' => 'April',
-                                '05' => 'Mei',
-                                '06' => 'Juni',
-                                '07' => 'Juli',
-                                '08' => 'Agustus',
-                                '09' => 'September',
-                                '10' => 'Oktober',
-                                '11' => 'November',
-                                '12' => 'Desember',
-                            ])
-                            ->required()
-                            ->default(date('m')),
-                        Forms\Components\Select::make('year')
-                            ->label('Tahun')
-                            ->options(array_combine(range(date('Y'), 2024), range(date('Y'), 2024)))
-                            ->required()
-                            ->default(date('Y')),
-                    ])
+                    ->form(static::laporanForm())
                     ->action(fn(array $data) => redirect()->route('prospect.laporan', $data)),
+
+                // Daftar kunjungan lengkap per marketing
+                Tables\Actions\Action::make('rincianLaporan')
+                    ->label('Rincian Laporan Sales')
+                    ->icon('heroicon-o-document-text')
+                    ->color('info')
+                    ->form(static::laporanForm())
+                    ->action(fn(array $data) => redirect()->route('prospect.laporan.rincian', $data)),
 
                 Tables\Actions\CreateAction::make(),
             ])

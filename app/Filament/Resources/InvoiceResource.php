@@ -160,23 +160,51 @@ class InvoiceResource extends Resource
                     ->falseLabel('Belum Diterima'),
             ])
             ->headerActions([
-                // Tombol untuk mencetak semua data rekap sekaligus di bagian atas tabel
                 Tables\Actions\Action::make('printAll')
                     ->label('Cetak Rekap Semua')
                     ->icon('heroicon-o-printer')
                     ->color('success')
-                    ->url(route('invoice.print-all'))
-                    ->openUrlInNewTab(),
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
+                    ->modalHeading('Cetak Rekap Invoice')
+                    ->modalSubmitActionLabel('Cetak')
+                    ->form([
+                        Forms\Components\Select::make('bulan')
+                            ->label('Bulan')
+                            ->options([
+                                'all' => 'Semua Bulan',
+                                1 => 'Januari',
+                                2 => 'Februari',
+                                3 => 'Maret',
+                                4 => 'April',
+                                5 => 'Mei',
+                                6 => 'Juni',
+                                7 => 'Juli',
+                                8 => 'Agustus',
+                                9 => 'September',
+                                10 => 'Oktober',
+                                11 => 'November',
+                                12 => 'Desember',
+                            ])
+                            ->default(now()->month)
+                            ->required(),
 
-                // Tombol Print untuk mencetak per satuan baris
-                Tables\Actions\Action::make('print')
-                    ->label('Cetak')
-                    ->icon('heroicon-o-printer')
-                    ->url(fn(Invoice $record): string => route('invoice.print', $record))
-                    ->openUrlInNewTab(),
+                        Forms\Components\Select::make('tahun')
+                            ->label('Tahun')
+                            ->options(
+                                collect(range(now()->year, now()->year - 5))
+                                    ->mapWithKeys(fn($y) => [$y => $y])
+                            )
+                            ->default(now()->year)
+                            ->required(),
+                    ])
+                    ->action(function (array $data, $livewire) {
+                        $url = route('invoice.print-all', [
+                            'bulan' => $data['bulan'],
+                            'tahun' => $data['tahun'],
+                        ]);
+
+                        // buka di tab baru
+                        $livewire->js("window.open('{$url}', '_blank')");
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

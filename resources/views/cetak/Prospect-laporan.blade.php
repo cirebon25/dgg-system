@@ -17,19 +17,16 @@
             font-size: 8.5px;
             color: #1e293b;
             background: #fff;
-            line-height: 1.25;
+            line-height: 1.3;
         }
 
         .page {
             width: 297mm;
-            height: 210mm;
-            padding: 6mm 10mm;
+            padding: 8mm 10mm;
             margin: 0 auto;
-            overflow: hidden;
-            /* Mencegah tembus ke halaman 2 */
         }
 
-        /* Header Kop Surat */
+        /* Kop */
         .header {
             display: flex;
             justify-content: space-between;
@@ -57,27 +54,45 @@
             text-align: right;
         }
 
-        /* Grand Summary Cards */
-        .grand-summary {
+        /* Ringkasan */
+        .summary-wrap {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .summary-box {
+            flex: 1;
             background: #f8fafc;
             border: 1px solid #cbd5e1;
             border-radius: 3px;
-            padding: 5px 10px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 9.5px;
+            padding: 5px 8px;
+            font-size: 9px;
         }
 
-        .grand-summary-item {
+        .summary-box .title {
+            font-size: 7.5px;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: bold;
+            letter-spacing: 0.3px;
+            margin-bottom: 3px;
+        }
+
+        .summary-item {
             display: inline-block;
-            margin-right: 12px;
+            margin-right: 10px;
         }
 
-        /* Per Marketing Section Card */
+        .formula {
+            font-size: 7.5px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        /* Kartu per marketing */
         .marketing-card {
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             border: 1px solid #cbd5e1;
             border-radius: 4px;
             overflow: hidden;
@@ -85,7 +100,7 @@
 
         .marketing-header {
             background: #1e40af;
-            color: #ffffff;
+            color: #fff;
             padding: 4px 8px;
             display: flex;
             justify-content: space-between;
@@ -96,7 +111,6 @@
             font-size: 9.5px;
             font-weight: bold;
             text-transform: uppercase;
-            margin: 0;
             letter-spacing: 0.3px;
         }
 
@@ -107,34 +121,42 @@
 
         .stat-badge {
             font-size: 8px;
-            padding: 1px 4px;
+            padding: 1px 5px;
             border-radius: 2px;
             font-weight: bold;
             background: rgba(255, 255, 255, 0.2);
             color: #fff;
         }
 
-        /* Tabel Data Visits */
+        /* Tabel */
         table {
             width: 100%;
             border-collapse: collapse;
             background: #fff;
         }
 
+        thead {
+            display: table-header-group;
+        }
+
+        tr {
+            page-break-inside: avoid;
+        }
+
         th {
             border: 1px solid #cbd5e1;
-            padding: 4px 6px;
+            padding: 4px 5px;
             background: #f1f5f9;
             font-weight: bold;
             text-align: left;
-            font-size: 8px;
+            font-size: 7.5px;
             color: #334155;
             text-transform: uppercase;
         }
 
         td {
             border: 1px solid #cbd5e1;
-            padding: 4px 6px;
+            padding: 4px 5px;
             font-size: 8.5px;
             vertical-align: top;
         }
@@ -144,7 +166,7 @@
             text-align: center;
         }
 
-        tr:nth-child(even) {
+        tbody tr:nth-child(even) {
             background: #f8fafc;
         }
 
@@ -160,7 +182,7 @@
             font-weight: 600;
         }
 
-        /* Badge Status / Hasil Kunjungan */
+        /* Badge */
         .badge {
             padding: 1px 4px;
             border-radius: 2px;
@@ -190,11 +212,22 @@
             color: #991b1b;
         }
 
-        /* Tanda Tangan Footer */
+        .badge-baru {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .fu-date {
+            color: #92400e;
+            font-weight: bold;
+        }
+
+        /* Tanda tangan */
         .footer {
             margin-top: 12px;
             display: flex;
             justify-content: space-between;
+            page-break-inside: avoid;
         }
 
         .ttd {
@@ -208,7 +241,6 @@
             border-top: 1px solid #333;
         }
 
-        /* Tombol Cetak / Kontrol Tampilan Web */
         .no-print {
             width: 297mm;
             margin: 10px auto;
@@ -232,13 +264,18 @@
 
             .page {
                 margin: 0;
-                padding: 6mm;
-                height: auto;
+                padding: 0;
+                width: 100%;
             }
 
             @page {
                 size: A4 landscape;
-                margin: 0;
+                margin: 8mm;
+            }
+
+            * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
         }
     </style>
@@ -246,10 +283,9 @@
 
 <body>
 
-    <!-- Tombol Aksi Print -->
     <div class="no-print">
         <button onclick="window.print()" class="btn" style="background:#2563eb; color:#fff;">
-            🖨️ Cetak / Simpan PDF Laporan (1 Halaman)
+            🖨️ Cetak / Simpan PDF Laporan
         </button>
         <button onclick="window.close()" class="btn" style="background:#6b7280; color:#fff; margin-left:6px;">
             ✕ Tutup
@@ -257,7 +293,7 @@
     </div>
 
     <div class="page">
-        <!-- Header Dokumen -->
+        <!-- Kop -->
         <div class="header">
             <div>
                 <h2>PT Dinamika Global Gemilang</h2>
@@ -275,31 +311,56 @@
             $totalClosingAll = $dataPerMarketing->sum('closing');
             $totalFollowUpAll = $dataPerMarketing->sum('followup');
             $totalInterestAll = $dataPerMarketing->sum('interest');
+            $totalGagalAll = $dataPerMarketing->sum('gagal');
             $conversionRate = $totalVisitAll > 0 ? round(($totalClosingAll / $totalVisitAll) * 100, 1) : 0;
+
+            // Perusahaan unik yang dikunjungi pada periode ini, dikelompokkan berdasarkan Status Prospek
+            $prospekUnik = $dataPerMarketing
+                ->flatMap(fn($d) => collect($d['visits']))
+                ->pluck('prospect')
+                ->filter()
+                ->unique('id');
+            $statusCount = $prospekUnik->countBy('status');
+
+            // Jumlah visit "Follow Up" yang punya jadwal follow-up berikutnya
+            $totalJadwalFu = $dataPerMarketing
+                ->flatMap(fn($d) => collect($d['visits']))
+                ->filter(fn($v) => $v->hasil_kunjungan === 'Follow Up' && $v->tanggal_followup)
+                ->count();
         @endphp
 
-        <!-- Rekapitulasi Keseluruhan -->
-        <div class="grand-summary">
-            <div>
-                <span class="grand-summary-item">Total Visit: <strong
+        <!-- Rekapitulasi -->
+        <div class="summary-wrap">
+            <div class="summary-box" style="flex: 1.6;">
+                <div class="title">Rekap Kunjungan (Visit)</div>
+                <span class="summary-item">Total Visit: <strong
                         style="color:#2563eb;">{{ $totalVisitAll }}</strong></span>
-                <span class="grand-summary-item">Kunjungan Awal: <strong>{{ $totalInterestAll }}</strong></span>
-                <span class="grand-summary-item">Follow Up: <strong
+                <span class="summary-item">Kunjungan Awal: <strong>{{ $totalInterestAll }}</strong></span>
+                <span class="summary-item">Follow Up: <strong
                         style="color:#d97706;">{{ $totalFollowUpAll }}</strong></span>
-                <span class="grand-summary-item">Closing: <strong
+                <span class="summary-item">Closing: <strong
                         style="color:#059669;">{{ $totalClosingAll }}</strong></span>
-            </div>
-            <div>
-                <span>
+                <span class="summary-item">Gagal: <strong style="color:#dc2626;">{{ $totalGagalAll }}</strong></span>
+                <div class="formula">
                     Conversion Rate: <strong style="color:#7c3aed;">{{ $conversionRate }}%</strong>
-                    <span style="font-size: 7.5px; color: #64748b; font-weight: normal;">
-                        ( Rumus: (Total Closing {{ $totalClosingAll }} ÷ Total Visit {{ $totalVisitAll }}) × 100 )
-                    </span>
-                </span>
+                    ( Rumus: (Total Closing {{ $totalClosingAll }} ÷ Total Visit {{ $totalVisitAll }}) × 100 )
+                </div>
+            </div>
+
+            <div class="summary-box">
+                <div class="title">Status Prospek (Perusahaan Unik: {{ $prospekUnik->count() }})</div>
+                <span class="summary-item">Baru: <strong>{{ $statusCount['Baru'] ?? 0 }}</strong></span>
+                <span class="summary-item">Proses: <strong
+                        style="color:#d97706;">{{ $statusCount['Proses'] ?? 0 }}</strong></span>
+                <span class="summary-item">Closing: <strong
+                        style="color:#059669;">{{ $statusCount['Closing'] ?? 0 }}</strong></span>
+                <span class="summary-item">Gagal: <strong
+                        style="color:#dc2626;">{{ $statusCount['Gagal'] ?? 0 }}</strong></span>
+                <div class="formula">Jadwal follow-up terdata: <strong>{{ $totalJadwalFu }}</strong> kunjungan</div>
             </div>
         </div>
 
-        <!-- Loop Per Marketing -->
+        <!-- Per Marketing -->
         @forelse ($dataPerMarketing as $data)
             <div class="marketing-card">
                 <div class="marketing-header">
@@ -316,12 +377,14 @@
                 <table>
                     <thead>
                         <tr>
-                            <th class="center" style="width: 25px;">No</th>
-                            <th class="center" style="width: 65px;">Tanggal</th>
-                            <th style="width: 140px;">Perusahaan & Alamat</th>
-                            <th style="width: 140px;">Detail PIC (Kontak)</th>
-                            <th style="width: 110px;">Mesin Yg Ditawarkan</th>
-                            <th class="center" style="width: 80px;">Hasil</th>
+                            <th class="center" style="width: 22px;">No</th>
+                            <th class="center" style="width: 58px;">Tgl Kunjungan</th>
+                            <th style="width: 150px;">Perusahaan & Alamat</th>
+                            <th style="width: 120px;">Detail PIC</th>
+                            <th style="width: 100px;">Mesin Existing</th>
+                            <th class="center" style="width: 60px;">Status Prospek</th>
+                            <th class="center" style="width: 65px;">Hasil Kunjungan</th>
+                            <th class="center" style="width: 58px;">Tgl Follow-up</th>
                             <th>Catatan & Progres Kunjungan</th>
                         </tr>
                     </thead>
@@ -329,6 +392,8 @@
                         @foreach ($data['visits'] as $i => $visit)
                             @php
                                 $prospect = $visit->prospect;
+
+                                // Hasil kunjungan
                                 $hasil = $visit->hasil_kunjungan;
                                 $labelHasil = $hasil === 'Interest' ? 'Kunjungan Awal' : $hasil;
                                 $badgeClass = match ($hasil) {
@@ -337,6 +402,16 @@
                                     'Closing' => 'badge-closing',
                                     'Gagal' => 'badge-gagal',
                                     default => 'badge-followup',
+                                };
+
+                                // Status prospek (Baru / Proses / Closing / Gagal)
+                                $statusProspek = $prospect?->status;
+                                $statusClass = match ($statusProspek) {
+                                    'Baru' => 'badge-baru',
+                                    'Proses' => 'badge-followup',
+                                    'Closing' => 'badge-closing',
+                                    'Gagal' => 'badge-gagal',
+                                    default => 'badge-baru',
                                 };
                             @endphp
                             <tr>
@@ -351,7 +426,7 @@
                                     @endif
                                     @if ($prospect?->alamat)
                                         <span class="text-sub"
-                                            style="color: #475569;">{{ Str::limit($prospect->alamat, 55) }}</span>
+                                            style="color: #475569;">{{ Str::limit($prospect->alamat, 70) }}</span>
                                     @endif
                                 </td>
                                 <td>
@@ -364,15 +439,29 @@
                                     @endif
                                 </td>
                                 <td>
-                                    {{ $visit->merk_mesin_existing ?? '-' }}
+                                    <strong>{{ $visit->merk_mesin_existing ?: '-' }}</strong>
                                     @if ($visit->jenis_mesin_existing)
                                         <span class="text-sub">{{ $visit->jenis_mesin_existing }}</span>
                                     @endif
                                 </td>
                                 <td class="center">
+                                    @if ($statusProspek)
+                                        <span class="badge {{ $statusClass }}">{{ $statusProspek }}</span>
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                <td class="center">
                                     <span class="badge {{ $badgeClass }}">{{ $labelHasil }}</span>
                                 </td>
-                                <td>{{ $visit->catatan ?? '-' }}</td>
+                                <td class="center">
+                                    @if ($visit->tanggal_followup)
+                                        <span class="fu-date">{{ $visit->tanggal_followup->format('d/m/Y') }}</span>
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                <td>{{ $visit->catatan ?: '-' }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -384,7 +473,7 @@
             </div>
         @endforelse
 
-        <!-- Tanda Tangan Footer -->
+        <!-- Tanda Tangan -->
         <div class="footer">
             <div class="ttd">
                 <p>Mengetahui,</p>

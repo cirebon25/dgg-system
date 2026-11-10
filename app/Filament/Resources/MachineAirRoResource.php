@@ -8,13 +8,13 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use App\Filament\Traits\HasRoleAccess; // <-- Pastikan trait ini di-import
+use App\Filament\Traits\HasRoleAccess;
 
 class MachineAirRoResource extends Resource
 {
-    use HasRoleAccess; // <-- Gunakan trait di sini
+    use HasRoleAccess;
 
-    protected static array $allowedRoles = ['admin']; // <-- Batasi akses khusus admin
+    protected static array $allowedRoles = ['admin'];
 
     protected static ?string $model = MachineAirRo::class;
 
@@ -49,6 +49,7 @@ class MachineAirRoResource extends Resource
                     ->label('Status')
                     ->options([
                         'Ready' => 'Ready (Siap Pakai)',
+                        'Rental' => 'Rental (Sedang Disewa)',
                         'Perbaikan' => 'Perbaikan (Dalam Perbaikan)',
                         'Rusak' => 'Rusak (Tidak Bisa Dipakai)',
                     ])
@@ -82,6 +83,7 @@ class MachineAirRoResource extends Resource
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
                         'Ready' => 'success',
+                        'Rental' => 'info',
                         'Perbaikan' => 'warning',
                         'Rusak' => 'danger',
                         default => 'gray',
@@ -98,6 +100,7 @@ class MachineAirRoResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
                         'Ready' => 'Ready',
+                        'Rental' => 'Rental',
                         'Perbaikan' => 'Perbaikan',
                         'Rusak' => 'Rusak',
                     ]),

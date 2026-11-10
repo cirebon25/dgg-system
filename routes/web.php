@@ -34,6 +34,7 @@ use App\Http\Controllers\OrderPartPrintController;
 use App\Http\Controllers\BukuKontrakController;
 use App\Http\Controllers\AbsensiCetakController;
 use App\Http\Controllers\RincianHarianController;
+use App\Http\Controllers\ProspectLaporanController;
 
 
 
@@ -322,10 +323,28 @@ Route::get('/admin/invoices/{record}/print', function (Invoice $record) {
 })->name('invoice.print')->middleware(['web', 'auth']);
 
 // Route Cetak Rekap Semua Data
+// Route::get('/admin/invoices/print-all', function (Request $request) {
+//     $invoices = Invoice::with('customer')->orderBy('tanggal', 'desc')->get();
+//     return view('invoices.print-all', ['invoices' => $invoices]);
+// })->name('invoice.print-all')->middleware(['web', 'auth']);
+
+
 Route::get('/admin/invoices/print-all', function (Request $request) {
-    $invoices = Invoice::with('customer')->orderBy('tanggal', 'desc')->get();
-    return view('invoices.print-all', ['invoices' => $invoices]);
-})->name('invoice.print-all')->middleware(['web', 'auth']);
+    $bulan = $request->query('bulan', 'all');
+    $tahun = (int) $request->query('tahun', now()->year);
+
+    $invoices = Invoice::with('customer')
+        ->whereYear('tanggal', $tahun)
+        ->when($bulan !== 'all', fn($q) => $q->whereMonth('tanggal', (int) $bulan))
+        ->orderBy('tanggal')
+        ->get();
+
+    $periode = $bulan === 'all'
+        ? "Tahun {$tahun}"
+        : \Carbon\Carbon::create($tahun, (int) $bulan, 1)->locale('id')->translatedFormat('F Y');
+
+    return view('invoices.print-all', compact('invoices', 'periode')); // pakai nama view lama
+})->name('invoice.print-all');
 
 Route::get('/mrc/cetak-rekap', [MrcController::class, 'cetakRekap'])
     ->name('mrc.cetak-rekap')
@@ -364,3 +383,9 @@ Route::middleware('auth')->group(function () {
 Route::get('/cetak/rincian-harian', RincianHarianController::class)
     ->name('cetak.rincian-harian')
     ->middleware('auth');
+
+Route::get('/prospect/laporan', [ProspectLaporanController::class, 'ringkasan'])
+    ->name('prospect.laporan');
+
+Route::get('/prospect/laporan/rincian', [ProspectLaporanController::class, 'rincian'])
+    ->name('prospect.laporan.rincian');

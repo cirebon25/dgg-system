@@ -8,36 +8,48 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            font-size: 12px;
-            color: #333;
+            font-size: 11px;
+            color: #222;
             margin: 0;
             padding: 20px;
+            text-transform: uppercase;
+        }
+
+        button {
+            text-transform: none;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .header h2 {
-            margin: 0 0 5px 0;
+            margin: 0 0 6px 0;
+            font-size: 16px;
+        }
+
+        .header p {
+            margin: 2px 0;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
         }
 
         table th,
         table td {
-            padding: 8px 10px;
-            border: 1px solid #999;
+            padding: 6px 8px;
+            border: 1px solid #888;
             text-align: left;
+            vertical-align: middle;
         }
 
         table th {
-            background-color: #f2f2f2;
+            background-color: #eee;
+            text-align: center;
+            font-size: 10.5px;
         }
 
         .text-center {
@@ -48,8 +60,22 @@
             text-align: right;
         }
 
+        /* Kolom yang tidak boleh turun baris */
+        .nw {
+            white-space: nowrap;
+        }
+
+        /* Lebar kolom (muat s/d Rp 100.000.000) */
+        .w-no {
+            width: 30px;
+        }
+
+        .w-nominal {
+            width: 115px;
+        }
+
         .total-row td {
-            background-color: #f2f2f2;
+            background-color: #eee;
             font-weight: bold;
         }
 
@@ -59,7 +85,7 @@
         }
 
         .badge-sudah {
-            color: #5cb85c;
+            color: #3d9b3d;
             font-weight: bold;
         }
 
@@ -100,41 +126,44 @@
 
     <div class="header">
         <h2>REKAP STATUS INVOICE KONSUMEN</h2>
+        <p>PERIODE: {{ $periode ?? 'SEMUA' }}</p>
         <p>Tanggal Cetak: {{ date('d/m/Y H:i') }}</p>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th style="width: 40px;" class="text-center">No</th>
-                <th>No. Invoice</th>
+                <th class="w-no">No</th>
+                <th class="nw">No. Invoice</th>
                 <th>Nama Customer</th>
-                <th>Tanggal</th>
-                <th class="text-right">Nominal</th>
-                <th>Pengirim</th>
-                <th>Penerima</th>
-                <th class="text-center">Status Diterima</th>
-                <th>Tgl & Waktu Diterima</th>
+                <th class="nw">Tanggal</th>
+                <th class="nw w-nominal">Nominal</th>
+                <th class="nw">Pengirim</th>
+                <th class="nw">Penerima</th>
+                <th class="nw">Status</th>
+                <th class="nw">Tgl & Waktu Diterima</th>
             </tr>
         </thead>
         <tbody>
             @forelse($invoices as $index => $invoice)
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td>{{ $invoice->invoice_number }}</td>
+                    <td class="nw">{{ $invoice->invoice_number }}</td>
                     <td>{{ $invoice->customer->nama_customer ?? 'Belum ada Customer' }}</td>
-                    <td>{{ $invoice->tanggal ? \Carbon\Carbon::parse($invoice->tanggal)->format('d/m/Y') : '-' }}</td>
-                    <td class="text-right">Rp {{ number_format($invoice->nominal ?? 0, 0, ',', '.') }}</td>
-                    <td>{{ $invoice->nama_pengirim ?: '-' }}</td>
-                    <td>{{ $invoice->nama_penerima ?: '-' }}</td>
-                    <td class="text-center">
+                    <td class="nw text-center">
+                        {{ $invoice->tanggal ? \Carbon\Carbon::parse($invoice->tanggal)->format('d/m/Y') : '-' }}
+                    </td>
+                    <td class="nw text-left">Rp {{ number_format($invoice->nominal ?? 0, 0, ',', '.') }}</td>
+                    <td class="nw">{{ $invoice->nama_pengirim ?: '-' }}</td>
+                    <td class="nw">{{ $invoice->nama_penerima ?: '-' }}</td>
+                    <td class="nw text-center">
                         @if ($invoice->is_received)
                             <span class="badge-sudah">Sudah</span>
                         @else
                             <span class="badge-belum">Belum</span>
                         @endif
                     </td>
-                    <td>
+                    <td class="nw text-center">
                         {{ $invoice->received_at ? \Carbon\Carbon::parse($invoice->received_at)->format('d/m/Y H:i') : 'Belum' }}
                     </td>
                 </tr>
@@ -147,7 +176,7 @@
             @if ($invoices->isNotEmpty())
                 <tr class="total-row">
                     <td colspan="4" class="text-right">TOTAL NOMINAL</td>
-                    <td class="text-right">Rp {{ number_format($invoices->sum('nominal'), 0, ',', '.') }}</td>
+                    <td class="nw text-right">Rp {{ number_format($invoices->sum('nominal'), 0, ',', '.') }}</td>
                     <td colspan="4"></td>
                 </tr>
             @endif

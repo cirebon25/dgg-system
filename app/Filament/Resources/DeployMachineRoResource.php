@@ -8,6 +8,8 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use App\Filament\Traits\HasRoleAccess;
 
 class DeployMachineRoResource extends Resource
@@ -30,7 +32,18 @@ class DeployMachineRoResource extends Resource
             ->schema([
                 Forms\Components\Select::make('machine_air_ro_id')
                     ->label('Mesin RO')
-                    ->relationship('machineAirRo', 'serial_number')
+                    ->relationship(
+                        'machineAirRo',
+                        'serial_number',
+                        // Hanya mesin berstatus Ready yang bisa di-deploy.
+                        // Saat edit, mesin milik deploy ini tetap ikut tampil.
+                        modifyQueryUsing: fn(Builder $query, ?Model $record) => $query
+                            ->where('status', 'Ready')
+                            ->when(
+                                $record?->machine_air_ro_id,
+                                fn(Builder $q) => $q->orWhere('id', $record->machine_air_ro_id)
+                            )
+                    )
                     ->getOptionLabelFromRecordUsing(fn($record) => "{$record->serial_number} - {$record->tipe_mesin}")
                     ->searchable()
                     ->preload()
@@ -51,8 +64,8 @@ class DeployMachineRoResource extends Resource
                 Forms\Components\Select::make('status_deploy')
                     ->label('Status Deploy')
                     ->options([
-                        'Terpasang' => 'Terpasang',
-                        'Ditarik' => 'Ditarik Kembali',
+                        'Terpasang' => 'Terpasang (Mesin jadi Rental)',
+                        'Ditarik' => 'Ditarik Kembali (Mesin jadi Ready)',
                     ])
                     ->default('Terpasang')
                     ->required(),
@@ -94,6 +107,17 @@ class DeployMachineRoResource extends Resource
                     ->color(fn(string $state): string => match ($state) {
                         'Terpasang' => 'success',
                         'Ditarik' => 'danger',
+                        default => 'gray',
+                    }),
+
+                Tables\Columns\TextColumn::make('machineAirRo.status')
+                    ->label('Status Stok')
+                    ->badge()
+                    ->color(fn(?string $state): string => match ($state) {
+                        'Ready' => 'success',
+                        'Rental' => 'info',
+                        'Perbaikan' => 'warning',
+                        'Rusak' => 'danger',
                         default => 'gray',
                     }),
             ])
