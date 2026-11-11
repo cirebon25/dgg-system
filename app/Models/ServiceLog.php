@@ -32,6 +32,8 @@ class ServiceLog extends Model
         'perbaikan',
         'nama_teknisi_2',
         'is_mrc',
+        'counter_bw_lalu',
+        'counter_color_lalu',
     ];
 
     protected $casts = [
@@ -78,5 +80,10 @@ class ServiceLog extends Model
     public static function duplicateDateKeys(): array
     {
         return ['tanggal'];
+    }
+
+    public function scopeBukanMrc($query)
+    {
+        return $query->where(fn($q) => $q->where('is_mrc', false)->orWhereNull('is_mrc'));
     }
 }

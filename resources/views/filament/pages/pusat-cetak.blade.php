@@ -1,118 +1,355 @@
 <x-filament-panels::page>
 
-    <div class="space-y-12" x-data="pusatCetak">
+    <style>
+        .pc-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+        }
 
-        {{-- MODAL PILIH PERIODE --}}
-        <div x-show="modalOpen" x-cloak x-transition.opacity @keydown.escape.window="tutup()"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" role="dialog" aria-modal="true"
-            :aria-label="modalTitle">
-            <div @click.outside="tutup()" x-transition
-                class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm mx-4"
-                style="padding: 1.5rem;">
-                <h2 class="text-lg font-bold" style="margin-bottom: 1rem;" x-text="modalTitle"></h2>
+        /* ---------- Toolbar: cari + periode ---------- */
+        .pc-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .75rem;
+            align-items: center;
+            justify-content: space-between;
+        }
 
-                <div style="display: flex; flex-direction: column; gap: 1rem;">
-                    <div>
-                        <label class="block text-sm font-medium" style="margin-bottom: 0.25rem;"
-                            for="pusat-cetak-bulan">Bulan</label>
-                        <x-filament::input.wrapper>
-                            <x-filament::input.select id="pusat-cetak-bulan" x-model="selectedMonth">
-                                <option value="01">Januari</option>
-                                <option value="02">Februari</option>
-                                <option value="03">Maret</option>
-                                <option value="04">April</option>
-                                <option value="05">Mei</option>
-                                <option value="06">Juni</option>
-                                <option value="07">Juli</option>
-                                <option value="08">Agustus</option>
-                                <option value="09">September</option>
-                                <option value="10">Oktober</option>
-                                <option value="11">November</option>
-                                <option value="12">Desember</option>
-                            </x-filament::input.select>
-                        </x-filament::input.wrapper>
-                    </div>
+        .pc-search {
+            position: relative;
+            flex: 1 1 280px;
+            max-width: 420px;
+        }
 
-                    <div>
-                        <label class="block text-sm font-medium" style="margin-bottom: 0.25rem;"
-                            for="pusat-cetak-tahun">Tahun</label>
-                        <x-filament::input.wrapper>
-                            <x-filament::input.select id="pusat-cetak-tahun" x-model="selectedYear">
-                                @for ($y = now()->year; $y >= 2024; $y--)
-                                    <option value="{{ $y }}">{{ $y }}</option>
-                                @endfor
-                            </x-filament::input.select>
-                        </x-filament::input.wrapper>
-                    </div>
-                </div>
+        .pc-search svg {
+            position: absolute;
+            left: .85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1.1rem;
+            height: 1.1rem;
+            opacity: .5;
+        }
 
-                <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
-                    <x-filament::button type="button" color="gray" x-on:click="tutup()">
-                        Batal
-                    </x-filament::button>
+        .pc-search input {
+            width: 100%;
+            padding: .7rem 1rem .7rem 2.6rem;
+            border-radius: 999px;
+            border: 1px solid rgba(128, 128, 128, .25);
+            background: rgba(128, 128, 128, .08);
+            color: inherit;
+            font-size: .9rem;
+            outline: none;
+            transition: .2s;
+        }
 
-                    <x-filament::button type="button" color="primary" icon="heroicon-m-printer"
-                        x-on:click="cetak()">
-                        Cetak
-                    </x-filament::button>
-                </div>
+        .pc-search input:focus {
+            border-color: rgb(var(--primary-500));
+            box-shadow: 0 0 0 3px rgba(var(--primary-500), .2);
+        }
+
+        .pc-period {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .35rem .5rem .35rem 1rem;
+            border-radius: 999px;
+            border: 1px solid rgba(128, 128, 128, .25);
+            background: rgba(128, 128, 128, .08);
+        }
+
+        .pc-period svg {
+            width: 1.1rem;
+            height: 1.1rem;
+            opacity: .6;
+        }
+
+        .pc-period span {
+            font-size: .75rem;
+            opacity: .6;
+            margin-right: .25rem;
+        }
+
+        .pc-period select,
+        .pc-period input {
+            border: 0;
+            background: rgba(128, 128, 128, .15);
+            color: inherit;
+            border-radius: 999px;
+            padding: .4rem .9rem;
+            font-size: .85rem;
+            font-weight: 600;
+            outline: none;
+        }
+
+        .pc-period input {
+            width: 5.5rem;
+        }
+
+        .pc-period select option {
+            color: #111;
+        }
+
+        /* ---------- Grup ---------- */
+        .pc-group-head {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            margin-bottom: .9rem;
+        }
+
+        .pc-group-icon {
+            width: 2.4rem;
+            height: 2.4rem;
+            border-radius: .8rem;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, rgb(var(--c)), rgba(var(--c), .6));
+            color: #fff;
+            box-shadow: 0 6px 16px -6px rgb(var(--c));
+        }
+
+        .pc-group-icon svg {
+            width: 1.3rem;
+            height: 1.3rem;
+        }
+
+        .pc-group-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .pc-group-count {
+            font-size: .72rem;
+            padding: .15rem .6rem;
+            border-radius: 999px;
+            background: rgba(var(--c), .15);
+            color: rgb(var(--c));
+            font-weight: 600;
+        }
+
+        /* ---------- Kartu ---------- */
+        .pc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: .85rem;
+        }
+
+        .pc-card {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: .85rem;
+            padding: .9rem 1rem;
+            border-radius: 1rem;
+            text-decoration: none;
+            color: inherit;
+            overflow: hidden;
+            border: 1px solid rgba(128, 128, 128, .2);
+            background: rgba(128, 128, 128, .06);
+            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
+        }
+
+        .pc-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: rgb(var(--c));
+            opacity: 0;
+            transition: .2s;
+        }
+
+        .pc-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(var(--c), .6);
+            background: rgba(var(--c), .08);
+            box-shadow: 0 12px 24px -12px rgba(var(--c), .55);
+        }
+
+        .pc-card:hover::before {
+            opacity: 1;
+        }
+
+        /* ---------- Kartu penting (highlight) ---------- */
+        .pc-card.pc-highlight {
+            background: linear-gradient(135deg, rgb(var(--c) / .16), rgb(var(--c) / .04));
+            border-color: rgb(var(--c) / .5);
+            box-shadow: 0 0 0 1px rgb(var(--c) / .12),
+                0 10px 26px -16px rgb(var(--c));
+        }
+
+        /* garis aksen kiri selalu tampil */
+        .pc-card.pc-highlight::before {
+            opacity: 1;
+        }
+
+        .pc-card.pc-highlight:hover {
+            background: linear-gradient(135deg, rgb(var(--c) / .24), rgb(var(--c) / .08));
+            border-color: rgb(var(--c) / .8);
+        }
+
+        .pc-star {
+            position: absolute;
+            top: .4rem;
+            right: .5rem;
+            width: 1rem;
+            height: 1rem;
+            color: rgb(255 255 255 / .85);
+            filter: drop-shadow(0 0 4px rgb(var(--c) / .8));
+        }
+
+        .pc-star svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .pc-ico {
+            flex: none;
+            width: 2.6rem;
+            height: 2.6rem;
+            border-radius: .75rem;
+            display: grid;
+            place-items: center;
+            background: rgba(var(--c), .15);
+            color: rgb(var(--c));
+            transition: .2s;
+        }
+
+        .pc-ico svg {
+            width: 1.3rem;
+            height: 1.3rem;
+        }
+
+        .pc-card:hover .pc-ico {
+            background: rgb(var(--c));
+            color: #fff;
+        }
+
+        .pc-text {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .pc-label {
+            font-size: .9rem;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .pc-desc {
+            font-size: .75rem;
+            opacity: .6;
+            margin-top: .15rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pc-badge {
+            display: inline-block;
+            margin-top: .3rem;
+            font-size: .62rem;
+            font-weight: 700;
+            letter-spacing: .03em;
+            text-transform: uppercase;
+            padding: .1rem .5rem;
+            border-radius: 999px;
+            background: rgba(245, 158, 11, .18);
+            color: rgb(245 158 11);
+        }
+
+        .pc-arrow {
+            flex: none;
+            width: 1.1rem;
+            height: 1.1rem;
+            opacity: 0;
+            transform: translateX(-6px);
+            transition: .2s;
+            color: rgb(var(--c));
+        }
+
+        .pc-card:hover .pc-arrow {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .pc-empty {
+            text-align: center;
+            padding: 2.5rem 1rem;
+            opacity: .6;
+        }
+    </style>
+
+    <div class="pc-wrap" x-data="{ q: '' }">
+
+        {{-- Toolbar --}}
+        <div class="pc-toolbar">
+            <div class="pc-search">
+                <x-filament::icon icon="heroicon-o-magnifying-glass" />
+                <input type="text" x-model="q" placeholder="Cari laporan… (mis. stok, mrc, kas)">
+            </div>
+
+            <div class="pc-period">
+                <x-filament::icon icon="heroicon-o-calendar-days" />
+                <span>Periode</span>
+                <select wire:model.live="bulan">
+                    @foreach (range(1, 12) as $m)
+                        <option value="{{ $m }}">
+                            {{ \Carbon\Carbon::create(null, $m, 1)->locale('id')->translatedFormat('F') }}
+                        </option>
+                    @endforeach
+                </select>
+                <input type="number" wire:model.live.debounce.500ms="tahun">
             </div>
         </div>
 
-        {{-- KATEGORI LAPORAN --}}
-        @foreach (\App\Support\PusatCetak\ReportCatalog::groups() as $kategori => $laporan)
-            <section class="space-y-4">
-                <h4
-                    class="text-xl font-bold text-gray-800 dark:text-gray-100 pb-2 border-b-2 border-gray-200 dark:border-gray-700">
-                    {{ $kategori }}
-                </h4>
+        {{-- Grup --}}
+        @foreach ($this->getDaftarCetak() as $grup)
+            <section style="--c: {{ $grup['warna'] }}" x-data="{ get kosong() { return q !== '' && ![...$el.querySelectorAll('[data-label]')].some(e => e.dataset.label.includes(q.toLowerCase())) } }" x-show="! kosong">
+                <div class="pc-group-head">
+                    <div class="pc-group-icon"><x-filament::icon :icon="$grup['icon']" /></div>
+                    <div class="pc-group-title">{{ $grup['judul'] }}</div>
+                    <span class="pc-group-count">{{ count($grup['items']) }} laporan</span>
+                </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-4">
-                    @foreach ($laporan as $item)
-                        <x-report-card :icon="$item['icon']" :title="$item['title']" :description="$item['description']" :color="$item['color']"
-                            :button-icon="$item['buttonIcon']" :button-label="$item['buttonLabel']" :href="$item['href'] ?? null" :url-template="$item['urlTemplate'] ?? null" />
+                <div class="pc-grid">
+                    @foreach ($grup['items'] as $item)
+                        <a href="{{ $this->urlCetak($item) }}" target="_blank"
+                            class="pc-card {{ !empty($item['highlight']) ? 'pc-highlight' : '' }}"
+                            data-label="{{ strtolower($item['label'] . ' ' . ($item['desc'] ?? '') . ' ' . $grup['judul']) }}"
+                            x-show="q === '' || $el.dataset.label.includes(q.toLowerCase())">
+
+                            @if (!empty($item['highlight']))
+                                <span class="pc-star" title="Laporan utama">
+                                    <x-filament::icon icon="heroicon-s-star" />
+                                </span>
+                            @endif
+
+                            <div class="pc-ico"><x-filament::icon :icon="$item['icon'] ?? 'heroicon-o-printer'" /></div>
+
+                            <div class="pc-text">
+                                <div class="pc-label">{{ $item['label'] }}</div>
+                                @if (!empty($item['desc']))
+                                    <div class="pc-desc">{{ $item['desc'] }}</div>
+                                @endif
+                                @if ($item['filter'] ?? false)
+                                    <span class="pc-badge">
+                                        {{ \Carbon\Carbon::create(null, $this->bulan, 1)->locale('id')->translatedFormat('M') }}
+                                        {{ $this->tahun }}
+                                    </span>
+                                @endif
+                            </div>
+
+                            <x-filament::icon icon="heroicon-m-arrow-up-right" class="pc-arrow" />
+                        </a>
                     @endforeach
                 </div>
             </section>
         @endforeach
 
     </div>
-
-    @script
-        <script>
-            Alpine.data('pusatCetak', () => ({
-                modalOpen: false,
-                modalTitle: '',
-                activeUrlTemplate: '',
-                selectedMonth: String(new Date().getMonth() + 1).padStart(2, '0'),
-                selectedYear: String(new Date().getFullYear()),
-
-                buka(urlTemplate, judul) {
-                    this.activeUrlTemplate = urlTemplate;
-                    this.modalTitle = '🖨️ Cetak ' + judul;
-                    this.selectedMonth = String(new Date().getMonth() + 1).padStart(2, '0');
-                    this.selectedYear = String(new Date().getFullYear());
-                    this.modalOpen = true;
-                },
-
-                tutup() {
-                    this.modalOpen = false;
-                },
-
-                cetak() {
-                    if (!this.activeUrlTemplate) {
-                        return;
-                    }
-
-                    const url = this.activeUrlTemplate
-                        .replace('__B__', this.selectedMonth)
-                        .replace('__T__', this.selectedYear);
-
-                    window.open(url, '_blank');
-                    this.tutup();
-                },
-            }));
-        </script>
-    @endscript
-
 </x-filament-panels::page>

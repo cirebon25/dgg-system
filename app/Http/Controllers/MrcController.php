@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ServiceLog;
 use App\Models\Machine;
+use App\Models\MeterReading;
 use App\Models\MrcContract;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -36,7 +36,7 @@ class MrcController extends Controller
         $month = $request->get('month', date('m'));
         $year  = $request->get('year',  date('Y'));
 
-        $logs = ServiceLog::with(['machine', 'customer', 'technician'])
+        $logs = MeterReading::with(['machine', 'customer', 'technician'])
             ->whereMonth('tanggal', $month)
             ->whereYear('tanggal',  $year)
             ->orderBy('tanggal')
@@ -57,7 +57,7 @@ class MrcController extends Controller
         $month = $request->get('month', date('m'));
         $year  = $request->get('year',  date('Y'));
 
-        $mrcLogs = ServiceLog::select([
+        $mrcLogs = MeterReading::select([
             'id',
             'machine_id',
             'tanggal',
@@ -68,6 +68,8 @@ class MrcController extends Controller
         ])
             ->whereMonth('tanggal', $month)
             ->whereYear('tanggal',  $year)
+            ->orderBy('tanggal')
+            ->orderBy('id')
             ->get()
             ->keyBy('machine_id');
 
@@ -105,17 +107,18 @@ class MrcController extends Controller
         $month = $request->get('month', date('m'));
         $year  = $request->get('year',  date('Y'));
 
-        $mrcLogs = ServiceLog::with(['machine.customer', 'technician'])
+        $mrcLogs = MeterReading::with(['machine.customer', 'technician'])
             ->whereMonth('tanggal', $month)
             ->whereYear('tanggal',  $year)
             ->get();
 
         return view('exports.mrc-rekap', [
-            'mrcLogs' => $mrcLogs,
+            'logs'    => $mrcLogs,   // blade memakai $logs
+            'mrcLogs' => $mrcLogs,   // dibiarkan, kalau ada bagian lain yang memakainya
             'bulan'   => $this->bulanNama[$month] ?? $month,
             'tahun'   => $year,
             'month'   => $month,
-            'year'    => $year,
+            'periode' => ($this->bulanNama[$month] ?? $month) . ' ' . $year,
         ]);
     }
 
@@ -147,18 +150,16 @@ class MrcController extends Controller
         $tanggalAwalBulan = Carbon::createFromDate((int) $year, (int) $month, 1)->startOfMonth();
 
         $tagihans = $contracts->map(function ($contract) use ($month, $year, $tanggalAwalBulan) {
-            // Input MRC bulan ini (paling akhir di bulan tersebut)
-            $logSekarang = ServiceLog::where('machine_id', $contract->machine_id)
-                ->where('is_mrc', true)
+            // Input counter bulan ini (paling akhir di bulan tersebut)
+            $logSekarang = MeterReading::where('machine_id', $contract->machine_id)
                 ->whereMonth('tanggal', $month)
                 ->whereYear('tanggal', $year)
                 ->orderBy('tanggal', 'desc')
                 ->orderBy('id', 'desc')
                 ->first();
 
-            // Input MRC sebelum bulan ini (cadangan kalau Counter Lalu tidak diisi)
-            $logSebelumnya = ServiceLog::where('machine_id', $contract->machine_id)
-                ->where('is_mrc', true)
+            // Input counter sebelum bulan ini (cadangan kalau Counter Lalu tidak diisi)
+            $logSebelumnya = MeterReading::where('machine_id', $contract->machine_id)
                 ->where('tanggal', '<', $tanggalAwalBulan)
                 ->orderBy('tanggal', 'desc')
                 ->orderBy('id', 'desc')

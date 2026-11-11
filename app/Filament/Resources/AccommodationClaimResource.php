@@ -108,13 +108,27 @@ class AccommodationClaimResource extends Resource
 
                     Forms\Components\Repeater::make('visits')
                         ->relationship('visits')
+                        ->orderColumn('no_urut')   // urutan tersimpan otomatis ke kolom no_urut
+                        ->reorderable()
+                        ->live()
+                        ->afterStateUpdated(function ($state, Forms\Set $set) {
+                            // renumber tampilan: 1, 2, 3, ... sesuai posisi
+                            $i = 1;
+                            $renumbered = [];
+                            foreach ($state ?? [] as $key => $item) {
+                                $item['no_urut'] = $i++;
+                                $renumbered[$key] = $item;
+                            }
+                            $set('visits', $renumbered);
+                        })
                         ->schema([
 
                             Forms\Components\TextInput::make('no_urut')
                                 ->label('No')
-                                ->numeric()
+                                ->readOnly()          // tidak bisa diedit manual
                                 ->default(1)
                                 ->columnSpan(1),
+
 
                             Forms\Components\Select::make('nama_customer')
                                 ->label('Nama Customer')
@@ -154,8 +168,6 @@ class AccommodationClaimResource extends Resource
                         ->columns(11)
                         ->defaultItems(1)
                         ->addActionLabel('+ Tambah Kunjungan')
-                        ->defaultItems(1)
-                        ->reorderable()
                         ->columnSpanFull(),
 
                 ]),

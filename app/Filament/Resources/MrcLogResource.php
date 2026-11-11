@@ -283,4 +283,19 @@ class MrcLogResource extends Resource
             'edit'   => Pages\EditMrcLog::route('/{record}/edit'),
         ];
     }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
 }
