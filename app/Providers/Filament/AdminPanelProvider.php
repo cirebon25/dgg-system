@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\Login;
+use App\Filament\Pages\EditMachineReplacement;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -11,15 +13,15 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use App\Filament\Pages\EditMachineReplacement;
-use App\Filament\Pages\Auth\Login; // <-- Pastikan ini terpanggil
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -31,10 +33,11 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->brandName('DGG System')
             ->globalSearchKeyBindings(['command+k', 'ctrl+1'])
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->sidebarCollapsibleOnDesktop()
-            ->login(Login::class) // <-- DIUBAH MENJADI INI (Mengarah ke kelas Login custom)
+            ->login(Login::class)
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Violet,
                 'secondary' => Color::Gray,
                 'success' => Color::Emerald,
                 'danger' => Color::Rose,
@@ -101,49 +104,17 @@ class AdminPanelProvider extends PanelProvider
                 'pengaturan',
                 'manajemen user',
                 'Manajemen Mesin RO',
-
-                // PUSAT BANTUAN DIKUNCI DI POSISI PALING BAWAH
-                NavigationGroup::make('Bantuan')
-                    ->label('Bantuan'),
+                NavigationGroup::make('Bantuan')->label('Bantuan'),
             ])
             ->renderHook(
-                \Filament\View\PanelsRenderHook::SIDEBAR_FOOTER,
-                fn() => new \Illuminate\Support\HtmlString('
-                <style>
-                    /* 1. Background menu sidebar aktif menjadi kuning */
-                    .fi-sidebar-item.fi-active > a,
-                    .fi-sidebar-item.fi-active > button {
-                        background-color: #EAB308 !important;
-                        color: #000000 !important;
-                    }
-                    /* Warna teks dan ikon di dalam menu aktif menjadi hitam agar kontras */
-                    .fi-sidebar-item.fi-active span,
-                    .fi-sidebar-item.fi-active svg {
-                        color: #000000 !important;
-                    }
-
-                    /* 2. Custom Thin Scrollbar untuk Sidebar */
-                    aside .fi-sidebar-nav::-webkit-scrollbar {
-                        width: 4px;
-                    }
-                    aside .fi-sidebar-nav::-webkit-scrollbar-track {
-                        background: transparent;
-                    }
-                    aside .fi-sidebar-nav::-webkit-scrollbar-thumb {
-                        background: rgba(255, 255, 255, 0.1);
-                        border-radius: 4px;
-                    }
-                    aside .fi-sidebar-nav::-webkit-scrollbar-thumb:hover {
-                        background: rgba(255, 255, 255, 0.2);
-                    }
-                </style>
-                <div
-                    class="flex items-center justify-center gap-x-2 px-6 py-3 border-t border-gray-100 dark:border-white/5 select-none pointer-events-none">
-                    <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                    <span class="text-[10px] tracking-wider font-medium uppercase text-gray-400 dark:text-gray-500 font-mono">
-                        Developer RUDIANTO
-                    </span>
-                </div>
+                PanelsRenderHook::SIDEBAR_FOOTER,
+                fn() => new HtmlString('
+                    <div class="flex items-center justify-center gap-x-2 px-6 py-3 border-t border-gray-100 dark:border-white/5 select-none pointer-events-none">
+                        <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                        <span class="text-[10px] tracking-wider font-medium uppercase text-gray-400 dark:text-gray-500 font-mono">
+                            Developer RUDIANTO
+                        </span>
+                    </div>
                 ')
             );
     }

@@ -90,29 +90,6 @@
             background: #ffffff;
         }
 
-        tbody tr:hover {
-            background: #eff6ff;
-        }
-
-        /* ===== RANK ===== */
-        .rank-1 {
-            background: #fef3c7 !important;
-            font-weight: bold;
-            color: #92400e;
-        }
-
-        .rank-2 {
-            background: #f1f5f9 !important;
-            font-weight: bold;
-            color: #475569;
-        }
-
-        .rank-3 {
-            background: #fef2f2 !important;
-            font-weight: bold;
-            color: #b91c1c;
-        }
-
         /* ===== KOLOM ===== */
         .col-rank {
             width: 40px;
@@ -139,7 +116,6 @@
             background: #1e3a5f !important;
             color: #ffffff !important;
             font-weight: bold;
-            border-radius: 3px;
         }
 
         /* ===== FOOTER ===== */
@@ -159,18 +135,8 @@
                 padding: 12px;
             }
 
-            tbody tr:hover {
-                background: inherit;
-            }
-
-            .rank-1,
-            .rank-2,
-            .rank-3 {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-
             thead tr,
+            .col-total,
             .col-avg {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
@@ -182,10 +148,15 @@
 <body onload="window.print()">
 
     <div class="header">
-        <div class="company">⚙ DINAMIKA GLOBAL GEMILANG (DGG)</div>
+        <div class="company">DINAMIKA GLOBAL GEMILANG (DGG)</div>
         <div class="title">Ranking Pemakaian Customer</div>
-        <div class="periode">Periode: {{ strtoupper($bulan) }} {{ $tahun }} &nbsp;|&nbsp; Dicetak:
-            {{ now()->format('d/m/Y H:i') }}</div>
+        <div class="periode">
+            Periode: {{ strtoupper($bulan) }} {{ $tahun }} &nbsp;|&nbsp;
+            Dicetak: {{ now()->format('d/m/Y H:i') }}
+        </div>
+        <div class="periode">
+            Total dihitung sejak input meter pertama s.d. {{ strtoupper($bulan) }} {{ $tahun }}
+        </div>
     </div>
 
     <table>
@@ -197,34 +168,20 @@
                 <th>TOTAL BW</th>
                 <th>TOTAL COLOR</th>
                 <th>GRAND TOTAL</th>
-                <th>LAMA PASANG</th>
+                <th>PAKAI BULAN INI</th>
                 <th>RATA-RATA / BULAN</th>
             </tr>
         </thead>
         <tbody>
             @foreach ($records as $index => $row)
-                @php
-                    $rankClass = match ($index) {
-                        0 => 'rank-1',
-                        1 => 'rank-2',
-                        2 => 'rank-3',
-                        default => '',
-                    };
-                    $rankIcon = match ($index) {
-                        0 => '🥇',
-                        1 => '🥈',
-                        2 => '🥉',
-                        default => $index + 1,
-                    };
-                @endphp
-                <tr class="{{ $rankClass }}">
-                    <td class="col-rank">{{ $rankIcon }}</td>
+                <tr>
+                    <td class="col-rank">{{ $index + 1 }}</td>
                     <td class="text-left"><strong>{{ $row->nama_customer }}</strong></td>
                     <td>{{ $row->serial_number }}</td>
                     <td class="col-bw">{{ number_format($row->total_bw) }}</td>
                     <td class="col-color">{{ number_format($row->total_color) }}</td>
                     <td class="col-total">{{ number_format($row->total_semua) }}</td>
-                    <td>{{ $row->jumlah_bulan }} bln</td>
+                    <td>{{ number_format($row->pemakaian_bulan_ini) }}</td>
                     <td class="col-avg">{{ number_format($row->rata_rata) }}</td>
                 </tr>
             @endforeach

@@ -10,20 +10,22 @@
         </div>
     </form>
 
-    {{-- RIWAYAT ROLLING --}}
     <div class="mt-10">
-        <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-200">
-            🔄 Riwayat Rolling Unit (20 Terakhir)
+        <h2 class="flex items-center gap-2 text-lg font-bold mb-4 text-[rgb(var(--dgg-text-base))]">
+            <x-filament::icon icon="heroicon-o-arrow-path" class="h-5 w-5 text-primary-500" />
+            Riwayat Rolling Unit (20 Terakhir)
         </h2>
 
         @if (count($riwayat) === 0)
-            <div class="p-6 bg-white dark:bg-gray-800 rounded-xl border text-center text-gray-400 text-sm">
+            <div
+                class="p-6 bg-[rgb(var(--dgg-surface))] rounded-xl border border-[rgb(var(--dgg-border))] text-center text-[rgb(var(--dgg-text-muted))] text-sm">
                 Belum ada riwayat rolling.
             </div>
         @else
-            <div class="overflow-x-auto rounded-xl border shadow-sm">
+            <div class="overflow-x-auto rounded-xl border border-[rgb(var(--dgg-border))] bg-[rgb(var(--dgg-surface))]">
                 <table class="w-full text-sm text-left">
-                    <thead class="bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-300 uppercase text-xs">
+                    <thead
+                        class="bg-[rgb(var(--dgg-body))]/50 text-[rgb(var(--dgg-text-muted))] uppercase text-xs border-b border-[rgb(var(--dgg-border))]">
                         <tr>
                             <th class="px-4 py-3">Tanggal</th>
                             <th class="px-4 py-3">Customer</th>
@@ -35,46 +37,57 @@
                             <th class="px-4 py-3 text-center">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                        {{-- ✅ GUNAKAN ARRAY SYNTAX [] --}}
+                    <tbody class="divide-y divide-[rgb(var(--dgg-border))]">
                         @foreach ($riwayat as $row)
-                            <tr class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    {{ \Carbon\Carbon::parse($row['tanggal'])->format('d/m/Y') }}
+                            <tr class="transition hover:bg-white/[0.02]">
+                                <td class="px-4 py-3 whitespace-nowrap opacity-80">
+                                    {{ filled($row['tanggal'] ?? null) ? \Carbon\Carbon::parse($row['tanggal'])->format('d/m/Y') : '-' }}
                                 </td>
-                                <td class="px-4 py-3 font-semibold">{{ $row['nama_customer'] ?? '-' }}</td>
-                                <td class="px-4 py-3">
-                                    <span class="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded">
-                                        {{ $row['sn_lama'] ?? '-' }}
-                                    </span>
+
+                                <td class="px-4 py-3 font-semibold text-[rgb(var(--dgg-text-base))]">
+                                    {{ $row['nama_customer'] ?? '-' }}
                                 </td>
-                                <td class="px-4 py-3">
-                                    <span class="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded">
-                                        {{ $row['sn_baru'] ?? '-' }}
-                                    </span>
+
+                                <td class="px-4 py-3 whitespace-nowrap font-mono text-xs text-red-400"
+                                    title="{{ $row['sn_lama'] ?? '-' }}">
+                                    {{ \Illuminate\Support\Str::limit($row['sn_lama'] ?? '-', 30, '') }}
                                 </td>
-                                <td class="px-4 py-3 text-xs">
+
+                                <td class="px-4 py-3 whitespace-nowrap font-mono text-xs text-green-400"
+                                    title="{{ $row['sn_baru'] ?? '-' }}">
+                                    {{ \Illuminate\Support\Str::limit($row['sn_baru'] ?? '-', 30, '') }}
+                                </td>
+
+                                <td class="px-4 py-3 text-xs whitespace-nowrap">
                                     <span class="block">BW: {{ number_format($row['counter_bw_final'] ?? 0) }}</span>
-                                    <span class="block text-gray-500">CL:
-                                        {{ number_format($row['counter_color_final'] ?? 0) }}</span>
+                                    <span class="block text-[rgb(var(--dgg-text-muted))]">
+                                        CL: {{ number_format($row['counter_color_final'] ?? 0) }}
+                                    </span>
                                 </td>
-                                <td class="px-4 py-3">{{ $row['nama_technician'] ?? '-' }}</td>
-                                <td class="px-4 py-3 text-gray-500 text-xs max-w-xs truncate">
-                                    {{ $row['keterangan'] ?? '-' }}
+
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    {{ $row['nama_technician'] ?? '-' }}
                                 </td>
-                                <td class="px-4 py-3 text-center">
-                                    <div class="flex gap-2 justify-center">
-                                        {{-- ✅ TOMBOL CETAK SJ --}}
+
+                                <td class="px-4 py-3 text-xs text-[rgb(var(--dgg-text-muted))] max-w-[14rem]">
+                                    <div class="truncate" title="{{ $row['keterangan'] ?? '-' }}">
+                                        {{ $row['keterangan'] ?? '-' }}
+                                    </div>
+                                </td>
+
+                                <td class="px-4 py-3 text-center whitespace-nowrap">
+                                    <div class="flex gap-4 justify-center text-xs font-bold">
                                         <a href="{{ route('cetak.sj-rolling', $row['id']) }}" target="_blank"
-                                            class="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition">
-                                            🖨️ Cetak SJ
+                                            rel="noopener"
+                                            class="inline-flex items-center gap-1.5 text-blue-400 hover:underline">
+                                            <x-filament::icon icon="heroicon-o-printer" class="h-4 w-4" />
+                                            Cetak SJ
                                         </a>
 
-                                        {{-- ✅ TOMBOL EDIT --}}
-                                        {{-- <a href="{{ route('filament.admin.pages.edit-machine-replacement', $row['id']) }}" --}}
-                                        <a href="{{ route('filament.admin.pages.edit-machine-replacement') }}?id={{ $row['id'] }}"
-                                            class="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition">
-                                            ✏️ Edit
+                                        <a href="{{ route('filament.admin.pages.edit-machine-replacement', ['id' => $row['id']]) }}"
+                                            class="inline-flex items-center gap-1.5 text-amber-400 hover:underline">
+                                            <x-filament::icon icon="heroicon-o-pencil-square" class="h-4 w-4" />
+                                            Edit
                                         </a>
                                     </div>
                                 </td>

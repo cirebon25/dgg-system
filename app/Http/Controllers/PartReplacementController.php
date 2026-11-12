@@ -37,9 +37,18 @@ class PartReplacementController extends Controller
     // ===== CETAK PER BULAN =====
     public function cetakPerBulan(Request $request)
     {
-        $bulan = $request->bulan;
-        $tahun = $request->tahun;
+        // 1. Normalisasi input: kosong / tidak valid -> bulan & tahun sekarang
+        $bulan = (int) ($request->input('bulan') ?: now()->month);
+        $tahun = (int) ($request->input('tahun') ?: now()->year);
 
+        if ($bulan < 1 || $bulan > 12) {
+            $bulan = now()->month;
+        }
+        if ($tahun < 2000) {
+            $tahun = now()->year;
+        }
+
+        // 2. Query riwayat ganti part pada bulan & tahun tersebut
         $data = PartReplacement::with(['machine.customer', 'sparepart'])
             ->whereMonth('tanggal', $bulan)
             ->whereYear('tanggal', $tahun)
@@ -49,19 +58,20 @@ class PartReplacementController extends Controller
             ->get()
             ->groupBy('machine_id');
 
+        // 3. Nama bulan pakai kunci angka
         $namaBulan = [
-            '01' => 'Januari',
-            '02' => 'Februari',
-            '03' => 'Maret',
-            '04' => 'April',
-            '05' => 'Mei',
-            '06' => 'Juni',
-            '07' => 'Juli',
-            '08' => 'Agustus',
-            '09' => 'September',
-            '10' => 'Oktober',
-            '11' => 'November',
-            '12' => 'Desember',
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember',
         ];
 
         $pdf = Pdf::loadView('cetak.part-per-bulan', compact('data', 'bulan', 'tahun', 'namaBulan'))

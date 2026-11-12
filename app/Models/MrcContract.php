@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MrcContract extends Model
 {
@@ -38,6 +39,14 @@ class MrcContract extends Model
     }
 
     /**
+     * Pemakaian bulanan (meter reading) milik mesin kontrak ini.
+     */
+    public function meterReadings(): HasMany
+    {
+        return $this->hasMany(MeterReading::class, 'machine_id', 'machine_id');
+    }
+
+    /**
      * SCOPE: kontrak aktif yang harganya belum diisi (draft).
      */
     public function scopeBelumDiisi($query)
@@ -67,6 +76,18 @@ class MrcContract extends Model
         });
     }
 
+    /**
+     * SCOPE: kontrak yang berlaku pada tanggal tertentu.
+     */
+    public function scopeBerlakuPada($query, $tanggal)
+    {
+        return $query->whereDate('tanggal_mulai', '<=', $tanggal)
+            ->where(function ($q) use ($tanggal) {
+                $q->whereNull('tanggal_selesai')
+                    ->orWhereDate('tanggal_selesai', '>=', $tanggal);
+            });
+    }
+
     public function isMesinDitarik(): bool
     {
         return $this->aktif && $this->machine && $this->machine->status !== 'Rented';
@@ -75,10 +96,10 @@ class MrcContract extends Model
     // Hitung tagihan berdasarkan usage
     public function hitungTagihan(int $usageBw, int $usageColor): array
     {
-        $hargaSewa   = (int) $this->harga_sewa;
+        $hargaSewa = (int) $this->harga_sewa;
 
-        $kelebihaBw    = max(0, $usageBw    - $this->free_bw);
-        $kelebihaColor = max(0, $usageColor - $this->free_color);
+        $kelebihaBw    = max(0, $usageBw    - (int) $this->free_bw);
+        $kelebihaColor = max(0, $usageColor - (int) $this->free_color);
 
         $biayaBw    = $kelebihaBw    * (int) $this->harga_bw;
         $biayaColor = $kelebihaColor * (int) $this->harga_color;
@@ -87,12 +108,12 @@ class MrcContract extends Model
         return [
             'harga_sewa'      => $hargaSewa,
             'usage_bw'        => $usageBw,
-            'free_bw'         => $this->free_bw,
+            'free_bw'         => (int) $this->free_bw,
             'kelebihan_bw'    => $kelebihaBw,
             'harga_bw'        => (int) $this->harga_bw,
             'biaya_bw'        => $biayaBw,
             'usage_color'     => $usageColor,
-            'free_color'      => $this->free_color,
+            'free_color'      => (int) $this->free_color,
             'kelebihan_color' => $kelebihaColor,
             'harga_color'     => (int) $this->harga_color,
             'biaya_color'     => $biayaColor,

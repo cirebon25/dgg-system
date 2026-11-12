@@ -1,9 +1,38 @@
+@php
+    // Daftar nama bulan (dibuat di sini supaya tidak bergantung pada controller)
+    $daftarBulan = [
+        1 => 'Januari',
+        2 => 'Februari',
+        3 => 'Maret',
+        4 => 'April',
+        5 => 'Mei',
+        6 => 'Juni',
+        7 => 'Juli',
+        8 => 'Agustus',
+        9 => 'September',
+        10 => 'Oktober',
+        11 => 'November',
+        12 => 'Desember',
+    ];
+
+    // Default aman: kalau bulan/tahun kosong, pakai bulan/tahun sekarang
+    $bulan = (int) ($bulan ?? 0);
+    $tahun = (int) ($tahun ?? 0);
+    if ($bulan < 1 || $bulan > 12) {
+        $bulan = now()->month;
+    }
+    if ($tahun < 2000) {
+        $tahun = now()->year;
+    }
+
+    $labelBulan = $daftarBulan[$bulan];
+@endphp
 <!DOCTYPE html>
 <html>
 
 <head>
     <meta charset="utf-8">
-    <title>Riwayat Ganti Part - {{ $namaBulan[$bulan] }} {{ $tahun }}</title>
+    <title>Riwayat Ganti Part - {{ $labelBulan }} {{ $tahun }}</title>
     <style>
         * {
             margin: 0;
@@ -103,7 +132,7 @@
 <body>
 
     <div class="header">
-        <h2>RIWAYAT GANTI SPAREPART BULAN {{ strtoupper($namaBulan[$bulan]) }} {{ $tahun }}</h2>
+        <h2>RIWAYAT GANTI SPAREPART BULAN {{ strtoupper($labelBulan) }} {{ $tahun }}</h2>
         <p>DGG System &mdash; Dicetak {{ now()->format('d/m/Y H:i') }}</p>
     </div>
 
@@ -114,8 +143,8 @@
             @php $machine = $rows->first()->machine; @endphp
             <div class="mesin-section">
                 <div class="mesin-title">
-                    Mesin: {{ $machine->serial_number }} &mdash; {{ $machine->tipe_model ?? '-' }} &mdash;
-                    {{ $machine->customer?->nama_customer ?? 'Gudang DGG' }}
+                    Mesin: {{ $machine?->serial_number ?? '-' }} &mdash; {{ $machine?->tipe_model ?? '-' }} &mdash;
+                    {{ $machine?->customer?->nama_customer ?? 'Gudang DGG' }}
                 </div>
                 <table>
                     <thead>
@@ -139,7 +168,7 @@
                                             : 'badge-normal');
                             @endphp
                             <tr>
-                                <td>{{ $i + 1 }}</td>
+                                <td>{{ $loop->iteration }}</td>
                                 <td>{{ $row->sparepart?->nama_sparepart ?? '-' }}</td>
                                 <td>{{ \Carbon\Carbon::parse($row->tanggal)->format('d/m/Y') }}</td>
                                 <td>{{ number_format($row->counter_sebelumnya) }}</td>

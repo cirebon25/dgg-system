@@ -1,502 +1,11 @@
+@vite('resources/css/filament/admin/pusat-bantuan.css')
+
 <x-filament-panels::page>
     <div x-data="{
         kategori: 'master',
         formulir: 'customer',
         cari: '',
     }" class="dgg-manual">
-        <style>
-            .dgg-manual {
-                --paper: #F7F4EC;
-                --paper-dim: #EFEAD9;
-                --ink: #1F2A1E;
-                --ink-soft: #4A5D52;
-                --rule: #D8D2C0;
-                --stamp-red: #8B2E2E;
-                --index-amber: #B07F22;
-                font-family: 'Inter', system-ui, -apple-system, sans-serif;
-                color: var(--ink);
-                background: var(--paper);
-                border: 1px solid var(--rule);
-                border-radius: 2px;
-                padding: 0;
-                position: relative;
-            }
-
-            .dgg-manual * {
-                box-sizing: border-box;
-            }
-
-            .dgg-mono {
-                font-family: 'Courier Prime', 'Courier New', ui-monospace, monospace;
-            }
-
-            /* ===== Letterhead ===== */
-            .dgg-letterhead {
-                display: flex;
-                align-items: flex-end;
-                justify-content: space-between;
-                gap: 1.5rem;
-                padding: 2rem 2.25rem 1.25rem;
-                border-bottom: 3px solid var(--ink);
-                background-image:
-                    repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(31, 42, 30, 0.025) 28px);
-            }
-
-            .dgg-letterhead .dgg-eyebrow {
-                font-size: 10.5px;
-                letter-spacing: 0.18em;
-                text-transform: uppercase;
-                color: var(--ink-soft);
-                margin: 0 0 0.4rem;
-            }
-
-            .dgg-letterhead h1 {
-                font-size: 1.9rem;
-                line-height: 1.1;
-                font-weight: 800;
-                letter-spacing: -0.01em;
-                margin: 0;
-                color: var(--ink);
-            }
-
-            .dgg-letterhead .dgg-sub {
-                font-size: 12px;
-                color: var(--ink-soft);
-                margin: 0.4rem 0 0;
-                max-width: 46ch;
-            }
-
-            .dgg-stampbox {
-                flex: none;
-                width: 116px;
-                height: 116px;
-                border: 2.5px solid var(--stamp-red);
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                text-align: center;
-                transform: rotate(-7deg);
-                color: var(--stamp-red);
-                position: relative;
-            }
-
-            .dgg-stampbox::before {
-                content: '';
-                position: absolute;
-                inset: 7px;
-                border: 1px solid var(--stamp-red);
-                border-radius: 50%;
-            }
-
-            .dgg-stampbox span {
-                font-family: 'Courier Prime', monospace;
-                font-size: 9.5px;
-                font-weight: 700;
-                letter-spacing: 0.05em;
-                line-height: 1.5;
-                text-transform: uppercase;
-            }
-
-            /* ===== Body grid ===== */
-            .dgg-body {
-                display: grid;
-                grid-template-columns: 280px 1fr;
-            }
-
-            @media (max-width: 900px) {
-                .dgg-body {
-                    grid-template-columns: 1fr;
-                }
-            }
-
-            /* ===== Index / card catalog ===== */
-            .dgg-index {
-                border-right: 1px solid var(--rule);
-                padding: 1.25rem 1rem;
-                background: var(--paper-dim);
-            }
-
-            @media (max-width: 900px) {
-                .dgg-index {
-                    border-right: none;
-                    border-bottom: 1px solid var(--rule);
-                }
-            }
-
-            .dgg-search {
-                width: 100%;
-                background: var(--paper);
-                border: 1px solid var(--rule);
-                border-radius: 2px;
-                padding: 0.5rem 0.65rem;
-                font-size: 12px;
-                color: var(--ink);
-                margin-bottom: 1rem;
-            }
-
-            .dgg-search::placeholder {
-                color: #9b9683;
-            }
-
-            .dgg-search:focus {
-                outline: 2px solid var(--index-amber);
-                outline-offset: 1px;
-            }
-
-            .dgg-cat-head {
-                width: 100%;
-                display: flex;
-                align-items: baseline;
-                justify-content: space-between;
-                gap: 0.5rem;
-                background: none;
-                border: none;
-                border-bottom: 1px dashed var(--rule);
-                padding: 0.55rem 0.15rem;
-                margin-top: 0.35rem;
-                cursor: pointer;
-                text-align: left;
-                font-family: 'Courier Prime', monospace;
-                font-size: 11px;
-                letter-spacing: 0.06em;
-                text-transform: uppercase;
-                color: var(--ink-soft);
-            }
-
-            .dgg-cat-head.is-active {
-                color: var(--ink);
-                font-weight: 700;
-            }
-
-            .dgg-cat-head .dgg-cat-code {
-                color: var(--index-amber);
-                font-weight: 700;
-                margin-right: 0.45rem;
-            }
-
-            .dgg-cat-arrow {
-                font-size: 9px;
-                color: #9b9683;
-            }
-
-            .dgg-tab {
-                display: flex;
-                align-items: baseline;
-                gap: 0.5rem;
-                width: 100%;
-                text-align: left;
-                background: none;
-                border: none;
-                padding: 0.4rem 0.5rem 0.4rem 1.15rem;
-                font-size: 12.5px;
-                color: var(--ink-soft);
-                border-left: 2px solid transparent;
-                cursor: pointer;
-            }
-
-            .dgg-tab:hover {
-                color: var(--ink);
-                background: rgba(31, 42, 30, 0.035);
-            }
-
-            .dgg-tab.is-active {
-                color: var(--ink);
-                font-weight: 700;
-                border-left-color: var(--stamp-red);
-                background: rgba(139, 46, 46, 0.06);
-            }
-
-            .dgg-tab .dgg-tab-code {
-                font-family: 'Courier Prime', monospace;
-                font-size: 10px;
-                color: var(--index-amber);
-                flex: none;
-                width: 3.6em;
-            }
-
-            /* ===== Sheet (right content) ===== */
-            .dgg-sheet {
-                padding: 2rem 2.25rem 2.5rem;
-                min-height: 480px;
-            }
-
-            .dgg-sheet-head {
-                display: flex;
-                align-items: flex-start;
-                justify-content: space-between;
-                gap: 1rem;
-                border-bottom: 1.5px solid var(--ink);
-                padding-bottom: 0.85rem;
-                margin-bottom: 1.25rem;
-            }
-
-            .dgg-formno {
-                font-family: 'Courier Prime', monospace;
-                font-size: 10.5px;
-                letter-spacing: 0.06em;
-                color: var(--index-amber);
-                margin: 0 0 0.3rem;
-            }
-
-            .dgg-sheet-head h2 {
-                font-size: 1.3rem;
-                font-weight: 800;
-                margin: 0;
-                letter-spacing: -0.005em;
-            }
-
-            .dgg-sheet-head p {
-                font-size: 12px;
-                color: var(--ink-soft);
-                margin: 0.3rem 0 0;
-                max-width: 56ch;
-            }
-
-            .dgg-badge {
-                flex: none;
-                font-family: 'Courier Prime', monospace;
-                font-size: 10px;
-                font-weight: 700;
-                letter-spacing: 0.05em;
-                text-transform: uppercase;
-                padding: 0.3rem 0.55rem;
-                border: 1px solid currentColor;
-                border-radius: 2px;
-                white-space: nowrap;
-            }
-
-            .dgg-prose {
-                font-size: 13px;
-                line-height: 1.65;
-                color: var(--ink);
-            }
-
-            .dgg-prose p {
-                margin: 0 0 0.9rem;
-            }
-
-            /* card-stok style field box */
-            .dgg-binbox {
-                border: 1px solid var(--rule);
-                border-left: 3px solid var(--ink-soft);
-                background: var(--paper-dim);
-                border-radius: 2px;
-                margin: 1rem 0;
-            }
-
-            .dgg-bin-title {
-                font-family: 'Courier Prime', monospace;
-                font-size: 10px;
-                letter-spacing: 0.08em;
-                text-transform: uppercase;
-                color: var(--ink-soft);
-                padding: 0.6rem 0.85rem 0;
-            }
-
-            .dgg-bin-row {
-                display: grid;
-                grid-template-columns: 11.5em 1fr;
-                gap: 0.5rem;
-                padding: 0.45rem 0.85rem;
-                border-top: 1px dashed var(--rule);
-                font-size: 12.5px;
-            }
-
-            .dgg-bin-row:first-of-type {
-                border-top: 1px solid var(--rule);
-                margin-top: 0.5rem;
-            }
-
-            .dgg-bin-field {
-                font-family: 'Courier Prime', monospace;
-                font-size: 11.5px;
-                color: var(--stamp-red);
-                font-weight: 700;
-            }
-
-            .dgg-flow {
-                display: flex;
-                align-items: stretch;
-                gap: 0;
-                margin: 1.1rem 0;
-                border: 1px solid var(--rule);
-                border-radius: 2px;
-                overflow: hidden;
-                font-size: 11.5px;
-            }
-
-            .dgg-flow-step {
-                flex: 1;
-                padding: 0.65rem 0.7rem;
-                background: var(--paper);
-                position: relative;
-            }
-
-            .dgg-flow-step+.dgg-flow-step {
-                border-left: 1px dashed var(--rule);
-            }
-
-            .dgg-flow-step b {
-                display: block;
-                font-size: 11.5px;
-                margin-bottom: 0.15rem;
-            }
-
-            .dgg-flow-step span {
-                color: var(--ink-soft);
-                font-size: 11px;
-            }
-
-            .dgg-note {
-                border: 1px solid var(--index-amber);
-                background: rgba(176, 127, 34, 0.08);
-                border-radius: 2px;
-                padding: 0.7rem 0.85rem;
-                font-size: 12px;
-                line-height: 1.55;
-                margin: 1rem 0 0;
-            }
-
-            .dgg-note b {
-                color: var(--index-amber);
-            }
-
-            .dgg-lock {
-                border: 1px solid var(--stamp-red);
-                background: rgba(139, 46, 46, 0.06);
-                border-radius: 2px;
-                padding: 0.7rem 0.85rem;
-                font-size: 12px;
-                line-height: 1.55;
-                margin: 1rem 0 0;
-                color: #5e2020;
-            }
-
-            .dgg-lock b {
-                color: var(--stamp-red);
-            }
-
-            /* ===== Footer formula ledger ===== */
-            .dgg-ledger {
-                border-top: 1.5px solid var(--ink);
-                padding: 1.25rem 2.25rem;
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 1rem;
-                background: var(--paper-dim);
-            }
-
-            @media (max-width: 700px) {
-                .dgg-ledger {
-                    grid-template-columns: 1fr;
-                }
-            }
-
-            .dgg-ledger-card {
-                border: 1px solid var(--rule);
-                background: var(--paper);
-                border-radius: 2px;
-                padding: 0.75rem 0.9rem;
-            }
-
-            .dgg-ledger-card .dgg-led-label {
-                font-family: 'Courier Prime', monospace;
-                font-size: 10px;
-                letter-spacing: 0.05em;
-                text-transform: uppercase;
-                color: var(--ink-soft);
-                margin: 0 0 0.3rem;
-            }
-
-            .dgg-ledger-card .dgg-led-formula {
-                font-family: 'Courier Prime', monospace;
-                font-size: 12px;
-                color: var(--ink);
-            }
-
-            /* ===== Escalation strip ===== */
-            .dgg-escalation {
-                border-top: 3px solid var(--ink);
-                padding: 1.75rem 2.25rem;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 1.5rem;
-                flex-wrap: wrap;
-            }
-
-            .dgg-escalation .dgg-eyebrow {
-                font-size: 10.5px;
-                letter-spacing: 0.16em;
-                text-transform: uppercase;
-                color: var(--stamp-red);
-                margin: 0 0 0.4rem;
-                font-weight: 700;
-            }
-
-            .dgg-escalation p {
-                font-size: 12px;
-                color: var(--ink-soft);
-                max-width: 50ch;
-                margin: 0;
-                line-height: 1.6;
-            }
-
-            .dgg-call {
-                flex: none;
-                text-decoration: none;
-                border: 1.5px solid var(--ink);
-                background: var(--paper);
-                padding: 0.85rem 1.4rem;
-                border-radius: 2px;
-                text-align: center;
-                min-width: 220px;
-                transition: background 0.15s ease;
-            }
-
-            .dgg-call:hover {
-                background: var(--paper-dim);
-            }
-
-            .dgg-call .dgg-call-label {
-                font-family: 'Courier Prime', monospace;
-                font-size: 10px;
-                letter-spacing: 0.08em;
-                text-transform: uppercase;
-                color: var(--ink-soft);
-            }
-
-            .dgg-call .dgg-call-name {
-                font-size: 1.1rem;
-                font-weight: 800;
-                color: var(--ink);
-                margin: 0.2rem 0;
-            }
-
-            .dgg-call .dgg-call-num {
-                font-family: 'Courier Prime', monospace;
-                font-size: 13px;
-                color: #2f5d3a;
-                font-weight: 700;
-            }
-
-            .dgg-colophon {
-                display: flex;
-                justify-content: space-between;
-                gap: 1rem;
-                flex-wrap: wrap;
-                padding: 0.85rem 2.25rem;
-                font-size: 10.5px;
-                color: #9b9683;
-                font-family: 'Courier Prime', monospace;
-                border-top: 1px solid var(--rule);
-            }
-
-            [x-cloak] {
-                display: none !important;
-            }
-        </style>
 
         {{-- ===================================================================
              LETTERHEAD
@@ -519,7 +28,7 @@
         <div class="dgg-body">
 
             {{-- ===================================================================
-                 INDEX / KARTU KATALOG KIRI
+                 INDEX
             ==================================================================== --}}
             <nav class="dgg-index">
                 <input type="text" x-model="cari" class="dgg-search" placeholder="Cari nama menu&hellip;">
@@ -644,7 +153,7 @@
             </nav>
 
             {{-- ===================================================================
-                 LEMBAR FORMULIR (KANAN)
+                 LEMBAR FORMULIR
             ==================================================================== --}}
             <div class="dgg-sheet">
 
@@ -657,7 +166,7 @@
                             <p>Database identitas resmi instansi penyewa mesin, dibuat sebelum unit dikirim ke lokasi.
                             </p>
                         </div>
-                        <span class="dgg-badge" style="color:#4A5D52;">Master</span>
+                        <span class="dgg-badge dgg-badge--master">Master</span>
                     </div>
                     <div class="dgg-prose">
                         <p>Setiap kontrak sewa baru wajib didaftarkan di sini terlebih dahulu. Data ini menjadi acuan
@@ -685,7 +194,7 @@
                             <h2>Data Unit Mesin</h2>
                             <p>Kartu inventaris fisik tiap unit fotokopi, lengkap dengan status dan lokasi terkini.</p>
                         </div>
-                        <span class="dgg-badge" style="color:#4A5D52;">Master</span>
+                        <span class="dgg-badge dgg-badge--master">Master</span>
                     </div>
                     <div class="dgg-prose">
                         <p>Menu kontrol inventaris unit fisik agar admin selalu tahu unit mana yang siap kirim dan mana
@@ -699,8 +208,8 @@
                             <div class="dgg-bin-row"><span class="dgg-bin-field">volt, finisher,
                                     double_scan</span><span>Spesifikasi fisik bawaan unit.</span></div>
                             <div class="dgg-bin-row"><span
-                                    class="dgg-bin-field">status</span><span><strong>Ready</strong> di gudang,
-                                    <strong>Rented</strong> terpasang, <strong>Refurbish</strong> perbaikan,
+                                    class="dgg-bin-field">status</span><span><strong>Ready</strong>
+                                    di gudang, <strong>Rented</strong> terpasang, <strong>Refurbish</strong> perbaikan,
                                     <strong>Returned</strong> baru ditarik.</span></div>
                         </div>
                     </div>
@@ -714,7 +223,7 @@
                             <h2>Personel Teknisi</h2>
                             <p>Registrasi akun teknisi pemegang inventaris logistik lapangan.</p>
                         </div>
-                        <span class="dgg-badge" style="color:#4A5D52;">Master</span>
+                        <span class="dgg-badge dgg-badge--master">Master</span>
                     </div>
                     <div class="dgg-prose">
                         <p>Daftarkan personel resmi sebelum mereka diberi tas stok sparepart atau ditugaskan menangani
@@ -739,7 +248,7 @@
                             <h2>Master Sparepart</h2>
                             <p>Katalog induk komponen: drum, roll, toner, dan suku cadang lainnya.</p>
                         </div>
-                        <span class="dgg-badge" style="color:#4A5D52;">Master</span>
+                        <span class="dgg-badge dgg-badge--master">Master</span>
                     </div>
                     <div class="dgg-prose">
                         <p>Dipakai admin gudang untuk mencatat nama komponen, kode part, dan saldo stok yang berjalan
@@ -764,7 +273,7 @@
                             <h2>Data Marketing</h2>
                             <p>Daftar personel sales yang berhak mencatat kunjungan ke prospek perusahaan baru.</p>
                         </div>
-                        <span class="dgg-badge" style="color:#4A5D52;">Master</span>
+                        <span class="dgg-badge dgg-badge--master">Master</span>
                     </div>
                     <div class="dgg-prose">
                         <p>Setiap marketing harus terdaftar di sini sebelum bisa dipilih sebagai pencatat kunjungan pada
@@ -789,7 +298,7 @@
                             <h2>Pemasangan Mesin</h2>
                             <p>SOP deployment unit baru dari gudang ke kantor pelanggan.</p>
                         </div>
-                        <span class="dgg-badge" style="color:#2f5d3a;">Servis</span>
+                        <span class="dgg-badge dgg-badge--servis">Servis</span>
                     </div>
                     <div class="dgg-prose">
                         <p>Mengunci status mesin agar satu unit tidak terkirim dobel ke dua pelanggan berbeda.</p>
@@ -819,7 +328,7 @@
                             <p>Catatan kunjungan harian: counter meteran, sparepart terpakai, dan keterangan perbaikan.
                             </p>
                         </div>
-                        <span class="dgg-badge" style="color:#2f5d3a;">Servis</span>
+                        <span class="dgg-badge dgg-badge--servis">Servis</span>
                     </div>
                     <div class="dgg-prose">
                         <p>Setelah kunjungan selesai, teknisi wajib mengisi formulir ini. Sistem menghitung otomatis
@@ -857,7 +366,7 @@
                             <h2>Kunjungan Sales</h2>
                             <p>Pencatatan kunjungan marketing ke perusahaan calon pelanggan baru.</p>
                         </div>
-                        <span class="dgg-badge" style="color:#2f5d3a;">Servis</span>
+                        <span class="dgg-badge dgg-badge--servis">Servis</span>
                     </div>
                     <div class="dgg-prose">
                         <p>Setiap kali marketing mengunjungi sebuah perusahaan, kunjungan itu ditambahkan sebagai baris
@@ -892,7 +401,7 @@
                             <h2>Pencatatan MRC</h2>
                             <p>Pencatatan counter bulanan resmi yang menjadi dasar tagihan ke customer.</p>
                         </div>
-                        <span class="dgg-badge" style="color:#B07F22;">MRC</span>
+                        <span class="dgg-badge dgg-badge--mrc">MRC</span>
                     </div>
                     <div class="dgg-prose">
                         <p>MRC bukan jenis kunjungan tersendiri &mdash; tetap diinput lewat formulir Servis Teknisi
@@ -915,7 +424,7 @@
                             <h2>Rekap Status MRC</h2>
                             <p>Daftar semua unit terpasang beserta status sudah atau belum dicatat MRC bulan ini.</p>
                         </div>
-                        <span class="dgg-badge" style="color:#B07F22;">MRC</span>
+                        <span class="dgg-badge dgg-badge--mrc">MRC</span>
                     </div>
                     <div class="dgg-prose">
                         <p>Gunakan menu ini di akhir bulan untuk memastikan tidak ada unit terpasang yang terlewat
@@ -940,7 +449,7 @@
                             <h2>Kontrak &amp; Tagihan</h2>
                             <p>Harga sewa, kuota gratis, dan harga kelebihan lembar per unit mesin.</p>
                         </div>
-                        <span class="dgg-badge" style="color:#B07F22;">MRC</span>
+                        <span class="dgg-badge dgg-badge--mrc">MRC</span>
                     </div>
                     <div class="dgg-prose">
                         <p>Setiap unit yang disewakan dengan skema kuota harus memiliki satu kontrak di sini. Tanpa
@@ -972,7 +481,7 @@
                             <h2>Drop Part ke Teknisi</h2>
                             <p>Pemberian modal sparepart dari gudang pusat ke tas motor teknisi.</p>
                         </div>
-                        <span class="dgg-badge" style="color:#6b4fa0;">Logistik</span>
+                        <span class="dgg-badge dgg-badge--logistik">Logistik</span>
                     </div>
                     <div class="dgg-prose">
                         <p>Dipakai saat teknisi mengambil bekal sparepart dari kantor sebelum keliling servis lapangan.
@@ -992,7 +501,7 @@
                             <h2>Tas Stok Teknisi</h2>
                             <p>Dashboard sisa material yang sedang dibawa keliling tiap teknisi.</p>
                         </div>
-                        <span class="dgg-badge" style="color:#6b4fa0;">Logistik</span>
+                        <span class="dgg-badge dgg-badge--logistik">Logistik</span>
                     </div>
                     <div class="dgg-prose">
                         <p>Halaman pemantauan, bukan tempat input manual. Nilai di sini berubah otomatis dari drop part
@@ -1014,7 +523,7 @@
                             <h2>Retur Suku Cadang</h2>
                             <p>Pengembalian sisa atau salah bawa komponen dari lapangan ke gudang pusat.</p>
                         </div>
-                        <span class="dgg-badge" style="color:#6b4fa0;">Logistik</span>
+                        <span class="dgg-badge dgg-badge--logistik">Logistik</span>
                     </div>
                     <div class="dgg-prose">
                         <p>Menjaga stok gudang dan tas teknisi tetap sinkron ketika ada komponen yang tidak terpakai.
@@ -1034,7 +543,7 @@
                             <h2>Penarikan Unit Mesin</h2>
                             <p>SOP pemutusan kontrak sewa dan pencetakan dokumen jalan.</p>
                         </div>
-                        <span class="dgg-badge" style="color:#8B2E2E;">Penarikan</span>
+                        <span class="dgg-badge dgg-badge--penarikan">Penarikan</span>
                     </div>
                     <div class="dgg-prose">
                         <p>Digunakan saat masa sewa berakhir, atau unit ditarik karena rusak berat atau menunggak
@@ -1082,7 +591,7 @@
                     hubungi langsung penanggung jawab sistem di kantor pusat Cirebon.
                 </p>
             </div>
-            <a href="https://wa.me/+62895636675848" target="_blank" class="dgg-call">
+            <a href="https://wa.me/62895636675848" target="_blank" rel="noopener" class="dgg-call">
                 <div class="dgg-call-label">Hubungi via WhatsApp</div>
                 <div class="dgg-call-name">Rudi &mdash; Person In Charge</div>
                 <div class="dgg-call-num">0895-6366-75848</div>

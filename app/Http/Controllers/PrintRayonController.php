@@ -9,6 +9,7 @@ use App\Models\Technician;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\MeterReading;
 
 class PrintRayonController extends Controller
 {
@@ -125,34 +126,64 @@ class PrintRayonController extends Controller
     }
 
     // dipindah dari: Route::get('/cetak-top-usage', ...)->name('cetak.top-usage')
+    // dipindah dari: Route::get('/cetak-top-usage', ...)->name('cetak.top-usage')
     public function topUsage(Request $request)
     {
-        $month = $request->month;
-        $year = $request->year;
+        $month = $request->month ?? date('m');
+        $year  = $request->year ?? date('Y');
 
-        $records = ServiceLog::query()
-            ->join('machines', 'service_logs.machine_id', '=', 'machines.id')
-            ->join('deployments', 'machines.id', '=', 'deployments.machine_id')
-            ->join('customers', 'deployments.customer_id', '=', 'customers.id')
-            ->select(
-                'customers.nama_customer',
+        $awalBulan  = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $akhirBulan = $awalBulan->copy()->endOfMonth();
+
+        $records = MeterReading::query()
+            ->join('machines', 'machines.id', '=', 'meter_readings.machine_id')
+            ->join('customers', 'customers.id', '=', 'meter_readings.customer_id')
+            ->where('meter_readings.tanggal', '<=', $akhirBulan)
+            ->groupBy(
+                'meter_readings.machine_id',
                 'machines.serial_number',
-                DB::raw('SUM(usage_bw) as total_bw'),
-                DB::raw('SUM(usage_color) as total_color'),
-                DB::raw('SUM(usage_bw + usage_color) as total_semua')
+                'customers.id',
+                'customers.nama_customer'
             )
-            ->whereMonth('service_logs.tanggal', $month)
-            ->whereYear('service_logs.tanggal', $year)
-            ->groupBy('customers.nama_customer', 'machines.serial_number')
-            ->orderBy('total_semua', 'desc')->get();
+            ->selectRaw('
+            customers.nama_customer,
+            machines.serial_number,
+
+            COALESCE(MAX(meter_readings.counter_bw) - MIN(meter_readings.counter_bw_lalu), 0) AS total_bw,
+            COALESCE(MAX(meter_readings.counter_color) - MIN(meter_readings.counter_color_lalu), 0) AS total_color,
+
+            COALESCE(
+                MAX(CASE WHEN meter_readings.tanggal >= ? THEN meter_readings.counter_bw END)
+                - MIN(CASE WHEN meter_readings.tanggal >= ? THEN meter_readings.counter_bw_lalu END), 0
+            ) AS bw_bulan_ini,
+            COALESCE(
+                MAX(CASE WHEN meter_readings.tanggal >= ? THEN meter_readings.counter_color END)
+                - MIN(CASE WHEN meter_readings.tanggal >= ? THEN meter_readings.counter_color_lalu END), 0
+            ) AS color_bulan_ini,
+
+            PERIOD_DIFF(DATE_FORMAT(?, "%Y%m"), DATE_FORMAT(MIN(meter_readings.tanggal), "%Y%m")) + 1 AS jumlah_bulan
+        ', [
+                $awalBulan->toDateString(),
+                $awalBulan->toDateString(),
+                $awalBulan->toDateString(),
+                $awalBulan->toDateString(),
+                $akhirBulan->toDateString(),
+            ])
+            ->get()
+            ->each(function ($row) {
+                $row->total_semua         = $row->total_bw + $row->total_color;
+                $row->pemakaian_bulan_ini = $row->bw_bulan_ini + $row->color_bulan_ini;
+                $row->rata_rata           = round($row->total_semua / ($row->jumlah_bulan ?: 1));
+            })
+            ->sortByDesc('rata_rata')
+            ->values();
 
         return view('filament.pages.cetak-top-usage', [
             'records' => $records,
-            'bulan' => Carbon::create()->month($month)->translatedFormat('F'),
-            'tahun' => $year,
+            'bulan'   => $awalBulan->translatedFormat('F'),
+            'tahun'   => $year,
         ]);
     }
-
     // dipindah dari: Route::get('/print/technician-performance', ...)->name('print.tech-performance')
     public function technicianPerformance(Request $request)
     {

@@ -1,0 +1,720 @@
+@import "../../../../vendor/filament/filament/resources/css/theme.css";
+@config '../../../../tailwind.config.js';
+
+/* ===================================================================
+   DGG SYSTEM — TOKEN TEMA
+   =================================================================== */
+
+/* ===================================================================
+   DGG SYSTEM — TOKEN TEMA
+   =================================================================== */
+:root,
+.dark {
+    --dgg-body: 13 11 20;
+    --dgg-surface: 13 11 20;
+    --dgg-border: 38 33 53;
+    --dgg-text-base: 226 216 240;
+    --dgg-text-muted: 150 140 170;
+    --dgg-accent: 139 92 246;
+    --dgg-accent-hover: 124 58 237;
+    --dgg-on-accent: 255 255 255;
+    --dgg-radius-lg: 1rem;
+    --dgg-radius-md: 0.625rem;
+    --dgg-radius-pill: 999px;
+
+    /* Gradasi aksen: tebal di kiri, memudar ke transparan di kanan.
+       Dipakai bersama oleh sidebar aktif dan header tabel. */
+    --dgg-accent-fade: linear-gradient(
+        90deg,
+        rgb(139 92 246 / 0.22) 0%,
+        rgb(139 92 246 / 0.06) 55%,
+        transparent 100%
+    );
+}
+
+/* ===================================================================
+   BASE
+   =================================================================== */
+body,
+.fi-body {
+    background-color: rgb(var(--dgg-body)) !important;
+    color: rgb(var(--dgg-text-base)) !important;
+}
+
+.fi-topbar nav,
+.fi-sidebar {
+    background-color: rgb(var(--dgg-body));
+    border-color: rgb(var(--dgg-border));
+}
+
+/* ===================================================================
+   SIDEBAR
+   =================================================================== */
+.fi-sidebar-item.fi-active > .fi-sidebar-item-button,
+.fi-sidebar-item.fi-active > a,
+.fi-sidebar-item.fi-active > button {
+    position: relative;
+    background: var(--dgg-accent-fade) !important;
+    border-radius: var(--dgg-radius-md);
+    color: #fff !important;
+    font-weight: 600;
+    overflow: hidden;
+}
+
+.fi-sidebar-item.fi-active > .fi-sidebar-item-button::before,
+.fi-sidebar-item.fi-active > a::before,
+.fi-sidebar-item.fi-active > button::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 15%;
+    bottom: 15%;
+    width: 3px;
+    background: rgb(var(--dgg-accent));
+    border-radius: 0 4px 4px 0;
+    box-shadow: 0 0 12px 1px rgb(var(--dgg-accent));
+}
+
+.fi-sidebar-item.fi-active span,
+.fi-sidebar-item.fi-active svg {
+    color: #fff !important;
+}
+
+.fi-sidebar-item.fi-active svg {
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.3));
+}
+
+.fi-sidebar-item-button {
+    border-radius: var(--dgg-radius-md);
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+    color: rgb(var(--dgg-text-muted));
+}
+
+.fi-sidebar-item-button:hover:not(.fi-active) {
+    background-color: rgb(255 255 255 / 0.03);
+    color: rgb(var(--dgg-text-base));
+}
+
+/* Scrollbar sidebar tipis */
+aside .fi-sidebar-nav::-webkit-scrollbar {
+    width: 4px;
+}
+
+aside .fi-sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+aside .fi-sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+aside .fi-sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* ===================================================================
+   CONTAINER: SECTION, WIDGET, TABEL
+   =================================================================== */
+.fi-section,
+.fi-wi-widget,
+.fi-ta-ctn {
+    background-color: rgb(var(--dgg-surface)) !important;
+    border: 1px solid rgb(var(--dgg-border));
+    border-radius: var(--dgg-radius-lg);
+}
+
+.fi-ta-header-toolbar {
+    border-color: rgb(var(--dgg-border));
+}
+
+/* ===================================================================
+   HEADER TABEL
+   Gradasi sama dengan sidebar aktif + bar aksen di kolom pertama
+   =================================================================== */
+.fi-ta-header {
+    position: relative;
+    background: var(--dgg-accent-fade) !important;
+    border-radius: var(--dgg-radius-md) var(--dgg-radius-md) 0 0;
+}
+
+.fi-ta-header-cell {
+    position: relative;
+    background-color: transparent !important;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #fff;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.25);
+}
+
+.fi-ta-header-cell:first-child::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 15%;
+    bottom: 15%;
+    width: 3px;
+    background: rgb(var(--dgg-accent));
+    border-radius: 0 4px 4px 0;
+    box-shadow: 0 0 12px 1px rgb(var(--dgg-accent));
+}
+
+.fi-ta-row {
+    border-color: rgb(var(--dgg-border));
+    transition: background-color 0.12s ease;
+}
+
+.fi-ta-row:hover {
+    background-color: rgb(255 255 255 / 0.02) !important;
+}
+
+.fi-ta-cell {
+    border-color: rgb(var(--dgg-border));
+    color: rgb(var(--dgg-text-base));
+}
+
+.fi-ta-header-toolbar .fi-input-wrp {
+    border-radius: var(--dgg-radius-md);
+    background-color: rgb(255 255 255 / 0.03);
+    border: 1px solid rgb(255 255 255 / 0.1);
+}
+
+/* ===================================================================
+   TOMBOL
+   =================================================================== */
+.fi-btn {
+    border-radius: var(--dgg-radius-md);
+    font-weight: 500;
+}
+
+.fi-btn-color-primary {
+    background-color: rgb(var(--dgg-accent));
+    color: rgb(var(--dgg-on-accent));
+    border: 1px solid rgb(255 255 255 / 0.1);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.15);
+}
+
+.fi-btn-color-primary:hover {
+    background-color: rgb(var(--dgg-accent-hover));
+}
+
+/* ===================================================================
+   DASHBOARD: STAT CARD
+   Hover naik, border berwarna, glow, dan bar aksen kiri.
+   Warna per kartu lewat variabel --c.
+   =================================================================== */
+.fi-wi-stats-overview-stat {
+    --c: 139 92 246;
+    position: relative;
+    overflow: hidden;
+    background-color: rgb(var(--dgg-surface)) !important;
+    border: 1px solid rgb(var(--dgg-border));
+    border-radius: var(--dgg-radius-lg);
+    transition:
+        transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.fi-wi-stats-overview-stat::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: rgb(var(--c));
+    box-shadow: 0 0 12px 1px rgb(var(--c) / 0.6);
+    opacity: 0.85;
+    pointer-events: none;
+}
+
+.fi-wi-stats-overview-stat:hover {
+    transform: translateY(-2px);
+    border-color: rgb(var(--c) / 0.4);
+    box-shadow: 0 8px 24px -10px rgb(var(--c) / 0.3);
+}
+
+.fi-wi-stats-overview-stat-label {
+    color: rgb(var(--dgg-text-muted));
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.fi-wi-stats-overview-stat-value {
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.fi-wi-stats-overview-stat-description {
+    font-size: 0.75rem;
+}
+
+.fi-wi-stats-overview-stat.dgg-stat-accent {
+    --c: 139 92 246;
+}
+.fi-wi-stats-overview-stat.dgg-stat-warning {
+    --c: 245 158 11;
+}
+.fi-wi-stats-overview-stat.dgg-stat-success {
+    --c: 16 185 129;
+}
+.fi-wi-stats-overview-stat.dgg-stat-danger {
+    --c: 239 68 68;
+}
+.fi-wi-stats-overview-stat.dgg-stat-info {
+    --c: 59 130 246;
+}
+
+/* ===================================================================
+   KOMPONEN KARTU: PUSAT CETAK & CETAK FORM
+   =================================================================== */
+.pc-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    color: rgb(var(--dgg-text-base));
+}
+
+.pc-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.pc-search {
+    position: relative;
+    flex: 1 1 300px;
+    max-width: 480px;
+}
+
+.pc-search > svg {
+    position: absolute;
+    left: 1.1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.1rem;
+    height: 1.1rem;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.pc-search input {
+    width: 100%;
+    padding: 0.7rem 1rem 0.7rem 3rem;
+    border-radius: var(--dgg-radius-pill);
+    border: 1px solid rgb(255 255 255 / 0.1);
+    background: rgb(255 255 255 / 0.02);
+    color: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.pc-search input:focus {
+    border-color: rgb(var(--dgg-accent) / 0.5);
+    background: rgb(255 255 255 / 0.05);
+    box-shadow: 0 0 0 3px rgb(var(--dgg-accent) / 0.15);
+}
+
+.pc-period {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem 0.35rem 1.2rem;
+    border-radius: var(--dgg-radius-pill);
+    border: 1px solid rgb(255 255 255 / 0.1);
+    background: rgb(255 255 255 / 0.02);
+}
+
+.pc-period > svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    opacity: 0.5;
+}
+
+.pc-period > span {
+    font-size: 0.75rem;
+    color: rgb(var(--dgg-text-muted));
+    margin-right: 0.25rem;
+}
+
+.pc-period select,
+.pc-period input {
+    border: 0;
+    background: rgb(255 255 255 / 0.05);
+    color: inherit;
+    border-radius: var(--dgg-radius-pill);
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    outline: none;
+}
+
+.pc-period input {
+    width: 5.5rem;
+}
+
+.pc-period select option {
+    background: rgb(var(--dgg-surface));
+    color: rgb(var(--dgg-text-base));
+}
+
+.pc-group-head {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.pc-group-icon {
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 0.6rem;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, rgb(var(--c)), rgb(var(--c) / 0.6));
+    color: #fff;
+    box-shadow: 0 4px 16px -4px rgb(var(--c) / 0.8);
+    border: 1px solid rgb(255 255 255 / 0.2);
+}
+
+.pc-group-icon svg {
+    width: 1.2rem;
+    height: 1.2rem;
+}
+
+.pc-group-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.pc-group-count {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: var(--dgg-radius-pill);
+    background: rgb(var(--c) / 0.15);
+    color: rgb(var(--c));
+    font-weight: 600;
+}
+
+.pc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+}
+
+.pc-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.1rem;
+    border-radius: 1rem;
+    text-decoration: none;
+    color: inherit;
+    overflow: hidden;
+    background: rgb(255 255 255 / 0.02);
+    border: 1px solid rgb(255 255 255 / 0.05);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pc-card:hover {
+    transform: translateY(-2px);
+    background: rgb(255 255 255 / 0.04);
+    border-color: rgb(var(--c) / 0.4);
+    box-shadow: 0 8px 24px -10px rgb(var(--c) / 0.3);
+}
+
+.pc-card.pc-highlight {
+    background: linear-gradient(
+        135deg,
+        rgb(var(--c) / 0.1),
+        rgb(var(--c) / 0.02)
+    );
+    border-color: rgb(var(--c) / 0.7);
+    box-shadow:
+        0 0 24px -6px rgb(var(--c) / 0.4),
+        inset 0 0 12px rgb(var(--c) / 0.1);
+}
+
+.pc-card.pc-highlight:hover {
+    background: linear-gradient(
+        135deg,
+        rgb(var(--c) / 0.15),
+        rgb(var(--c) / 0.04)
+    );
+    border-color: rgb(var(--c));
+    box-shadow:
+        0 0 30px -4px rgb(var(--c) / 0.5),
+        inset 0 0 16px rgb(var(--c) / 0.15);
+}
+
+.pc-main {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+}
+
+.pc-star {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.6rem;
+    width: 0.9rem;
+    height: 0.9rem;
+    color: rgb(255 255 255 / 0.95);
+    filter: drop-shadow(0 0 6px rgb(var(--c)));
+}
+
+.pc-star svg {
+    width: 100%;
+    height: 100%;
+}
+
+.pc-ico {
+    flex: none;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 0.6rem;
+    display: grid;
+    place-items: center;
+    background: rgb(255 255 255 / 0.05);
+    color: rgb(var(--dgg-text-muted));
+    transition: 0.2s;
+}
+
+.pc-ico svg {
+    width: 1.3rem;
+    height: 1.3rem;
+}
+
+.pc-card:hover .pc-ico,
+.pc-card.pc-highlight .pc-ico {
+    background: rgb(var(--c) / 0.15);
+    color: rgb(var(--c));
+}
+
+.pc-text {
+    min-width: 0;
+    flex: 1;
+}
+
+.pc-label {
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.2;
+    color: #fff;
+}
+
+.pc-desc {
+    font-size: 0.75rem;
+    color: rgb(var(--dgg-text-muted));
+    margin-top: 0.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pc-badge {
+    display: inline-block;
+    margin-top: 0.4rem;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--dgg-radius-pill);
+    background: rgb(245 158 11 / 0.15);
+    color: rgb(251 191 36);
+    border: 1px solid rgb(245 158 11 / 0.2);
+}
+
+.pc-arrow {
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: 0.2s;
+    color: rgb(var(--c));
+}
+
+.pc-card:hover .pc-arrow {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Tombol unduh ikon kecil, untuk kartu Cetak Form */
+.pc-dl {
+    flex: none;
+    width: 2.1rem;
+    height: 2.1rem;
+    display: grid;
+    place-items: center;
+    border-radius: 0.55rem;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: rgb(255 255 255 / 0.03);
+    color: rgb(var(--dgg-text-muted));
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.pc-dl svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.pc-dl:hover {
+    background: rgb(var(--c) / 0.15);
+    border-color: rgb(var(--c) / 0.5);
+    color: rgb(var(--c));
+}
+
+.pc-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: rgb(var(--dgg-text-muted));
+    font-size: 0.9rem;
+}
+
+/* ===================================================================
+   LOGIN
+   =================================================================== */
+@keyframes dggLoginIntro {
+    0% {
+        opacity: 0;
+        transform: scale(0.96) translateY(24px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes dggLoginGlow {
+    0%,
+    100% {
+        box-shadow:
+            0 0 0 1px rgb(var(--dgg-accent) / 0.08),
+            0 20px 60px -20px rgb(var(--dgg-accent) / 0.3);
+    }
+
+    50% {
+        box-shadow:
+            0 0 0 1px rgb(var(--dgg-accent) / 0.18),
+            0 20px 70px -18px rgb(var(--dgg-accent) / 0.45);
+    }
+}
+
+@keyframes dggLaserScan {
+    0% {
+        transform: translateY(-100%);
+        opacity: 0.8;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(1200%);
+        opacity: 0.2;
+    }
+}
+
+@keyframes dggWatermarkPulse {
+    0%,
+    100% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 0.85;
+    }
+}
+
+.dgg-login-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgb(var(--dgg-border));
+    border-radius: var(--dgg-radius-lg);
+    background: rgb(var(--dgg-surface));
+    animation:
+        dggLoginIntro 0.8s cubic-bezier(0.19, 1, 0.22, 1) both,
+        dggLoginGlow 6s ease-in-out infinite;
+}
+
+/* Garis laser ungu yang berjalan di bagian atas kartu */
+.dgg-login-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgb(var(--dgg-accent)),
+        transparent
+    );
+    animation: dggLaserScan 3.5s linear infinite;
+    pointer-events: none;
+}
+
+.dgg-login-watermark {
+    display: inline-block;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgb(var(--dgg-accent));
+    animation: dggWatermarkPulse 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dgg-login-card,
+    .dgg-login-card::before,
+    .dgg-login-watermark {
+        animation: none !important;
+    }
+
+    .dgg-login-card {
+        opacity: 1;
+    }
+}
+
+/* ===================================================================
+   AKSESIBILITAS: kurangi animasi jika user meminta reduced motion
+   =================================================================== */
+@media (prefers-reduced-motion: reduce) {
+    .fi-wi-stats-overview-stat,
+    .pc-card,
+    .pc-ico,
+    .pc-arrow,
+    .fi-sidebar-item-button {
+        transition: none !important;
+    }
+
+    .fi-wi-stats-overview-stat:hover,
+    .pc-card:hover {
+        transform: none;
+    }
+}
