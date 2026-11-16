@@ -1,6 +1,27 @@
 @php
     $f = fn($v) => number_format((float) $v, 0, ',', '.');
     $adaTagihan = $kontrak && $kontrak->sewa !== null;
+
+    // ===== Filter Part (dibaca dari ?part=...) =====
+    $semuaGanti = collect($gantiTahun)->values();
+    $daftarPart = $semuaGanti->pluck('part')->filter()->unique()->sort()->values();
+    $partReq = request('part');
+    $partDipilih = $daftarPart->contains($partReq) ? $partReq : null;
+
+    // Selisih sudah dihitung di controller dari SELURUH riwayat,
+    // jadi menyaring di sini tidak mengubah angka selisih.
+    $gantiTampil = $partDipilih ? $semuaGanti->where('part', $partDipilih)->values() : $semuaGanti;
+    $totalTampil = $partDipilih
+        ? collect($totalPart)->where('nama', $partDipilih)->values()
+        : collect($totalPart)->values();
+
+    // Format selisih: +1.234 / ⚠ -50 / -
+    $fmtSel = fn($v) => $v === null ? '-' : ($v < 0 ? '⚠ ' . $f($v) : '+' . $f($v));
+
+    // Statistik untuk mode 1 part
+    $selList = $gantiTampil->pluck('selisih_bw')->filter(fn($v) => $v !== null && $v >= 0)->values();
+    $hariList = $gantiTampil->pluck('hari')->filter(fn($v) => $v !== null)->values();
+    $maxSel = max(1, (float) ($selList->max() ?? 1));
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -33,6 +54,7 @@
             display: flex;
             gap: 8px;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .toolbar button,
@@ -43,6 +65,12 @@
             border: 1px solid #333;
             background: #fff;
             border-radius: 4px;
+        }
+
+        .toolbar select#part {
+            min-width: 260px;
+            border-color: #1f4e79;
+            border-width: 2px;
         }
 
         .toolbar label {
@@ -109,6 +137,19 @@
             border: 1px solid #1f4e79;
         }
 
+        /* Penyejajaran header = isi kolom */
+        table.data th.l {
+            text-align: left;
+        }
+
+        table.data th.r {
+            text-align: right;
+        }
+
+        table.data th.c {
+            text-align: center;
+        }
+
         table.data td {
             padding: 4px 6px;
             border-bottom: 1px solid #d9d9d9;
@@ -149,14 +190,12 @@
         }
 
         /* Tagihan */
-        th.tagihan {
-            text-align: center;
-            background: #548235 !important;
-            border-color: #548235 !important;
+        table.data th.tagihan {
+            background: #548235;
+            border-color: #548235;
         }
 
         td.total-tagihan {
-            text-align: center;
             text-align: right;
             font-weight: bold;
             background: #e2efda;
@@ -303,6 +342,73 @@
             margin-right: 3px;
         }
 
+        /* ===== Riwayat penggantian part ===== */
+        .petunjuk {
+            font-size: 10px;
+            color: #444;
+            background: #f2f6fb;
+            border-left: 4px solid #2e75b6;
+            padding: 5px 10px;
+            margin: 4px 0 6px;
+        }
+
+        .part-judul {
+            background: #dbe5f1;
+            border: 1px solid #8ea9c8;
+            border-bottom: 0;
+            padding: 6px 10px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #1f4e79;
+        }
+
+        table.data td.selisih {
+            text-align: right;
+            font-weight: bold;
+            font-size: 12px;
+            color: #1f4e79;
+            background: #eef4fb;
+            padding: 4px 6px;
+            border-left: 1px solid #bcd0e6;
+            border-right: 1px solid #bcd0e6;
+        }
+
+        table.data td.selisih.minus {
+            color: #c00000;
+            background: #fde9e9;
+        }
+
+        table.data td.awal {
+            text-align: right;
+            color: #888;
+            font-style: italic;
+        }
+
+        table.data tr.ganti-part td {
+            border-top: 2px solid #1f4e79;
+        }
+
+        table.data tr.grup-tgl td {
+            background: #dbe5f1;
+            color: #1f4e79;
+            font-weight: bold;
+            font-size: 11px;
+            border-top: 2px solid #2e75b6;
+            border-bottom: 1px solid #8ea9c8;
+        }
+
+        table.data tr.grup-tgl td .meta {
+            font-weight: normal;
+            color: #333;
+            margin-left: 12px;
+        }
+
+        table.data tr.stat td {
+            background: #deeaf6;
+            font-weight: bold;
+            border-top: 2px solid #2e75b6;
+        }
+
         .debug {
             margin-top: 14px;
             padding: 6px 10px;
@@ -340,7 +446,7 @@
 
 <body>
 
-    {{-- ===== Toolbar + Filter Tahun ===== --}}
+    {{-- ===== Toolbar + Filter Tahun & Part ===== --}}
     <form method="GET" class="toolbar no-print">
         <label for="tahun">Tahun:</label>
         <select name="tahun" id="tahun" onchange="this.form.submit()">
@@ -349,6 +455,15 @@
                 <option value="{{ $t }}" @selected($tahunDipilih === $t)>{{ $t }}</option>
             @endforeach
         </select>
+
+        <label for="part">Part:</label>
+        <select name="part" id="part" onchange="this.form.submit()">
+            <option value="">Semua Part</option>
+            @foreach ($daftarPart as $p)
+                <option value="{{ $p }}" @selected($partDipilih === $p)>{{ $p }}</option>
+            @endforeach
+        </select>
+
         <button type="button" onclick="window.print()">🖨 Cetak</button>
         <button type="button" onclick="window.close()">Tutup</button>
     </form>
@@ -411,10 +526,10 @@
         <div class="catatan">Data kontrak MRC belum ditemukan untuk mesin ini, jadi tagihan tidak dihitung.</div>
     @endif
 
-    {{-- ===== 2. PEMAKAIAN PER BULAN + TAGIHAN ===== --}}
+    {{-- ===== 2. PEMAKAIAN PER BULAN + ESTIMASI TAGIHAN ===== --}}
     <div class="sub">
         PEMAKAIAN PER BULAN @if ($adaTagihan)
-            &amp; TAGIHAN
+            &amp; ESTIMASI TAGIHAN
         @endif
         <small>(pemakaian = selisih counter antar kunjungan, dibagi rata per hari)</small>
     </div>
@@ -439,23 +554,23 @@
     <table class="data">
         <thead>
             <tr>
-                <th>Bulan</th>
-                <th style="width:55px">Kunjungan</th>
-                <th>Pemakaian BW</th>
+                <th class="l">Bulan</th>
+                <th class="c" style="width:70px">Kunjungan</th>
+                <th class="r">Pemakaian BW</th>
                 @if ($adaColor)
-                    <th>Pemakaian Color</th>
+                    <th class="r">Pemakaian Color</th>
                 @endif
                 @if ($adaTagihan)
-                    <th class="tagihan">Free Copy{{ $adaColor ? ' (BW/Color)' : '' }}</th>
-                    <th class="tagihan">Kelebihan{{ $adaColor ? ' (BW/Color)' : '' }}</th>
-                    <th class="tagihan">Harga Sewa</th>
-                    <th class="tagihan">Biaya Kelebihan</th>
-                    <th class="tagihan">Subtotal</th>
-                    <th class="tagihan">PPN {{ rtrim(rtrim(number_format($kontrak->ppn, 2, ',', '.'), '0'), ',') }}%
+                    <th class="tagihan r">Free Copy{{ $adaColor ? ' (BW/Color)' : '' }}</th>
+                    <th class="tagihan r">Kelebihan{{ $adaColor ? ' (BW/Color)' : '' }}</th>
+                    <th class="tagihan r">Harga Sewa</th>
+                    <th class="tagihan r">Biaya Kelebihan</th>
+                    <th class="tagihan r">Subtotal</th>
+                    <th class="tagihan r">PPN {{ rtrim(rtrim(number_format($kontrak->ppn, 2, ',', '.'), '0'), ',') }}%
                     </th>
-                    <th class="tagihan">Total Tagihan</th>
+                    <th class="tagihan r">Est. Tagihan (acuan)</th>
                 @endif
-                <th style="width:70px">Ket.</th>
+                <th class="c" style="width:70px">Ket.</th>
             </tr>
         </thead>
         <tbody>
@@ -470,7 +585,9 @@
                             <td class="angka">-</td>
                         @endif
                         @if ($adaTagihan)
-                            <td colspan="7" class="center">-</td>
+                            @for ($k = 0; $k < 7; $k++)
+                                <td class="angka">-</td>
+                            @endfor
                         @endif
                         <td class="center">-</td>
                     @else
@@ -537,92 +654,138 @@
     <div class="catatan">
         Terukur = ada kunjungan pada bulan itu. Estimasi = tanpa kunjungan (prorata dari kunjungan sebelum dan
         sesudahnya).
-        Parsial = bulan belum terhitung penuh, tagihan masih sementara.
+        Parsial = bulan belum terhitung penuh.
+        @if ($adaTagihan)
+            <strong>Nilai tagihan hanya acuan hitungan dari data kontrak, bukan tagihan resmi.</strong>
+        @endif
         @if ($anomali > 0)
             <span style="color:#c00000">⚠ {{ $anomali }} pembacaan counter mundur dilewati (kemungkinan salah
                 input).</span>
         @endif
     </div>
 
-    {{-- ===== 3. RIWAYAT PENGGANTIAN PART + TOTAL ===== --}}
+    {{-- ===== 3. RIWAYAT PENGGANTIAN PART (tabel biasa + filter Part) ===== --}}
     <div class="sub">
         RIWAYAT PENGGANTIAN PART
+        @if ($partDipilih)
+            — {{ $partDipilih }}
+        @endif
         <small>(selisih = kenaikan counter sejak penggantian part yang sama sebelumnya)</small>
     </div>
+
+    @php
+        // Semua Part: urut nama part lalu tanggal, supaya penggantian part yang sama berdekatan.
+        // 1 Part: urut tanggal.
+        $barisPart = $partDipilih
+            ? $gantiTampil
+            : $gantiTampil->sortBy(fn($r) => $r->part . '|' . $r->tanggal->format('Y-m-d'))->values();
+        $partSebelumnya = null;
+    @endphp
 
     <table class="data">
         <thead>
             <tr>
-                <th style="width:30px">No</th>
-                <th style="width:75px">Tanggal</th>
-                <th>Nama Part</th>
-                <th style="width:40px">Qty</th>
-                <th>Counter BW</th>
-                <th>Selisih BW</th>
+                <th class="c" style="width:30px">No</th>
+                <th class="c" style="width:75px">Tanggal</th>
+                <th class="l">Nama Part</th>
+                <th class="c" style="width:40px">Qty</th>
+                <th class="r" style="width:100px">Counter BW Lalu</th>
+                <th class="r" style="width:110px">Counter BW Sekarang</th>
+                <th class="r" style="width:100px">Selisih BW</th>
                 @if ($adaColorPart)
-                    <th>Counter Color</th>
-                    <th>Selisih Color</th>
+                    <th class="r" style="width:100px">Counter Color Lalu</th>
+                    <th class="r" style="width:110px">Counter Color Sekarang</th>
+                    <th class="r" style="width:100px">Selisih Color</th>
                 @endif
-                <th style="width:70px">Selisih Hari</th>
-                <th style="width:90px">Teknisi</th>
+                <th class="r" style="width:80px">Selisih Hari</th>
+                <th class="l" style="width:100px">Teknisi</th>
             </tr>
         </thead>
         <tbody>
-            @forelse ($gantiTahun as $i => $r)
-                <tr>
+            @forelse ($barisPart as $i => $r)
+                @php
+                    $laluBw = $r->selisih_bw !== null && $r->bw ? $r->bw - $r->selisih_bw : null;
+                    $laluClr = $r->selisih_clr !== null && $r->color ? $r->color - $r->selisih_clr : null;
+                    $pindahPart = !$partDipilih && $partSebelumnya !== null && $partSebelumnya !== $r->part;
+                    $partSebelumnya = $r->part;
+                @endphp
+                <tr class="{{ $pindahPart ? 'ganti-part' : '' }}">
                     <td class="center">{{ $i + 1 }}</td>
                     <td class="center">{{ $r->tanggal->format('d/m/Y') }}</td>
                     <td>{{ $r->part }}</td>
                     <td class="center">{{ $r->qty }}</td>
+                    @if ($laluBw !== null)
+                        <td class="angka">{{ $f($laluBw) }}</td>
+                    @else
+                        <td class="awal">(awal)</td>
+                    @endif
                     <td class="angka">{{ $r->bw ? $f($r->bw) : '-' }}</td>
-                    <td class="tebal {{ $r->selisih_bw !== null && $r->selisih_bw < 0 ? 'minus' : '' }}">
-                        @if ($r->selisih_bw === null)
-                            -
-                        @elseif ($r->selisih_bw < 0)
-                            ⚠ {{ $f($r->selisih_bw) }}
-                        @else
-                            +{{ $f($r->selisih_bw) }}
-                        @endif
+                    <td class="selisih {{ $r->selisih_bw !== null && $r->selisih_bw < 0 ? 'minus' : '' }}">
+                        {{ $fmtSel($r->selisih_bw) }}
                     </td>
                     @if ($adaColorPart)
+                        @if ($laluClr !== null)
+                            <td class="angka">{{ $f($laluClr) }}</td>
+                        @else
+                            <td class="awal">(awal)</td>
+                        @endif
                         <td class="angka">{{ $r->color ? $f($r->color) : '-' }}</td>
-                        <td class="tebal {{ $r->selisih_clr !== null && $r->selisih_clr < 0 ? 'minus' : '' }}">
-                            @if ($r->selisih_clr === null)
-                                -
-                            @elseif ($r->selisih_clr < 0)
-                                ⚠ {{ $f($r->selisih_clr) }}
-                            @else
-                                +{{ $f($r->selisih_clr) }}
-                            @endif
+                        <td class="selisih {{ $r->selisih_clr !== null && $r->selisih_clr < 0 ? 'minus' : '' }}">
+                            {{ $fmtSel($r->selisih_clr) }}
                         </td>
                     @endif
-                    <td class="center">{{ $r->hari !== null ? $r->hari . ' hari' : '-' }}</td>
+                    <td class="angka">{{ $r->hari !== null ? $r->hari . ' hari' : '-' }}</td>
                     <td>{{ $r->teknisi ?? '-' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="{{ $adaColorPart ? 10 : 8 }}" class="center">Tidak ada penggantian part pada
+                    <td colspan="{{ $adaColorPart ? 12 : 9 }}" class="center">Tidak ada penggantian part pada
                         {{ $periodeLabel }}.</td>
                 </tr>
             @endforelse
         </tbody>
+        @if ($partDipilih && $selList->count() > 0)
+            <tfoot>
+                <tr>
+                    <td colspan="6" style="text-align:right">Rata-rata selisih ({{ $selList->count() }}x
+                        pergantian)</td>
+                    <td class="angka">{{ $f($selList->avg()) }}</td>
+                    @if ($adaColorPart)
+                        <td colspan="3"></td>
+                    @endif
+                    <td class="angka">{{ $hariList->count() ? $f($hariList->avg()) . ' hari' : '-' }}</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="6" style="text-align:right">Terpendek / Terpanjang</td>
+                    <td class="angka">{{ $f($selList->min()) }} / {{ $f($selList->max()) }}</td>
+                    @if ($adaColorPart)
+                        <td colspan="3"></td>
+                    @endif
+                    <td class="angka">
+                        {{ $hariList->count() ? $f($hariList->min()) . ' / ' . $f($hariList->max()) : '-' }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        @endif
     </table>
+    <div class="catatan">"(awal)" = penggantian pertama yang tercatat untuk part itu, jadi belum ada pembanding.</div>
 
-    @if ($totalPart->isNotEmpty())
+    @if ($totalTampil->isNotEmpty())
         <div class="sub">TOTAL PART YANG SUDAH DIGANTI <small>({{ $periodeLabel }})</small></div>
         <table class="data">
             <thead>
                 <tr>
-                    <th style="width:30px">No</th>
-                    <th>Nama Part</th>
-                    <th style="width:90px">Total Qty</th>
-                    <th style="width:90px">Kali Diganti</th>
-                    <th style="width:110px">Terakhir Diganti</th>
-                    <th style="width:150px">Rata-rata Selisih BW</th>
+                    <th class="c" style="width:30px">No</th>
+                    <th class="l">Nama Part</th>
+                    <th class="c" style="width:90px">Total Qty</th>
+                    <th class="c" style="width:90px">Kali Diganti</th>
+                    <th class="c" style="width:110px">Terakhir Diganti</th>
+                    <th class="r" style="width:150px">Rata-rata Selisih BW</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($totalPart as $i => $p)
+                @foreach ($totalTampil as $i => $p)
                     <tr>
                         <td class="center">{{ $i + 1 }}</td>
                         <td>{{ $p->nama }}</td>
@@ -636,7 +799,7 @@
             <tfoot>
                 <tr>
                     <td colspan="2" style="text-align:right">TOTAL</td>
-                    <td class="center">{{ $f($grandPart) }}</td>
+                    <td class="center">{{ $f($totalTampil->sum('total')) }}</td>
                     <td colspan="3"></td>
                 </tr>
             </tfoot>
@@ -664,12 +827,12 @@
     <table class="data">
         <thead>
             <tr>
-                <th style="width:70px">Tanggal</th>
-                <th style="width:100px">Event</th>
-                <th style="width:85px">Tipe Kunjungan</th>
-                <th style="width:150px">Customer</th>
-                <th style="width:100px">Teknisi</th>
-                <th>Detail</th>
+                <th class="c" style="width:70px">Tanggal</th>
+                <th class="l" style="width:100px">Event</th>
+                <th class="l" style="width:85px">Tipe Kunjungan</th>
+                <th class="l" style="width:150px">Customer</th>
+                <th class="l" style="width:100px">Teknisi</th>
+                <th class="l">Detail</th>
             </tr>
         </thead>
         <tbody>

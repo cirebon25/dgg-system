@@ -24,7 +24,7 @@ class ServiceLogResource extends Resource
 
     protected static ?string $model = ServiceLog::class;
     protected static ?string $navigationLabel = 'Input Servis Teknisi';
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
+    protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
     protected static ?string $navigationGroup = 'Transaksi';
 
     public static function form(Form $form): Form
@@ -137,38 +137,21 @@ class ServiceLogResource extends Resource
                             ->required()
                             ->default('RM'),
 
-                        // Forms\Components\Toggle::make('is_mrc')
-                        //     ->label('Catat sebagai MRC (Pencatatan Counter Bulanan)')
-                        //     ->default(false)
-                        //     ->helperText('Centang jika kunjungan ini adalah pencatatan counter bulanan untuk tagihan.')
-                        //     ->columnSpanFull(),
+                        Forms\Components\Toggle::make('is_mrc')
+                            ->label('Catat sebagai MRC (Pencatatan Counter Bulanan)')
+                            ->default(false)
+                            ->helperText('Centang jika kunjungan ini adalah pencatatan counter bulanan untuk tagihan.')
+                            ->columnSpanFull(),
 
                         Forms\Components\DatePicker::make('tanggal')
                             ->label('Tanggal Kunjungan')
                             ->default(now())
                             ->required(),
 
-                        //     Forms\Components\Grid::make(2)->schema([
-                        //         Forms\Components\TimePicker::make('jam_mulai'),
-                        //         Forms\Components\TimePicker::make('jam_selesai'),
-                        //     ]),
-                    ])->columns(2),
-                Forms\Components\Section::make('Detail Teknisi & Perbaikan')
-                    ->schema([
-
-
-                        Forms\Components\Select::make('technician_id')
-                            ->relationship('technician', 'nama_technician')
-                            ->label('Teknisi Utama')
-                            ->required()
-                            ->live(),
-
-                        Forms\Components\TextInput::make('nama_teknisi_2')
-                            ->label('Teknisi Pembantu (Ketik Manual)')
-                            ->placeholder('Contoh: Rudi / Ahmad'),
-
-                        Forms\Components\Textarea::make('kerusakan')->required(),
-                        Forms\Components\Textarea::make('perbaikan')->required(),
+                        Forms\Components\Grid::make(2)->schema([
+                            Forms\Components\TimePicker::make('jam_mulai'),
+                            Forms\Components\TimePicker::make('jam_selesai'),
+                        ]),
                     ])->columns(2),
 
                 Forms\Components\Section::make('Pencatatan Counter')
@@ -219,81 +202,16 @@ class ServiceLogResource extends Resource
                             ->numeric()
                             ->readOnly(),
                     ])->columns(3),
-                // Forms\Components\Section::make('Sparepart yang Diganti')
-                //     ->schema([
-                //         Forms\Components\Repeater::make('serviceLogSpareparts')
-                //             ->relationship()
-                //             ->schema([
-                //                 Forms\Components\Select::make('sparepart_id')
-                //                     ->relationship('sparepart', 'nama_sparepart')
-                //                     ->label('Pilih Sparepart')
-                //                     ->searchable()
-                //                     ->preload()
-                //                     ->required()
-                //                     ->disabled(fn(string $operation) => $operation === 'edit'),
-
-                //                 Forms\Components\TextInput::make('jumlah')
-                //                     ->label('Jumlah Pakai')
-                //                     ->numeric()
-                //                     ->required()
-                //                     ->reactive()
-                //                     ->disabled(fn(string $operation) => $operation === 'edit')
-                //                     ->rules([
-                //                         fn(Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
-                //                             $technicianId = $get('../../technician_id');
-                //                             $sparepartId = $get('sparepart_id');
-
-                //                             if (!$technicianId || !$sparepartId) return;
-
-                //                             $stock = \App\Models\TechnicianStock::where('technician_id', $technicianId)
-                //                                 ->where('sparepart_id', $sparepartId)
-                //                                 ->first();
-
-                //                             $currentStock = $stock ? $stock->jumlah : 0;
-
-                //                             if ((int)$value > (int)$currentStock) {
-                //                                 $fail("❌ STOK TIDAK CUKUP! Saldo di tas teknisi hanya ada {$currentStock} pcs.");
-                //                             }
-
-                //                             if ((int)$value <= 0) {
-                //                                 $fail("❌ Minimal pemakaian adalah 1 pcs.");
-                //                             }
-                //                         },
-                //                     ]),
-                //             ])
-                //             ->columns(2)
-                //             ->defaultItems(0)
-                //             ->addActionLabel('Tambah Sparepart')
-                //             ->addable(fn(string $operation) => $operation === 'create')
-                //             ->deletable(fn(string $operation) => $operation === 'create')
-                //             ->reorderable(false),
-                //     ]),
-
-
                 Forms\Components\Section::make('Sparepart yang Diganti')
                     ->schema([
                         Forms\Components\Repeater::make('serviceLogSpareparts')
                             ->relationship()
                             ->schema([
                                 Forms\Components\Select::make('sparepart_id')
+                                    ->relationship('sparepart', 'nama_sparepart')
                                     ->label('Pilih Sparepart')
-                                    ->options(function (Forms\Get $get) {
-                                        $technicianId = $get('../../technician_id');
-
-                                        if (! $technicianId) {
-                                            return [];
-                                        }
-
-                                        return \App\Models\TechnicianStock::query()
-                                            ->with('sparepart')
-                                            ->where('technician_id', $technicianId)
-                                            ->where('jumlah', '>', 0)
-                                            ->get()
-                                            ->pluck('sparepart.nama_sparepart', 'sparepart_id');
-                                    })
-                                    ->getOptionLabelUsing(fn($value) => \App\Models\Sparepart::find($value)?->nama_sparepart)
                                     ->searchable()
-                                    ->live()
+                                    ->preload()
                                     ->required()
                                     ->disabled(fn(string $operation) => $operation === 'edit'),
 
@@ -303,20 +221,6 @@ class ServiceLogResource extends Resource
                                     ->required()
                                     ->reactive()
                                     ->disabled(fn(string $operation) => $operation === 'edit')
-                                    ->helperText(function (Forms\Get $get) {
-                                        $technicianId = $get('../../technician_id');
-                                        $sparepartId = $get('sparepart_id');
-
-                                        if (! $technicianId || ! $sparepartId) {
-                                            return null;
-                                        }
-
-                                        $stok = \App\Models\TechnicianStock::where('technician_id', $technicianId)
-                                            ->where('sparepart_id', $sparepartId)
-                                            ->value('jumlah') ?? 0;
-
-                                        return "Stok di tas teknisi: {$stok} pcs";
-                                    })
                                     ->rules([
                                         fn(Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
                                             $technicianId = $get('../../technician_id');
@@ -331,11 +235,11 @@ class ServiceLogResource extends Resource
                                             $currentStock = $stock ? $stock->jumlah : 0;
 
                                             if ((int)$value > (int)$currentStock) {
-                                                $fail(" STOK TIDAK CUKUP! Saldo di tas teknisi hanya ada {$currentStock} pcs.");
+                                                $fail("❌ STOK TIDAK CUKUP! Saldo di tas teknisi hanya ada {$currentStock} pcs.");
                                             }
 
                                             if ((int)$value <= 0) {
-                                                $fail(" Minimal pemakaian adalah 1 pcs.");
+                                                $fail("❌ Minimal pemakaian adalah 1 pcs.");
                                             }
                                         },
                                     ]),
@@ -348,21 +252,20 @@ class ServiceLogResource extends Resource
                             ->reorderable(false),
                     ]),
 
-                // Forms\Components\Section::make('Detail Teknisi & Perbaikan')
-                //     ->schema([
-                //         Forms\Components\Textarea::make('kerusakan')->required(),
-                //         Forms\Components\Textarea::make('perbaikan')->required(),
+                Forms\Components\Section::make('Detail Teknisi & Perbaikan')
+                    ->schema([
+                        Forms\Components\Textarea::make('kerusakan')->required(),
+                        Forms\Components\Textarea::make('perbaikan')->required(),
 
-                //         Forms\Components\Select::make('technician_id')
-                //             ->relationship('technician', 'nama_technician')
-                //             ->label('Teknisi Utama')
-                //             ->required()
-                //             ->live(),
+                        Forms\Components\Select::make('technician_id')
+                            ->relationship('technician', 'nama_technician')
+                            ->label('Teknisi Utama')
+                            ->required(),
 
-                //         Forms\Components\TextInput::make('nama_teknisi_2')
-                //             ->label('Teknisi Pembantu (Ketik Manual)')
-                //             ->placeholder('Contoh: Rudi / Ahmad'),
-                //     ])->columns(2),
+                        Forms\Components\TextInput::make('nama_teknisi_2')
+                            ->label('Teknisi Pembantu (Ketik Manual)')
+                            ->placeholder('Contoh: Rudi / Ahmad'),
+                    ])->columns(2),
             ]);
     }
 

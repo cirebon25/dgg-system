@@ -35,10 +35,8 @@ use App\Http\Controllers\BukuKontrakController;
 use App\Http\Controllers\AbsensiCetakController;
 use App\Http\Controllers\RincianHarianController;
 use App\Http\Controllers\ProspectLaporanController;
-
-
-
-
+use App\Http\Controllers\CetakKasMingguanController;
+use App\Http\Controllers\RekapMingguanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,14 +49,21 @@ use App\Http\Controllers\ProspectLaporanController;
 |
 */
 
+/*
+|==========================================================================
+| 1. UMUM
+|==========================================================================
+*/
+
 Route::get('/', function () {
     return view('welcome');
 });
 
 /*
-|--------------------------------------------------------------------------
-| Print: Service Log (lihat App\Http\Controllers\PrintServiceController)
-|--------------------------------------------------------------------------
+|==========================================================================
+| 2. SERVICE LOG
+| (lihat App\Http\Controllers\PrintServiceController)
+|==========================================================================
 */
 Route::get('/print-service-bulk', [PrintServiceController::class, 'bulk'])
     ->name('print.service.bulk')->middleware('auth');
@@ -72,14 +77,15 @@ Route::get('/sparepart/monitor-umur/{machine_id}', [PrintServiceController::clas
 Route::get('/admin/service-log/{serviceLog}/surat-jalan', [PrintServiceController::class, 'suratJalan'])
     ->name('service-log.surat-jalan')->middleware(['auth']);
 
+/*
+|==========================================================================
+| 3. MESIN — QR, histori, alokasi, stok gudang, SJ, tracking, riwayat, rekap
+| (lihat App\Http\Controllers\PrintMesinController)
+|==========================================================================
+*/
 Route::get('/cetak-stok-gudang/excel', [PrintMesinController::class, 'stokGudangExcel'])
     ->name('cetak.stok-gudang.excel');
-/*
-|--------------------------------------------------------------------------
-| Print: Mesin — QR, histori, alokasi, stok gudang, SJ baru
-| (lihat App\Http\Controllers\PrintMesinController)
-|--------------------------------------------------------------------------
-*/
+
 Route::get('/cetak-alokasi-customer', [PrintMesinController::class, 'alokasiCustomer'])
     ->name('cetak.alokasi-customer');
 
@@ -101,12 +107,24 @@ Route::get('/cetak-surat-jalan/{id}', [PrintMesinController::class, 'suratJalan'
 Route::get('/cetak-stok-gudang/pdf', [PrintMesinController::class, 'stokGudangPdf'])
     ->name('cetak.stok-gudang.pdf');
 
+Route::get('/mesin/{id}/tracking', [PrintMesinController::class, 'trackingMesin'])
+    ->name('mesin.tracking');
+
+Route::get('/cetak/riwayat-mesin/{machine}', [MachineRiwayatController::class, 'show'])
+    ->name('machine.riwayat');
+
+Route::get('/report/rekap-mesin', [MachineReportController::class, 'rekapUnitCustomer'])
+    ->name('report.rekap-mesin');
+
 /*
-|--------------------------------------------------------------------------
-| Print: Rekap Rayon, Service Rayon, Top Usage, Kinerja Teknisi/Rayon
+|==========================================================================
+| 4. RAYON & KINERJA — Rekap Rayon, Service Rayon, Top Usage, Kinerja
 | (lihat App\Http\Controllers\PrintRayonController)
-|--------------------------------------------------------------------------
+|==========================================================================
 */
+
+Route::get('/rekap-mingguan', [RekapMingguanController::class, 'index'])->name('rekap.mingguan');
+
 Route::get('/cetak-rekap-rayon', [PrintRayonController::class, 'rekapRayon'])
     ->name('cetak.rekap-rayon');
 
@@ -122,12 +140,17 @@ Route::get('/print/technician-performance', [PrintRayonController::class, 'techn
 Route::get('/print/performance-rayon', [PrintRayonController::class, 'performanceRayon'])
     ->name('print.performance-rayon');
 
+Route::get('/admin/rekap-horizontal', [ReportController::class, 'rekapHorizontal'])
+    ->name('rekap.horizontal')->middleware(['auth']);
+
 /*
-|--------------------------------------------------------------------------
-| Print: Bukti Pinjam, Kartu Stok Teknisi, SJ Rolling
-| (lihat App\Http\Controllers\PrintSparepartTransController)
-|--------------------------------------------------------------------------
+|==========================================================================
+| 5. SPAREPART — Bukti pinjam, kartu stok, saldo, outflow, rekap, part, PO
+|==========================================================================
 */
+
+/* --- Bukti Pinjam, Kartu Stok Teknisi, SJ Rolling
+       (lihat App\Http\Controllers\PrintSparepartTransController) --- */
 Route::get('/cetak-bukti-pinjam/{id}', [PrintSparepartTransController::class, 'buktiPinjam'])
     ->name('cetak.bukti-pinjam');
 
@@ -143,11 +166,59 @@ Route::get('/cetak-kartu-stok/{technician_id}', [PrintSparepartTransController::
 Route::get('/cetak-kartu-stok-semua', [PrintSparepartTransController::class, 'kartuStokSemua'])
     ->name('cetak.kartu-stok-semua');
 
+Route::get('/cetak-kartu-stok-sparepart/{sparepart_id}', [PrintSparepartTransController::class, 'kartuStokSparepart'])
+    ->name('cetak.kartu-stok-sparepart');
+
+Route::get('/admin/technician-stock-histories/print', [TechnicianStockPrintController::class, '__invoke'])
+    ->name('technician-stock.print')
+    ->middleware(['auth']); // sesuaikan middleware auth filament Anda
+
+/* --- Rekap Pengeluaran Sparepart (gabungan service log + deployment)
+       (lihat App\Http\Controllers\PrintRekapSparepartController) --- */
+Route::get('/cetak-rekap-sparepart', [PrintRekapSparepartController::class, 'index'])
+    ->name('cetak.rekap-sparepart');
+
+Route::get('/sparepart/pemakaian-bulanan', [PrintRekapSparepartController::class, 'pemakaianBulanan'])
+    ->name('sparepart.pemakaian-bulanan');
+
+Route::get('/sparepart/pemakaian-matrix', [PrintRekapSparepartController::class, 'pemakaianMatrix'])
+    ->name('sparepart.pemakaian-matrix');
+
+/* --- Saldo & Outflow --- */
+Route::get('/saldo-sparepart', [SaldoSparepartController::class, 'index'])
+    ->name('saldo-sparepart');
+
+Route::get('/sparepart/report/outflow', [SparepartOutflowController::class, 'index'])
+    ->name('sparepart.report.outflow');
+
+/* --- Part per Mesin / per Bulan / Keluar --- */
+Route::get('/cetak/part-per-mesin', [PartReplacementController::class, 'cetakPerMesin'])
+    ->name('cetak.part.mesin');
+
+Route::get('/cetak/part-per-bulan', [PartReplacementController::class, 'cetakPerBulan'])
+    ->name('cetak.part.bulan');
+
+Route::get('/cetak/part-per-mesin/{machine_id}', [PrintServiceController::class, 'partPerMesin'])
+    ->name('cetak.part-per-mesin');
+
+Route::get('/cetak/part-keluar', [PartKeluarController::class, 'cetak'])
+    ->name('part-keluar.cetak');
+
+/* --- Laporan Part Bandung, PO Part, Order Part --- */
+Route::get('/lap-part-bdg', [LapPartBdgController::class, 'index'])
+    ->name('lap-part-bdg');
+
+Route::get('/po-part/{id}/print', [PoPartController::class, 'print'])
+    ->name('po-part.print');
+
+Route::get('/print/order-part/{orderPart}', [OrderPartPrintController::class, 'show'])
+    ->name('print.order-part');
+
 /*
-|--------------------------------------------------------------------------
-| Print: Penarikan & Retur Mesin
+|==========================================================================
+| 6. PENARIKAN & RETUR MESIN
 | (lihat App\Http\Controllers\PrintWithdrawalReturController)
-|--------------------------------------------------------------------------
+|==========================================================================
 */
 Route::get('/cetak-surat-penarikan/{id}', [PrintWithdrawalReturController::class, 'suratPenarikan'])
     ->name('cetak.surat-penarikan');
@@ -164,91 +235,21 @@ Route::get('/cetak-surat-retur-tanggal/{tanggal}', [PrintWithdrawalReturControll
 Route::get('/cetak-klaim-akomodasi/{id}', [PrintWithdrawalReturController::class, 'klaimAkomodasi'])
     ->name('cetak.klaim-akomodasi')->middleware('auth');
 
-/*
-|--------------------------------------------------------------------------
-| Print: Rekap Pengeluaran Sparepart (gabungan service log + deployment)
-| (lihat App\Http\Controllers\PrintRekapSparepartController)
-|--------------------------------------------------------------------------
-*/
-Route::get('/cetak-rekap-sparepart', [PrintRekapSparepartController::class, 'index'])
-    ->name('cetak.rekap-sparepart');
-
-/*
-|--------------------------------------------------------------------------
-| Controller yang sudah ada sebelumnya — tidak diubah
-|--------------------------------------------------------------------------
-*/
-Route::get('/admin/rekap-horizontal', [ReportController::class, 'rekapHorizontal'])
-    ->name('rekap.horizontal')->middleware(['auth']);
-
-Route::get('/cetak-pemasangan-baru/{bulan?}/{tahun?}', [CetakPemasanganController::class, 'index'])
-    ->name('cetak.pemasangan');
-
-Route::get('/cetak/part-per-mesin', [PartReplacementController::class, 'cetakPerMesin'])
-    ->name('cetak.part.mesin');
-
-Route::get('/cetak/part-per-bulan', [PartReplacementController::class, 'cetakPerBulan'])
-    ->name('cetak.part.bulan');
-
-Route::get('/cetak-tukar-guling', [CetakSwapController::class, 'index'])
-    ->name('cetak.swap');
-
-Route::get('/saldo-sparepart', [SaldoSparepartController::class, 'index'])
-    ->name('saldo-sparepart');
-
-Route::get('/sparepart/report/outflow', [SparepartOutflowController::class, 'index'])
-    ->name('sparepart.report.outflow');
-
-// Route::get('/cash-mutation/print/{id}', [CashMutationPrintController::class, 'print'])
-//     ->name('cash-mutation.print')->middleware(['auth']);
-
-Route::get('/cash-mutation/print/{cashMutation}', [CashMutationPrintController::class, 'print'])
-    ->name('cash-mutation.print')
-    ->middleware(['auth']);
-
-Route::get('/cetak-kas-bulanan', [CashLedgerPrintController::class, 'cetakBulanan'])
-    ->name('cetak.kas-bulanan')->middleware('auth');
-
-Route::get('/report/rekap-mesin', [MachineReportController::class, 'rekapUnitCustomer'])
-    ->name('report.rekap-mesin');
-
-Route::get('/lap-part-bdg', [LapPartBdgController::class, 'index'])
-    ->name('lap-part-bdg');
-
-Route::get('/po-part/{id}/print', [PoPartController::class, 'print'])
-    ->name('po-part.print');
-
-Route::get('/mrc/rekap', [MrcController::class, 'rekap'])
-    ->name('mrc.rekap');
-
-Route::get('/mrc/tagihan', [MrcController::class, 'tagihan'])
-    ->name('mrc.tagihan')
-    ->middleware(['auth']);
-
-Route::get('/prospect/laporan', [ProspectController::class, 'laporan'])
-    ->name('prospect.laporan');
-
-Route::get('/sparepart/pemakaian-bulanan', [PrintRekapSparepartController::class, 'pemakaianBulanan'])
-    ->name('sparepart.pemakaian-bulanan');
-
-Route::get('/sparepart/pemakaian-matrix', [PrintRekapSparepartController::class, 'pemakaianMatrix'])
-    ->name('sparepart.pemakaian-matrix');
-
-
-
 // Route::get('/cetak-surat-retur/{id}', function ($id) {
 //     $retur = \App\Models\MachineReturn::with(['machine'])->findOrFail($id);
 //     return view('print.surat-retur', compact('retur'));
 // })->name('cetak.surat-retur')->middleware('auth');
 
-Route::get('/cetak/part-per-mesin/{machine_id}', [PrintServiceController::class, 'partPerMesin'])
-    ->name('cetak.part-per-mesin');
+/*
+|==========================================================================
+| 7. PEMASANGAN, DEPLOYMENT & TUKAR GULING
+|==========================================================================
+*/
+Route::get('/cetak-pemasangan-baru/{bulan?}/{tahun?}', [CetakPemasanganController::class, 'index'])
+    ->name('cetak.pemasangan');
 
-Route::get('/mesin/{id}/tracking', [PrintMesinController::class, 'trackingMesin'])
-    ->name('mesin.tracking');
-
-Route::get('/cetak-kartu-stok-sparepart/{sparepart_id}', [PrintSparepartTransController::class, 'kartuStokSparepart'])
-    ->name('cetak.kartu-stok-sparepart');
+Route::get('/cetak-tukar-guling', [CetakSwapController::class, 'index'])
+    ->name('cetak.swap');
 
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/deployments/print-yearly', [\App\Http\Controllers\DeploymentPrintController::class, 'printYearly'])
@@ -258,6 +259,121 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 Route::get('/deployments/{deployment}/print', [DeploymentPrintController::class, 'printServiceCard'])
     ->name('deployment.print');
 
+/*
+|==========================================================================
+| 8. KEUANGAN — Kas Keluar (SPM), Buku Kas, Kas Mingguan, Rincian Harian
+|==========================================================================
+*/
+
+Route::get('/cash-mutation/print/{cashMutation}', [CashMutationPrintController::class, 'print'])
+    ->name('cash-mutation.print')
+    ->middleware(['auth']);
+
+Route::get('/cetak-kas-bulanan', [CashLedgerPrintController::class, 'cetakBulanan'])
+    ->name('cetak.kas-bulanan')->middleware('auth');
+
+Route::get('/cetak/kas-mingguan', CetakKasMingguanController::class)
+    ->name('cetak.kas-mingguan');
+
+Route::get('/cetak/rincian-harian', RincianHarianController::class)
+    ->name('cetak.rincian-harian')
+    ->middleware('auth');
+
+/*
+|==========================================================================
+| 9. INVOICE
+|==========================================================================
+*/
+
+// Route Cetak Satuan (Per Baris Invoice)
+Route::get('/admin/invoices/{record}/print', function (Invoice $record) {
+    return view('invoices.print', ['invoice' => $record]);
+})->name('invoice.print')->middleware(['web', 'auth']);
+
+// Route Cetak Rekap Semua Data
+// Route::get('/admin/invoices/print-all', function (Request $request) {
+//     $invoices = Invoice::with('customer')->orderBy('tanggal', 'desc')->get();
+//     return view('invoices.print-all', ['invoices' => $invoices]);
+// })->name('invoice.print-all')->middleware(['web', 'auth']);
+
+Route::get('/admin/invoices/print-all', function (Request $request) {
+    $bulan = $request->query('bulan', 'all');
+    $tahun = (int) $request->query('tahun', now()->year);
+
+    $invoices = Invoice::with('customer')
+        ->whereYear('tanggal', $tahun)
+        ->when($bulan !== 'all', fn($q) => $q->whereMonth('tanggal', (int) $bulan))
+        ->orderBy('tanggal')
+        ->get();
+
+    $periode = $bulan === 'all'
+        ? "Tahun {$tahun}"
+        : \Carbon\Carbon::create($tahun, (int) $bulan, 1)->locale('id')->translatedFormat('F Y');
+
+    return view('invoices.print-all', compact('invoices', 'periode')); // pakai nama view lama
+})->name('invoice.print-all');
+
+/*
+|==========================================================================
+| 10. MRC (Meter Reading Contract)
+|==========================================================================
+*/
+Route::get('/mrc/rekap', [MrcController::class, 'rekap'])
+    ->name('mrc.rekap');
+
+Route::get('/mrc/tagihan', [MrcController::class, 'tagihan'])
+    ->name('mrc.tagihan')
+    ->middleware(['auth']);
+
+Route::get('/mrc/cetak-rekap', [MrcController::class, 'cetakRekap'])
+    ->name('mrc.cetak-rekap')
+    ->middleware(['auth']);
+
+Route::get('/mrc/cetak-semua', [MrcController::class, 'cetakSemua'])->name('mrc.cetak-semua');
+
+// Route::get('/mrc/rekap', [MrcController::class, 'cetak'])
+//     ->name('mrc.rekap')
+//     ->middleware(['auth']);
+
+/*
+|==========================================================================
+| 11. PROSPECT / SALES
+|==========================================================================
+*/
+Route::get('/prospect/laporan', [ProspectController::class, 'laporan'])
+    ->name('prospect.laporan');
+
+Route::get('/prospect/laporan', [ProspectLaporanController::class, 'ringkasan'])
+    ->name('prospect.laporan');
+
+Route::get('/prospect/laporan/rincian', [ProspectLaporanController::class, 'rincian'])
+    ->name('prospect.laporan.rincian');
+
+/*
+|==========================================================================
+| 12. BUKU KONTRAK
+|==========================================================================
+*/
+Route::middleware('auth')->group(function () {
+    Route::resource('buku-kontrak', BukuKontrakController::class)
+        ->parameters(['buku-kontrak' => 'bukuKontrak'])
+        ->except('show');
+});
+
+/*
+|==========================================================================
+| 13. ABSENSI (nonaktif)
+|==========================================================================
+*/
+// Route::get('/cetak/absensi', AbsensiCetakController::class)
+//     ->name('cetak.absensi')
+//     ->middleware('auth');
+
+/*
+|==========================================================================
+| 14. KONFIRMASI PASSWORD / PIN MODUL
+|==========================================================================
+*/
 fn() => null; // placeholder agar tidak error jika butuh namespace, gunakan kode di bawah:
 
 Route::get('/custom/confirm-password', function () {
@@ -275,7 +391,6 @@ Route::get('/custom/confirm-password', function () {
 
 //     return redirect()->intended();
 // })->middleware(['auth']);
-
 
 Route::post('/custom/confirm-password', function (Request $request) {
     $request->validate(['password' => ['required']]);
@@ -308,84 +423,3 @@ Route::post('/custom/confirm-password', function (Request $request) {
 
     return redirect()->intended();
 })->middleware(['auth']);
-
-
-Route::get('/admin/technician-stock-histories/print', [TechnicianStockPrintController::class, '__invoke'])
-    ->name('technician-stock.print')
-    ->middleware(['auth']); // sesuaikan middleware auth filament Anda
-
-
-
-
-// Route Cetak Satuan (Per Baris Invoice)
-Route::get('/admin/invoices/{record}/print', function (Invoice $record) {
-    return view('invoices.print', ['invoice' => $record]);
-})->name('invoice.print')->middleware(['web', 'auth']);
-
-// Route Cetak Rekap Semua Data
-// Route::get('/admin/invoices/print-all', function (Request $request) {
-//     $invoices = Invoice::with('customer')->orderBy('tanggal', 'desc')->get();
-//     return view('invoices.print-all', ['invoices' => $invoices]);
-// })->name('invoice.print-all')->middleware(['web', 'auth']);
-
-
-Route::get('/admin/invoices/print-all', function (Request $request) {
-    $bulan = $request->query('bulan', 'all');
-    $tahun = (int) $request->query('tahun', now()->year);
-
-    $invoices = Invoice::with('customer')
-        ->whereYear('tanggal', $tahun)
-        ->when($bulan !== 'all', fn($q) => $q->whereMonth('tanggal', (int) $bulan))
-        ->orderBy('tanggal')
-        ->get();
-
-    $periode = $bulan === 'all'
-        ? "Tahun {$tahun}"
-        : \Carbon\Carbon::create($tahun, (int) $bulan, 1)->locale('id')->translatedFormat('F Y');
-
-    return view('invoices.print-all', compact('invoices', 'periode')); // pakai nama view lama
-})->name('invoice.print-all');
-
-Route::get('/mrc/cetak-rekap', [MrcController::class, 'cetakRekap'])
-    ->name('mrc.cetak-rekap')
-    ->middleware(['auth']);
-
-
-Route::get('/mrc/cetak-semua', [MrcController::class, 'cetakSemua'])->name('mrc.cetak-semua');
-
-
-// Route::get('/mrc/rekap', [MrcController::class, 'cetak'])
-//     ->name('mrc.rekap')
-//     ->middleware(['auth']);
-
-
-Route::get('/cetak/part-keluar', [PartKeluarController::class, 'cetak'])
-    ->name('part-keluar.cetak');
-Route::get('/cetak/riwayat-mesin/{machine}', [MachineRiwayatController::class, 'show'])
-    ->name('machine.riwayat');
-
-
-Route::get('/print/order-part/{orderPart}', [OrderPartPrintController::class, 'show'])
-    ->name('print.order-part');
-
-
-Route::middleware('auth')->group(function () {
-    Route::resource('buku-kontrak', BukuKontrakController::class)
-        ->parameters(['buku-kontrak' => 'bukuKontrak'])
-        ->except('show');
-});
-
-// Route::get('/cetak/absensi', AbsensiCetakController::class)
-//     ->name('cetak.absensi')
-//     ->middleware('auth');
-
-
-Route::get('/cetak/rincian-harian', RincianHarianController::class)
-    ->name('cetak.rincian-harian')
-    ->middleware('auth');
-
-Route::get('/prospect/laporan', [ProspectLaporanController::class, 'ringkasan'])
-    ->name('prospect.laporan');
-
-Route::get('/prospect/laporan/rincian', [ProspectLaporanController::class, 'rincian'])
-    ->name('prospect.laporan.rincian');

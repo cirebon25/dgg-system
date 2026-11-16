@@ -156,6 +156,10 @@
             padding-top: 4px;
         }
 
+        .jumat td {
+            background: #f0f0f0;
+        }
+
         @page {
             size: A4 portrait;
             margin: 18mm 14mm;
@@ -210,7 +214,15 @@
 
                 {{-- DATA TRANSAKSI --}}
                 @forelse ($rows as $row)
-                    <tr>
+                    @php
+                        $tgl = \Carbon\Carbon::parse($row['tanggal']);
+                        $next = $rows->values()->get($loop->index + 1);
+
+                        // baris terakhir di hari Jumat = hari Jumat, dan baris berikutnya beda tanggal / tidak ada
+                        $akhirJumat =
+                            $tgl->isFriday() && (!$next || !\Carbon\Carbon::parse($next['tanggal'])->isSameDay($tgl));
+                    @endphp
+                    <tr class="{{ $akhirJumat ? 'jumat' : '' }}">
                         {{-- REVISI UTAMA: Menggunakan $loop->iteration agar nomor urut pasti rapi 1, 2, 3... --}}
                         <td class="text-center">{{ $loop->iteration }}</td>
                         <td class="text-center">{{ \Carbon\Carbon::parse($row['tanggal'])->format('d/m/Y') }}</td>
@@ -253,7 +265,7 @@
                         <td class="text-right">-</td>
                     </tr>
                     <tr class="saldo-akhir">
-                        <td colspan="6" class="text-right">SALDO AKHIR BULAN {{ strtoupper($namaBulan) }}</td>
+                        <td colspan="6" class="text-right">SISA SALDO </td>
                         <td class="text-right">Rp {{ number_format($saldoAkhir, 0, ',', '.') }}</td>
                     </tr>
                 @endif

@@ -309,8 +309,9 @@ class CashLedgerResource extends Resource
                     ->openUrlInNewTab(),
             ])
             ->headerActions([
+                // ===== CETAK PER BULAN =====
                 Tables\Actions\Action::make('cetak_laporan')
-                    ->label('Cetak Laporan Periode Ini')
+                    ->label('Cetak Per Bulan')
                     ->icon('heroicon-o-printer')
                     ->color('success')
                     ->form([
@@ -334,8 +335,46 @@ class CashLedgerResource extends Resource
 
                         return redirect()->away($url);
                     })
-                    ->modalHeading('Cetak Laporan Buku Kas')
+                    ->modalHeading('Cetak Laporan Buku Kas Bulanan')
                     ->modalDescription('Silakan pilih bulan dan tahun laporan yang ingin dicetak.')
+                    ->modalSubmitActionLabel('Cetak Sekarang'),
+
+                // ===== CETAK PER MINGGU =====
+                Tables\Actions\Action::make('cetak_mingguan')
+                    ->label('Cetak Per Minggu')
+                    ->icon('heroicon-o-calendar-days')
+                    ->color('info')
+                    ->form([
+                        Forms\Components\DatePicker::make('tanggal_mulai')
+                            ->label('Dari Tanggal')
+                            ->native(false)
+                            ->default(now()->startOfWeek())
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(
+                                fn($state, Set $set) => $set(
+                                    'tanggal_selesai',
+                                    \Carbon\Carbon::parse($state)->addDays(6)->toDateString()
+                                )
+                            ),
+
+                        Forms\Components\DatePicker::make('tanggal_selesai')
+                            ->label('Sampai Tanggal')
+                            ->native(false)
+                            ->default(now()->endOfWeek())
+                            ->required()
+                            ->afterOrEqual('tanggal_mulai'),
+                    ])
+                    ->action(function (array $data) {
+                        $url = route('cetak.kas-mingguan', [
+                            'mulai'   => $data['tanggal_mulai'],
+                            'selesai' => $data['tanggal_selesai'],
+                        ]);
+
+                        return redirect()->away($url);
+                    })
+                    ->modalHeading('Cetak Laporan Buku Kas Mingguan')
+                    ->modalDescription('Pilih tanggal awal, tanggal akhir otomatis +6 hari (bisa diubah).')
                     ->modalSubmitActionLabel('Cetak Sekarang'),
             ])
             ->bulkActions([
