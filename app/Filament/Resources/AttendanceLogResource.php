@@ -9,9 +9,13 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Traits\HasRoleAccess;
 
 class AttendanceLogResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin'];
     protected static ?string $model = AttendanceLog::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-finger-print';

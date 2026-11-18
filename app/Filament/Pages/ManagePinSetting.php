@@ -13,9 +13,13 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use App\Filament\Traits\HasRoleAccess;
 
 class ManagePinSetting extends Page
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin'];
     protected static ?string $navigationIcon = 'heroicon-o-key';
     protected static ?string $navigationLabel = 'Ubah PIN Modul Pinjam';
     protected static ?string $navigationGroup = 'Pengaturan';

@@ -19,7 +19,6 @@
             color: #1a1a1a;
         }
 
-        /* ===== HEADER ===== */
         .header {
             text-align: center;
             margin-bottom: 20px;
@@ -49,7 +48,6 @@
             margin-top: 2px;
         }
 
-        /* ===== TABEL ===== */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -81,17 +79,31 @@
             text-align: left;
         }
 
-        /* ===== BARIS GANJIL/GENAP ===== */
-        tbody tr:nth-child(odd) {
+        tbody tr.baris:nth-child(odd) {
             background: #f8fafc;
         }
 
-        tbody tr:nth-child(even) {
+        tbody tr.baris:nth-child(even) {
             background: #ffffff;
         }
 
-        /* ===== KOLOM ===== */
-        .col-rank {
+        tr.group-title td {
+            background: #e5e7eb;
+            font-weight: bold;
+            text-align: left;
+            font-size: 11px;
+            color: #1e3a5f;
+            padding: 8px 10px;
+            border-color: #9ca3af;
+        }
+
+        tr.subtotal td {
+            background: #f1f5f9;
+            font-weight: bold;
+            border-top: 2px solid #1e3a5f;
+        }
+
+        .col-no {
             width: 40px;
             font-weight: bold;
         }
@@ -118,7 +130,11 @@
             font-weight: bold;
         }
 
-        /* ===== FOOTER ===== */
+        .empty {
+            color: #9ca3af;
+            font-style: italic;
+        }
+
         .footer {
             margin-top: 16px;
             display: flex;
@@ -129,17 +145,22 @@
             padding-top: 8px;
         }
 
-        /* ===== PRINT ===== */
         @media print {
             body {
                 padding: 12px;
             }
 
             thead tr,
+            tr.group-title td,
+            tr.subtotal td,
             .col-total,
             .col-avg {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+            }
+
+            tr.group-title {
+                page-break-after: avoid;
             }
         }
     </style>
@@ -149,48 +170,69 @@
 
     <div class="header">
         <div class="company">DINAMIKA GLOBAL GEMILANG (DGG)</div>
-        <div class="title">Ranking Pemakaian Customer</div>
+        <div class="title">Ranking Pemakaian Customer per Rayon</div>
         <div class="periode">
             Periode: {{ strtoupper($bulan) }} {{ $tahun }} &nbsp;|&nbsp;
             Dicetak: {{ now()->format('d/m/Y H:i') }}
-        </div>
-        <div class="periode">
-            Total dihitung sejak input meter pertama s.d. {{ strtoupper($bulan) }} {{ $tahun }}
         </div>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th class="col-rank">RANK</th>
+                <th class="col-no">NO</th>
                 <th class="text-left">NAMA CUSTOMER</th>
                 <th>SN MESIN</th>
-                <th>TOTAL BW</th>
-                <th>TOTAL COLOR</th>
-                <th>GRAND TOTAL</th>
-                <th>PAKAI BULAN INI</th>
+                <th>PEMAKAIAN BW</th>
+                <th>PEMAKAIAN COLOR</th>
+                <th>TOTAL PEMAKAIAN</th>
                 <th>RATA-RATA / BULAN</th>
             </tr>
         </thead>
         <tbody>
-            @foreach ($records as $index => $row)
-                <tr>
-                    <td class="col-rank">{{ $index + 1 }}</td>
-                    <td class="text-left"><strong>{{ $row->nama_customer }}</strong></td>
-                    <td>{{ $row->serial_number }}</td>
-                    <td class="col-bw">{{ number_format($row->total_bw) }}</td>
-                    <td class="col-color">{{ number_format($row->total_color) }}</td>
-                    <td class="col-total">{{ number_format($row->total_semua) }}</td>
-                    <td>{{ number_format($row->pemakaian_bulan_ini) }}</td>
-                    <td class="col-avg">{{ number_format($row->rata_rata) }}</td>
+            @forelse ($groups as $group)
+                <tr class="group-title">
+                    <td colspan="7">
+                        RAYON: {{ strtoupper($group->nama) }} ({{ $group->baris->count() }} customer)
+                    </td>
                 </tr>
-            @endforeach
+
+                @foreach ($group->baris as $row)
+                    <tr class="baris">
+                        <td class="col-no">{{ $loop->iteration }}</td>
+                        <td class="text-left"><strong>{{ $row->nama_customer }}</strong></td>
+                        <td>{{ $row->serial_number }}</td>
+                        <td class="col-bw">
+                            {{ $row->pemakaian_bw !== null ? number_format($row->pemakaian_bw) : '-' }}
+                        </td>
+                        <td class="col-color">
+                            {{ $row->pemakaian_color !== null ? number_format($row->pemakaian_color) : '-' }}
+                        </td>
+                        <td class="col-total">
+                            {{ $row->pemakaian_total !== null ? number_format($row->pemakaian_total) : '-' }}
+                        </td>
+                        <td class="col-avg">{{ number_format($row->rata_rata) }}</td>
+                    </tr>
+                @endforeach
+
+                <tr class="subtotal">
+                    <td colspan="3" class="text-left">SUBTOTAL RAYON {{ strtoupper($group->nama) }}</td>
+                    <td>{{ number_format($group->sub_bw) }}</td>
+                    <td>{{ number_format($group->sub_color) }}</td>
+                    <td>{{ number_format($group->sub_total) }}</td>
+                    <td></td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="7" class="empty">Tidak ada data pemakaian.</td>
+                </tr>
+            @endforelse
         </tbody>
     </table>
 
     <div class="footer">
         <span>DGG System &copy; {{ date('Y') }} &mdash; Developer RUDIANTO</span>
-        <span>Total Customer: {{ count($records) }}</span>
+        <span>Total Customer: {{ $totalCustomer }}</span>
     </div>
 
 </body>

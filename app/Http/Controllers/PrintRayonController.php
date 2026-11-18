@@ -10,6 +10,8 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\MeterReading;
+use App\Services\Laporan\CounterPemakaianStats;
+use App\Services\Laporan\RankingPemakaianRayon;
 
 class PrintRayonController extends Controller
 {
@@ -127,10 +129,13 @@ class PrintRayonController extends Controller
 
     // dipindah dari: Route::get('/cetak-top-usage', ...)->name('cetak.top-usage')
     // dipindah dari: Route::get('/cetak-top-usage', ...)->name('cetak.top-usage')
-    public function topUsage(Request $request)
-    {
-        $month = $request->month ?? date('m');
-        $year  = $request->year ?? date('Y');
+    public function topUsage(
+        Request $request,
+        CounterPemakaianStats $stats,
+        RankingPemakaianRayon $ranking,
+    ) {
+        $month = (int) ($request->month ?? date('m'));
+        $year  = (int) ($request->year ?? date('Y'));
 
         $awalBulan  = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $akhirBulan = $awalBulan->copy()->endOfMonth();
@@ -138,50 +143,42 @@ class PrintRayonController extends Controller
         $records = MeterReading::query()
             ->join('machines', 'machines.id', '=', 'meter_readings.machine_id')
             ->join('customers', 'customers.id', '=', 'meter_readings.customer_id')
+            ->leftJoin('rayons', 'rayons.id', '=', 'customers.rayon_id')
             ->where('meter_readings.tanggal', '<=', $akhirBulan)
             ->groupBy(
                 'meter_readings.machine_id',
                 'machines.serial_number',
                 'customers.id',
-                'customers.nama_customer'
+                'customers.nama_customer',
+                'rayons.nama_rayon'
             )
-            ->selectRaw('
-            customers.nama_customer,
-            machines.serial_number,
+            ->selectRaw("
+                meter_readings.machine_id,
+                customers.nama_customer,
+                machines.serial_number,
+                rayons.nama_rayon,
 
-            COALESCE(MAX(meter_readings.counter_bw) - MIN(meter_readings.counter_bw_lalu), 0) AS total_bw,
-            COALESCE(MAX(meter_readings.counter_color) - MIN(meter_readings.counter_color_lalu), 0) AS total_color,
+                COALESCE(MAX(meter_readings.counter_bw) - MIN(meter_readings.counter_bw_lalu), 0) AS total_bw,
+                COALESCE(MAX(meter_readings.counter_color) - MIN(meter_readings.counter_color_lalu), 0) AS total_color,
 
-            COALESCE(
-                MAX(CASE WHEN meter_readings.tanggal >= ? THEN meter_readings.counter_bw END)
-                - MIN(CASE WHEN meter_readings.tanggal >= ? THEN meter_readings.counter_bw_lalu END), 0
-            ) AS bw_bulan_ini,
-            COALESCE(
-                MAX(CASE WHEN meter_readings.tanggal >= ? THEN meter_readings.counter_color END)
-                - MIN(CASE WHEN meter_readings.tanggal >= ? THEN meter_readings.counter_color_lalu END), 0
-            ) AS color_bulan_ini,
-
-            PERIOD_DIFF(DATE_FORMAT(?, "%Y%m"), DATE_FORMAT(MIN(meter_readings.tanggal), "%Y%m")) + 1 AS jumlah_bulan
-        ', [
-                $awalBulan->toDateString(),
-                $awalBulan->toDateString(),
-                $awalBulan->toDateString(),
-                $awalBulan->toDateString(),
+                PERIOD_DIFF(DATE_FORMAT(?, '%Y%m'), DATE_FORMAT(MIN(meter_readings.tanggal), '%Y%m')) + 1 AS jumlah_bulan
+            ", [
                 $akhirBulan->toDateString(),
             ])
             ->get()
             ->each(function ($row) {
-                $row->total_semua         = $row->total_bw + $row->total_color;
-                $row->pemakaian_bulan_ini = $row->bw_bulan_ini + $row->color_bulan_ini;
-                $row->rata_rata           = round($row->total_semua / ($row->jumlah_bulan ?: 1));
-            })
-            ->sortByDesc('rata_rata')
-            ->values();
+                $row->total_semua = $row->total_bw + $row->total_color;
+                $row->rata_rata   = round($row->total_semua / ($row->jumlah_bulan ?: 1));
+            });
+
+        $records = $stats->attach($records, $month, $year);
+        $groups  = $ranking->build($records);
 
         return view('filament.pages.cetak-top-usage', [
-            'records' => $records,
-            'bulan'   => $awalBulan->translatedFormat('F'),
-            'tahun'   => $year,
+            'groups'        => $groups,
+            'totalCustomer' => $records->count(),
+            'bulan'         => $awalBulan->translatedFormat('F'),
+            'tahun'         => $year,
         ]);
     }
     // dipindah dari: Route::get('/print/technician-performance', ...)->name('print.tech-performance')

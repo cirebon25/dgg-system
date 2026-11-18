@@ -9,9 +9,13 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use App\Filament\Traits\HasRoleAccess;
 
 class BukuKontrakResource extends Resource
 {
+    use HasRoleAccess;
+
+    protected static array $allowedRoles = ['admin'];
     protected static ?string $model = BukuKontrak::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-book-open';

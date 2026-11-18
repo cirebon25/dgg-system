@@ -22,6 +22,26 @@
     $selList = $gantiTampil->pluck('selisih_bw')->filter(fn($v) => $v !== null && $v >= 0)->values();
     $hariList = $gantiTampil->pluck('hari')->filter(fn($v) => $v !== null)->values();
     $maxSel = max(1, (float) ($selList->max() ?? 1));
+
+    // ===== Grafik pemakaian per bulan =====
+    // Baris kosong (tanpa kunjungan dan tanpa data) tidak ditampilkan di grafik.
+    $barData = collect($deret)->reject(fn($r) => $r->kosong)->values();
+    $bwMax = max(1, (float) ($barData->max(fn($r) => $r->bw) ?? 1));
+
+    // Tertinggi dan terendah hanya dari bulan yang sudah terhitung penuh (bukan Parsial).
+    $kandidat = $barData->reject(fn($r) => $r->status === 'Parsial')->values();
+    $maxKey = null;
+    $minKey = null;
+    if ($kandidat->count() >= 2) {
+        $maxKey = $kandidat->sortByDesc('bw')->first()->key;
+        $minKey = $kandidat->sortBy('bw')->first()->key;
+        if ($maxKey === $minKey) {
+            $minKey = null; // semua bulan bernilai sama, tidak ada yang terendah
+        }
+    }
+
+    // Kunci tetap untuk catatan keterangan per baris (tidak bergantung pada urutan tampil).
+    $kunciKet = fn($r) => md5(implode('|', [$r->part, $r->tanggal->format('Y-m-d'), $r->qty, $r->bw]));
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -342,6 +362,72 @@
             margin-right: 3px;
         }
 
+        /* ===== Grafik pemakaian bulanan ===== */
+        .chart {
+            border: 1px solid #8ea9c8;
+            padding: 8px 10px;
+            margin: 4px 0 8px;
+        }
+
+        .chart-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .chart-label {
+            width: 110px;
+            font-size: 10px;
+            flex-shrink: 0;
+        }
+
+        .chart-track {
+            flex: 1;
+            background: #f2f2f2;
+            height: 14px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .chart-bar {
+            height: 100%;
+            background: #2e75b6;
+        }
+
+        .chart-bar.max {
+            background: #548235;
+        }
+
+        .chart-bar.min {
+            background: #c55a11;
+        }
+
+        .chart-val {
+            width: 210px;
+            font-size: 10px;
+            font-weight: bold;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0 5px;
+            border-radius: 6px;
+            font-size: 8px;
+            color: #fff;
+            margin-left: 4px;
+        }
+
+        .tag-max {
+            background: #548235;
+        }
+
+        .tag-min {
+            background: #c55a11;
+        }
+
         /* ===== Riwayat penggantian part ===== */
         .petunjuk {
             font-size: 10px;
@@ -409,6 +495,53 @@
             border-top: 2px solid #2e75b6;
         }
 
+        /* Catatan & keterangan (browser-only) */
+        .catatan-box {
+            margin: 4px 0 8px;
+            border: 1px dashed #bf9000;
+            background: #fffdf0;
+            padding: 6px 8px;
+        }
+
+        .catatan-box label {
+            display: block;
+            font-size: 10px;
+            font-weight: bold;
+            color: #7f6000;
+            margin-bottom: 3px;
+        }
+
+        .catatan-box textarea {
+            width: 100%;
+            min-height: 48px;
+            font-family: inherit;
+            font-size: 11px;
+            padding: 4px 6px;
+            border: 1px solid #d9c27a;
+            resize: vertical;
+        }
+
+        .catatan-cetak {
+            display: none;
+            white-space: pre-wrap;
+            font-size: 10px;
+        }
+
+        .ket-input {
+            width: 100%;
+            border: none;
+            border-bottom: 1px dashed #8ea9c8;
+            background: transparent;
+            font-family: inherit;
+            font-size: 10px;
+            padding: 2px 3px;
+        }
+
+        .ket-input:focus {
+            outline: none;
+            background: #fffdf0;
+        }
+
         .debug {
             margin-top: 14px;
             padding: 6px 10px;
@@ -431,6 +564,18 @@
 
             .no-print {
                 display: none !important;
+            }
+
+            .catatan-box textarea {
+                display: none;
+            }
+
+            .catatan-box {
+                border: 1px solid #bf9000;
+            }
+
+            .catatan-cetak {
+                display: block;
             }
 
             table.data tr {
@@ -548,6 +693,34 @@
                     Proyeksi sebulan penuh ± <strong>{{ $f($bulanIni->proyeksi_bw) }}</strong> lembar BW.
                 @endif
             </div>
+        </div>
+    @endif
+
+    {{-- Grafik batang pemakaian BW per bulan --}}
+    @if ($barData->isNotEmpty())
+        <div class="chart">
+            @foreach ($barData as $r)
+                @php
+                    $lebar = $r->bw > 0 ? max(1, round(($r->bw / $bwMax) * 100, 2)) : 0;
+                    $kelas = $r->key === $maxKey ? 'max' : ($r->key === $minKey ? 'min' : '');
+                @endphp
+                <div class="chart-row">
+                    <div class="chart-label">{{ $r->label }}</div>
+                    <div class="chart-track">
+                        <div class="chart-bar {{ $kelas }}" style="width: {{ $lebar }}%"></div>
+                    </div>
+                    <div class="chart-val">
+                        {{ $f($r->bw) }} lembar
+                        @if ($kelas === 'max')
+                            <span class="tag tag-max">Terbanyak</span>
+                        @elseif ($kelas === 'min')
+                            <span class="tag tag-min">Terendah</span>
+                        @endif
+                    </div>
+                </div>
+            @endforeach
+            <div class="catatan">Bulan Parsial tetap ditampilkan, tetapi tidak ikut dalam penentuan terbanyak dan
+                terendah.</div>
         </div>
     @endif
 
@@ -673,6 +846,13 @@
         <small>(selisih = kenaikan counter sejak penggantian part yang sama sebelumnya)</small>
     </div>
 
+    {{-- Catatan bebas, disimpan di browser ini saja (localStorage) --}}
+    <div class="catatan-box no-print-wrap">
+        <label for="catatan-browser">Catatan (tersimpan di browser ini saja, tidak ke server)</label>
+        <textarea id="catatan-browser" class="no-print" placeholder="Ketik catatan untuk mesin ini..."></textarea>
+        <div class="catatan-cetak" id="catatan-cetak"></div>
+    </div>
+
     @php
         // Semua Part: urut nama part lalu tanggal, supaya penggantian part yang sama berdekatan.
         // 1 Part: urut tanggal.
@@ -699,6 +879,7 @@
                 @endif
                 <th class="r" style="width:80px">Selisih Hari</th>
                 <th class="l" style="width:100px">Teknisi</th>
+                <th class="l" style="width:180px">Keterangan</th>
             </tr>
         </thead>
         <tbody>
@@ -736,10 +917,14 @@
                     @endif
                     <td class="angka">{{ $r->hari !== null ? $r->hari . ' hari' : '-' }}</td>
                     <td>{{ $r->teknisi ?? '-' }}</td>
+                    <td>
+                        <input type="text" class="ket-input" data-key="{{ $kunciKet($r) }}"
+                            placeholder="Ketik keterangan..." aria-label="Keterangan {{ $r->part }}">
+                    </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="{{ $adaColorPart ? 12 : 9 }}" class="center">Tidak ada penggantian part pada
+                    <td colspan="{{ $adaColorPart ? 13 : 10 }}" class="center">Tidak ada penggantian part pada
                         {{ $periodeLabel }}.</td>
                 </tr>
             @endforelse
@@ -755,6 +940,7 @@
                     @endif
                     <td class="angka">{{ $hariList->count() ? $f($hariList->avg()) . ' hari' : '-' }}</td>
                     <td></td>
+                    <td></td>
                 </tr>
                 <tr>
                     <td colspan="6" style="text-align:right">Terpendek / Terpanjang</td>
@@ -764,6 +950,7 @@
                     @endif
                     <td class="angka">
                         {{ $hariList->count() ? $f($hariList->min()) . ' / ' . $f($hariList->max()) : '-' }}</td>
+                    <td></td>
                     <td></td>
                 </tr>
             </tfoot>
@@ -908,6 +1095,47 @@
             MachineRiwayatController.
         </div>
     @endif
+
+    <script>
+        (function() {
+            const PREFIX = @json('riwayat-mesin-' . $machine->serial_number);
+
+            // Akses localStorage dibungkus try/catch: bisa gagal di mode privat atau jika diblokir browser.
+            const simpan = (kunci, nilai) => {
+                try {
+                    localStorage.setItem(kunci, nilai);
+                } catch (e) {
+                    /* abaikan */ }
+            };
+            const baca = (kunci) => {
+                try {
+                    return localStorage.getItem(kunci) ?? '';
+                } catch (e) {
+                    return '';
+                }
+            };
+
+            // Catatan umum
+            const catatan = document.getElementById('catatan-browser');
+            const catatanCetak = document.getElementById('catatan-cetak');
+            const kunciCatatan = PREFIX + '-catatan';
+
+            catatan.value = baca(kunciCatatan);
+            catatanCetak.textContent = catatan.value;
+
+            catatan.addEventListener('input', () => {
+                simpan(kunciCatatan, catatan.value);
+                catatanCetak.textContent = catatan.value;
+            });
+
+            // Keterangan per baris penggantian part
+            document.querySelectorAll('.ket-input').forEach((el) => {
+                const kunci = PREFIX + '-ket-' + el.dataset.key;
+                el.value = baca(kunci);
+                el.addEventListener('input', () => simpan(kunci, el.value));
+            });
+        })();
+    </script>
 </body>
 
 </html>

@@ -16,7 +16,7 @@ class PrintFormResource extends Resource
     use HasRoleAccess;
 
     // Masukkan semua role yang diizinkan di sini (sesuaikan penulisan hurufnya dengan data di database Anda)
-    protected static array $allowedRoles = ['admin', 'teknisi', 'admin_teknik'];
+    protected static array $allowedRoles = ['admin'];
 
     protected static ?string $model = PrintForm::class;
     protected static ?string $navigationIcon = 'heroicon-o-archive-box';
