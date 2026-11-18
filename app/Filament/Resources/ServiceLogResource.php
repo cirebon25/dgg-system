@@ -6,6 +6,7 @@ use App\Filament\Resources\ServiceLogResource\Pages;
 use App\Filament\Traits\HasRoleAccess;
 use App\Models\Machine;
 use App\Models\ServiceLog;
+use App\Models\Sparepart;
 use App\Models\TechnicianStock;
 use Closure;
 use Filament\Forms;
@@ -104,7 +105,14 @@ class ServiceLogResource extends Resource
                     Forms\Components\Select::make('technician_id')
                         ->relationship('technician', 'nama_technician')
                         ->label('Teknisi Utama')
-                        ->required(),
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(function (Forms\Set $set, string $operation) {
+                            // Ganti teknisi = daftar sparepart lama tidak valid lagi
+                            if ($operation === 'create') {
+                                $set('serviceLogSpareparts', []);
+                            }
+                        }),
 
                     Forms\Components\TextInput::make('nama_teknisi_2')
                         ->label('Teknisi Pembantu (Ketik Manual)')
@@ -183,11 +191,27 @@ class ServiceLogResource extends Resource
                         ->relationship()
                         ->schema([
                             Forms\Components\Select::make('sparepart_id')
-                                ->relationship('sparepart', 'nama_sparepart')
                                 ->label('Pilih Sparepart')
+                                ->options(function (Forms\Get $get): array {
+                                    $technicianId = $get('../../technician_id');
+
+                                    if (! $technicianId) {
+                                        return [];
+                                    }
+
+                                    return Sparepart::query()
+                                        ->whereIn('id', TechnicianStock::query()
+                                            ->where('technician_id', $technicianId)
+                                            ->where('jumlah', '>', 0)
+                                            ->select('sparepart_id'))
+                                        ->orderBy('nama_sparepart')
+                                        ->pluck('nama_sparepart', 'id')
+                                        ->all();
+                                })
+                                ->getOptionLabelUsing(fn($value) => Sparepart::find($value)?->nama_sparepart)
                                 ->searchable()
-                                ->preload()
                                 ->required()
+                                ->placeholder('Pilih teknisi dulu')
                                 ->disabled(fn(string $operation) => $operation === 'edit'),
 
                             Forms\Components\TextInput::make('jumlah')
