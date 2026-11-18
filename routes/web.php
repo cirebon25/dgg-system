@@ -134,6 +134,9 @@ Route::get('/cetak-service-rayon', [PrintRayonController::class, 'serviceRayon']
 Route::get('/cetak-top-usage', [PrintRayonController::class, 'topUsage'])
     ->name('cetak.top-usage');
 
+Route::get('/cetak-top-usage/pilih-bulan', [PrintRayonController::class, 'topUsagePilih'])
+    ->name('cetak.top-usage.pilih');
+
 Route::get('/print/technician-performance', [PrintRayonController::class, 'technicianPerformance'])
     ->name('print.tech-performance');
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Exports\CashLedgerExport;
 use App\Filament\Resources\CashLedgerResource\Pages;
 use App\Filament\Traits\HasRoleAccess;
 use App\Models\CashLedger;
@@ -14,6 +15,7 @@ use Filament\Tables;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CashLedgerResource extends Resource
 {
@@ -376,6 +378,36 @@ class CashLedgerResource extends Resource
                     ->modalHeading('Cetak Laporan Buku Kas Mingguan')
                     ->modalDescription('Pilih tanggal awal, tanggal akhir otomatis +6 hari (bisa diubah).')
                     ->modalSubmitActionLabel('Cetak Sekarang'),
+
+                // ===== EXPORT EXCEL =====
+                Tables\Actions\Action::make('export_excel')
+                    ->label('Export Excel')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('indigo')
+                    ->form([
+                        Forms\Components\Select::make('bulan')
+                            ->label('Pilih Bulan')
+                            ->options(static::bulanOptions())
+                            ->default(now()->month)
+                            ->required(),
+
+                        Forms\Components\Select::make('tahun')
+                            ->label('Pilih Tahun')
+                            ->options(static::tahunOptions())
+                            ->default(now()->year)
+                            ->required(),
+                    ])
+                    ->action(function (array $data) {
+                        $namaBulan = static::bulanOptions()[$data['bulan']];
+
+                        return Excel::download(
+                            new CashLedgerExport((int) $data['bulan'], (int) $data['tahun']),
+                            "Buku-Kas-{$namaBulan}-{$data['tahun']}.xlsx"
+                        );
+                    })
+                    ->modalHeading('Export Buku Kas ke Excel')
+                    ->modalDescription('Pilih bulan dan tahun yang ingin diexport ke file Excel.')
+                    ->modalSubmitActionLabel('Download'),
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),

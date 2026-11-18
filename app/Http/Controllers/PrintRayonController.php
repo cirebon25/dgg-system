@@ -2,175 +2,127 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Machine;
+use App\Http\Requests\TopUsageRequest;
+use App\Models\MrcContract;
 use App\Models\Rayon;
 use App\Models\ServiceLog;
 use App\Models\Technician;
+use App\Services\Laporan\CounterPemakaianStats;
+use App\Services\Laporan\PerformanceRayonReport;
+use App\Services\Laporan\RankingPemakaianRayon;
+use App\Services\Laporan\TopUsageQuery;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use App\Models\MeterReading;
-use App\Services\Laporan\CounterPemakaianStats;
-use App\Services\Laporan\RankingPemakaianRayon;
 
 class PrintRayonController extends Controller
 {
-    // dipindah dari: Route::get('/cetak-rekap-rayon', ...)->name('cetak.rekap-rayon')
+    // Selisih counter di atas batas ini dianggap tidak wajar (salah ketik / counter placeholder)
+    private const LONJAKAN_MAKS = 150000;
+
+    // Route: /cetak-rekap-rayon  (cetak.rekap-rayon) -> pakai view yang sama dengan serviceRayon
     public function rekapRayon(Request $request)
     {
-        $month = $request->query('month', date('m'));
-        $year = $request->query('year', date('Y'));
+        return $this->serviceRayon($request);
+    }
+
+    // Route: /cetak-service-rayon  (cetak.service-rayon)
+    public function serviceRayon(Request $request)
+    {
+        $month = (int) $request->query('month', date('n'));
+        $year  = (int) $request->query('year', date('Y'));
+
+        $namaBulan = Carbon::create($year, $month, 1)->translatedFormat('F');
 
         $rayons = Rayon::with(['customers.deployments.machine'])->get();
 
-        $namaBulan = Carbon::createFromFormat('m', $month)->translatedFormat('F');
+        // Service bulan terpilih, per mesin (untuk tabel riwayat)
+        $logsPerMesin = ServiceLog::with('technician')
+            ->whereMonth('tanggal', $month)
+            ->whereYear('tanggal', $year)
+            ->orderBy('tanggal')
+            ->get()
+            ->groupBy('machine_id');
 
-        $html = "
-        <!DOCTYPE html>
-        <html lang='id'>
-        <head>
-            <meta charset='UTF-8'>
-            <style>
-                body { font-family: 'Helvetica', sans-serif; font-size: 11px; padding: 10px; }
-                header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
-                .rayon-box { margin-bottom: 30px; }
-                .rayon-title { background: #333; color: #fff; padding: 8px; font-weight: bold; font-size: 14px; margin-bottom: 5px; }
-                table { width: 100%; border-collapse: collapse; }
-                th { background: #f2f2f2; border: 1px solid #000; padding: 8px; text-transform: uppercase; }
-                td { border: 1px solid #000; padding: 8px; vertical-align: top; }
-                .text-center { text-align: center; }
-                .empty { color: #999; font-style: italic; }
-            </style>
-        </head>
-        <body onload='window.print()'>
-            <header>
-                <h1 style='margin:0;'>DGG SYSTEM - MONITORING UNIT</h1>
-                <h2 style='margin:5px 0;'>LAPORAN KINERJA MESIN PER RAYON</h2>
-                <p>Periode: $namaBulan $year</p>
-            </header>";
+        // Semua log yang punya counter sampai akhir tahun terpilih (untuk hitung pemakaian)
+        $counterPerMesin = ServiceLog::whereDate('tanggal', '<=', $year . '-12-31')
+            ->where(function ($q) {
+                $q->where('counter_bw', '>', 0)->orWhere('counter_color', '>', 0);
+            })
+            ->orderBy('tanggal')
+            ->orderBy('id')
+            ->get(['id', 'machine_id', 'tanggal', 'counter_bw', 'counter_color'])
+            ->groupBy('machine_id');
 
-        foreach ($rayons as $rayon) {
-            $html .= "<div class='rayon-box'>
-                        <div class='rayon-title'>📍 RAYON: " . strtoupper($rayon->nama_rayon) . "</div>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th width='30'>NO</th>
-                                    <th width='200'>NAMA CUSTOMER & KOTA</th>
-                                    <th width='150'>SN / MODEL</th>
-                                    <th>HISTORI SERVICE ($namaBulan)</th>
-                                </tr>
-                            </thead>
-                            <tbody>";
+        // Kontrak MRC aktif, per mesin
+        $kontrakPerMesin = MrcContract::where('aktif', true)
+            ->get()
+            ->keyBy('machine_id');
 
-            $i = 1;
+        $rayonData = $rayons->map(function ($rayon) use ($logsPerMesin, $counterPerMesin, $kontrakPerMesin, $year) {
+            $mesin = collect();
+
             foreach ($rayon->customers as $customer) {
                 foreach ($customer->deployments as $dep) {
                     $machine = $dep->machine;
-                    if (! $machine) {
+
+                    if (! $machine || $mesin->contains('id', $machine->id)) {
                         continue;
                     }
 
-                    $logs = ServiceLog::where('machine_id', $machine->id)
-                        ->whereMonth('created_at', $month)
-                        ->whereYear('created_at', $year)
-                        ->get();
-
-                    $html .= "<tr>
-                                <td class='text-center'>$i</td>
-                                <td><b>{$customer->nama_customer}</b><br>{$customer->kota}</td>
-                                <td><b>{$machine->serial_number}</b><br>{$machine->tipe_model}</td>
-                                <td>";
-
-                    if ($logs->isEmpty()) {
-                        $html .= "<span class='empty'>- Unit Normal (Tidak Ada Tindakan) -</span>";
-                    } else {
-                        $html .= "<ul style='margin:0; padding-left:15px;'>";
-                        foreach ($logs as $log) {
-                            $tgl = date('d/m', strtotime($log->created_at));
-                            $html .= "<li><b>[$tgl]</b> {$log->keluhan} -> <i>{$log->tindakan}</i></li>";
-                        }
-                        $html .= "</ul>";
-                    }
-
-                    $html .= "</td></tr>";
-                    $i++;
+                    $mesin->push((object) [
+                        'id'        => $machine->id,
+                        'machine'   => $machine,
+                        'customer'  => $customer,
+                        'kontrak'   => $kontrakPerMesin->get($machine->id),
+                        'logs'      => $logsPerMesin->get($machine->id, collect()),
+                        'pemakaian' => $this->susunPemakaian($counterPerMesin->get($machine->id, collect()), $year),
+                    ]);
                 }
             }
 
-            if ($i == 1) {
-                $html .= "<tr><td colspan='4' class='text-center empty'>Tidak ada mesin terpasang di wilayah ini.</td></tr>";
-            }
+            return (object) [
+                'nama'  => $rayon->nama_rayon,
+                'mesin' => $mesin,
+            ];
+        });
 
-            $html .= "</tbody></table></div>";
-        }
-
-        $html .= "</body></html>";
-
-        return response($html);
-    }
-
-    // dipindah dari: Route::get('/cetak-service-rayon', ...)->name('cetak.service-rayon')
-    public function serviceRayon(Request $request)
-    {
-        $month = $request->query('month', date('m'));
-        $year = $request->query('year', date('Y'));
-
-        $rayons = Rayon::with(['customers.deployments.machine'])->get();
-        $namaBulan = Carbon::createFromFormat('m', $month)->translatedFormat('F');
-
-        return view('filament.pages.cetak-rekap-rayon', [
-            'rayons' => $rayons,
-            'month' => $month,
-            'year' => $year,
+        return view('print.rekap-rayon', [
+            'rayonData' => $rayonData,
+            'month'     => $month,
+            'year'      => $year,
             'namaBulan' => $namaBulan,
         ]);
     }
 
-    // dipindah dari: Route::get('/cetak-top-usage', ...)->name('cetak.top-usage')
-    // dipindah dari: Route::get('/cetak-top-usage', ...)->name('cetak.top-usage')
+    // Route: /cetak-top-usage/pilih-bulan  (cetak.top-usage.pilih)
+    public function topUsagePilih(Request $request)
+    {
+        $sekarang = now();
+
+        return view('filament.pages.pilih-bulan-top-usage', [
+            'daftarBulan' => collect(range(1, 12))->mapWithKeys(
+                fn(int $nomor) => [$nomor => Carbon::create(null, $nomor, 1)->translatedFormat('F')]
+            ),
+            'daftarTahun'   => range($sekarang->year, $sekarang->year - 5),
+            'bulanTerpilih' => $request->integer('month', $sekarang->month),
+            'tahunTerpilih' => $request->integer('year', $sekarang->year),
+        ]);
+    }
+
+    // Route: /cetak-top-usage  (cetak.top-usage)
     public function topUsage(
-        Request $request,
+        TopUsageRequest $request,
+        TopUsageQuery $query,
         CounterPemakaianStats $stats,
         RankingPemakaianRayon $ranking,
     ) {
-        $month = (int) ($request->month ?? date('m'));
-        $year  = (int) ($request->year ?? date('Y'));
+        $sekarang = now();
+        $month    = $request->integer('month', $sekarang->month);
+        $year     = $request->integer('year', $sekarang->year);
 
-        $awalBulan  = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-        $akhirBulan = $awalBulan->copy()->endOfMonth();
+        $awalBulan = Carbon::createFromDate($year, $month, 1)->startOfMonth();
 
-        $records = MeterReading::query()
-            ->join('machines', 'machines.id', '=', 'meter_readings.machine_id')
-            ->join('customers', 'customers.id', '=', 'meter_readings.customer_id')
-            ->leftJoin('rayons', 'rayons.id', '=', 'customers.rayon_id')
-            ->where('meter_readings.tanggal', '<=', $akhirBulan)
-            ->groupBy(
-                'meter_readings.machine_id',
-                'machines.serial_number',
-                'customers.id',
-                'customers.nama_customer',
-                'rayons.nama_rayon'
-            )
-            ->selectRaw("
-                meter_readings.machine_id,
-                customers.nama_customer,
-                machines.serial_number,
-                rayons.nama_rayon,
-
-                COALESCE(MAX(meter_readings.counter_bw) - MIN(meter_readings.counter_bw_lalu), 0) AS total_bw,
-                COALESCE(MAX(meter_readings.counter_color) - MIN(meter_readings.counter_color_lalu), 0) AS total_color,
-
-                PERIOD_DIFF(DATE_FORMAT(?, '%Y%m'), DATE_FORMAT(MIN(meter_readings.tanggal), '%Y%m')) + 1 AS jumlah_bulan
-            ", [
-                $akhirBulan->toDateString(),
-            ])
-            ->get()
-            ->each(function ($row) {
-                $row->total_semua = $row->total_bw + $row->total_color;
-                $row->rata_rata   = round($row->total_semua / ($row->jumlah_bulan ?: 1));
-            });
-
+        $records = $query->get($awalBulan->copy()->endOfMonth());
         $records = $stats->attach($records, $month, $year);
         $groups  = $ranking->build($records);
 
@@ -181,14 +133,15 @@ class PrintRayonController extends Controller
             'tahun'         => $year,
         ]);
     }
-    // dipindah dari: Route::get('/print/technician-performance', ...)->name('print.tech-performance')
+
+    // Route: /print/technician-performance  (print.tech-performance)
     public function technicianPerformance(Request $request)
     {
         $month = $request->month ?? date('m');
-        $year = $request->year ?? date('Y');
+        $year  = $request->year ?? date('Y');
 
         $technicians = Technician::all();
-        $reportData = [];
+        $reportData  = [];
 
         foreach ($technicians as $tech) {
             $logs = ServiceLog::where('technician_id', $tech->id)
@@ -200,17 +153,18 @@ class PrintRayonController extends Controller
 
             $breakdown = $logs->groupBy('tipe_kunjungan')->map(function ($items) use ($totalVisits) {
                 $count = $items->count();
+
                 return [
-                    'count' => $count,
-                    'percentage' => $totalVisits > 0 ? round(($count / $totalVisits) * 100, 1) : 0
+                    'count'      => $count,
+                    'percentage' => $totalVisits > 0 ? round(($count / $totalVisits) * 100, 1) : 0,
                 ];
             });
 
             if ($totalVisits > 0) {
-                $reportData[] = (object)[
-                    'nama' => $tech->nama_technician,
-                    'total' => $totalVisits,
-                    'details' => $breakdown
+                $reportData[] = (object) [
+                    'nama'    => $tech->nama_technician,
+                    'total'   => $totalVisits,
+                    'details' => $breakdown,
                 ];
             }
         }
@@ -218,92 +172,59 @@ class PrintRayonController extends Controller
         return view('print.technician-performance', compact('reportData', 'month', 'year'));
     }
 
-    // PERBAIKAN (24 Juni 2026):
-    // Sebelumnya laporan dikelompokkan berdasarkan rayon TEKNISI (Technician::rayon_id).
-    // Ini salah untuk teknisi yang tugasnya lintas wilayah (contoh: petugas pencatat
-    // counter MRC yang harus tetap diberi 1 rayon saat input data, padahal dia jalan
-    // ke semua kota). Akibatnya kunjungan ke kota di luar rayon resminya ikut
-    // tercampur ke grup rayon teknisi tersebut.
-    //
-    // Sekarang dikelompokkan berdasarkan rayon CUSTOMER (customers.rayon_id) --
-    // setiap kunjungan otomatis masuk ke grup rayon sesuai kota customer yang
-    // sebenarnya dikunjungi, bukan rayon resmi si teknisi. Ini otomatis benar
-    // untuk teknisi lintas wilayah tanpa perlu rayon khusus atau koreksi manual.
-    public function performanceRayon(Request $request)
+    // Route: /print/performance-rayon  (print.performance-rayon)
+    // Pengelompokan berdasarkan rayon CUSTOMER (bukan rayon teknisi), lihat PerformanceRayonReport
+    public function performanceRayon(Request $request, PerformanceRayonReport $report)
     {
         $month = $request->month ?? date('m');
-        $year  = $request->year  ?? date('Y');
+        $year  = $request->year ?? date('Y');
 
-        // Ambil semua service log bulan ini, sertakan customer (dengan rayon-nya) dan technician
-        $logs = ServiceLog::whereMonth('tanggal', $month)
-            ->whereYear('tanggal', $year)
-            ->with(['customer.rayon', 'technician'])
-            ->get();
+        return view('print.performance-rayon', $report->build($month, $year));
+    }
 
-        // TAMBAHAN: kumpulan machine_id yang SUDAH dikunjungi RM bulan ini -- dipakai
-        // untuk menghitung "RM Tertunda" (mesin Rented yang belum di-RM sama sekali
-        // bulan ini). Diambil dari log yang sama supaya konsisten dengan data tabel.
-        $machineIdSudahRm = $logs->where('tipe_kunjungan', 'RM')->pluck('machine_id')->unique();
+    // Hitung pemakaian BW/Color per bulan (indeks 1..12) dari selisih counter service log.
+    // - Counter pertama mesin = titik awal (pemakaian 0).
+    // - Selisih dimasukkan ke bulan tanggal log yang bersangkutan.
+    // - Kalau counter turun (reset / ganti unit / salah ketik) atau selisih melebihi
+    //   LONJAKAN_MAKS, selisih dianggap 0 dan counter tetap jadi titik awal berikutnya.
+    private function susunPemakaian($logs, int $year): array
+    {
+        $bw    = array_fill(1, 12, 0);
+        $color = array_fill(1, 12, 0);
 
-        $tipeKolom = ['CM', 'RM', 'RN', 'RR', 'Mesin', 'RM Tertunda'];
+        $lastBw    = null;
+        $lastColor = null;
 
-        $hariKerja = 0;
-        $daysInMonth = Carbon::create($year, $month)->daysInMonth;
-        for ($d = 1; $d <= $daysInMonth; $d++) {
-            $day = Carbon::create($year, $month, $d)->dayOfWeek;
-            if ($day !== Carbon::SUNDAY) $hariKerja++;
+        foreach ($logs as $log) {
+            $tgl    = Carbon::parse($log->tanggal);
+            $cBw    = (int) $log->counter_bw;
+            $cColor = (int) $log->counter_color;
+
+            $deltaBw = 0;
+            if ($cBw > 0 && $lastBw !== null && $cBw >= $lastBw) {
+                $selisih = $cBw - $lastBw;
+                $deltaBw = $selisih <= self::LONJAKAN_MAKS ? $selisih : 0;
+            }
+
+            $deltaColor = 0;
+            if ($cColor > 0 && $lastColor !== null && $cColor >= $lastColor) {
+                $selisih    = $cColor - $lastColor;
+                $deltaColor = $selisih <= self::LONJAKAN_MAKS ? $selisih : 0;
+            }
+
+            if ($cBw > 0) {
+                $lastBw = $cBw;
+            }
+            if ($cColor > 0) {
+                $lastColor = $cColor;
+            }
+
+            if ($tgl->year === $year) {
+                $bw[$tgl->month]    += $deltaBw;
+                $color[$tgl->month] += $deltaColor;
+            }
         }
 
-        // Kelompokkan LOG berdasarkan rayon CUSTOMER, bukan rayon teknisi
-        $logsByRayon = $logs->groupBy(fn($log) => $log->customer?->rayon?->nama_rayon ?? 'Tanpa Rayon');
-
-        // Bentuk ulang struktur agar tetap kompatibel dengan blade performance-rayon
-        // yang mengharapkan $reportData[$namaRayon] = koleksi "technician-like" dengan
-        // properti ->serviceLogs dan ->nama_technician.
-        $reportData = $logsByRayon->map(function ($logsInRayon) {
-            // Kelompokkan log dalam rayon ini per teknisi, supaya jumlah teknisi
-            // (untuk rata-rata kunjungan/hari) tetap dihitung dengan benar.
-            return $logsInRayon
-                ->groupBy(fn($log) => $log->technician_id)
-                ->map(function ($logsPerTechnician) {
-                    $technician = $logsPerTechnician->first()->technician;
-                    return (object) [
-                        'nama_technician' => $technician?->nama_technician ?? '-',
-                        'serviceLogs'     => $logsPerTechnician,
-                    ];
-                })
-                ->values();
-        });
-
-        // TAMBAHAN: kumpulkan unit mesin terpasang (status Rented) per RAYON + KOTA.
-        // PENTING: nama kota yang sama (misal "Cirebon") bisa muncul di beberapa rayon
-        // berbeda, karena rayon ditentukan oleh customers.rayon_id per customer --
-        // bukan oleh nama kotanya. Jika dihitung per kota saja (tanpa rayon), maka kota
-        // yang sama akan menunjukkan angka identik di setiap grup rayon, padahal mesin
-        // di tiap rayon itu benar-benar unit yang berbeda.
-        // Disimpan sebagai koleksi mesin (bukan cuma angka) agar bisa dicocokkan dengan
-        // $machineIdSudahRm untuk menghitung "RM Tertunda".
-        $mesinPerRayonKota = Machine::where('status', 'Rented')
-            ->with('customer.rayon')
-            ->get()
-            ->groupBy(fn($m) => ($m->customer?->rayon?->nama_rayon ?? 'Tanpa Rayon') . '||' . ($m->customer?->kota ?? 'Tanpa Kota'));
-
-        $jumlahMesinPerRayonKota = $mesinPerRayonKota->map(fn($group) => $group->count());
-
-        // RM Tertunda per rayon+kota = mesin di grup itu yang machine_id-nya TIDAK ada
-        // di $machineIdSudahRm (belum pernah dikunjungi RM bulan ini).
-        $rmTertundaPerRayonKota = $mesinPerRayonKota->map(
-            fn($group) => $group->filter(fn($m) => !$machineIdSudahRm->contains($m->id))->count()
-        );
-
-        return view('print.performance-rayon', compact(
-            'reportData',
-            'month',
-            'year',
-            'tipeKolom',
-            'hariKerja',
-            'jumlahMesinPerRayonKota',
-            'rmTertundaPerRayonKota'
-        ));
+        return ['bw' => $bw, 'color' => $color];
     }
 }

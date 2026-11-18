@@ -191,7 +191,7 @@ class PusatCetak extends Page
                 'warna' => '16 185 129', // hijau
                 'items' => [
                     [
-                        'label' => 'Rekap Rayon',
+                        'label' => 'Tren Pemakaian',
                         'desc'  => 'Ringkasan per rayon',
                         'route' => 'cetak.rekap-rayon',
                         'icon'  => 'heroicon-o-map'
@@ -205,7 +205,7 @@ class PusatCetak extends Page
                     [
                         'label' => 'Top Usage',
                         'desc'  => 'Pemakaian tertinggi',
-                        'route' => 'cetak.top-usage',
+                        'route' => 'cetak.top-usage.pilih',
                         'icon'  => 'heroicon-o-fire'
                     ],
                     [

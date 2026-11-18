@@ -1,3 +1,6 @@
+@php
+    $fmt = fn($nilai) => $nilai === null ? '–' : number_format($nilai);
+@endphp
 <!DOCTYPE html>
 <html lang="id">
 
@@ -5,6 +8,11 @@
     <meta charset="UTF-8">
     <title>Ranking Pemakaian DGG</title>
     <style>
+        @page {
+            size: A4 landscape;
+            margin: 10mm;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,154 +21,179 @@
 
         body {
             font-family: 'Arial', sans-serif;
-            font-size: 11px;
-            padding: 24px;
-            background: #fff;
-            color: #1a1a1a;
+            font-size: 10.5px;
+            color: #111827;
+            background: #ffffff;
+            padding: 16px 20px;
         }
 
+        .num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .warna {
+            color: #dc2626;
+        }
+
+        /* ===== HEADER ===== */
         .header {
             text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 3px double #1e3a5f;
+            padding-bottom: 10px;
+            margin-bottom: 14px;
+            border-bottom: 2px solid #1e3a5f;
         }
 
         .header .company {
             font-size: 15px;
             font-weight: bold;
             color: #1e3a5f;
-            letter-spacing: 1px;
-            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .header .title {
             font-size: 12px;
             font-weight: bold;
-            color: #374151;
-            margin-top: 4px;
-            text-transform: uppercase;
+            margin-top: 3px;
         }
 
         .header .periode {
             font-size: 10px;
-            color: #6b7280;
-            margin-top: 2px;
+            color: #4b5563;
+            margin-top: 3px;
         }
 
+        /* ===== TABEL ===== */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 4px;
         }
 
-        thead tr {
+        thead {
+            display: table-header-group;
+        }
+
+        thead th {
             background: #1e3a5f;
             color: #ffffff;
-        }
-
-        th {
-            padding: 8px 10px;
-            text-align: center;
-            font-size: 10px;
+            padding: 7px 8px;
+            font-size: 9.5px;
             font-weight: bold;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
+            text-align: center;
             border: 1px solid #1e3a5f;
         }
 
-        td {
-            padding: 7px 10px;
-            border: 1px solid #d1d5db;
-            text-align: center;
+        thead th.num {
+            text-align: right;
+        }
+
+        thead th.left {
+            text-align: left;
+        }
+
+        tbody td {
+            padding: 5px 8px;
+            border-bottom: 1px solid #e5e7eb;
             vertical-align: middle;
+            height: 26px;
         }
 
-        .text-left {
-            text-align: left;
+        tbody tr.baris {
+            page-break-inside: avoid;
         }
 
-        tbody tr.baris:nth-child(odd) {
-            background: #f8fafc;
-        }
-
-        tbody tr.baris:nth-child(even) {
-            background: #ffffff;
-        }
-
-        tr.group-title td {
-            background: #e5e7eb;
-            font-weight: bold;
-            text-align: left;
-            font-size: 11px;
-            color: #1e3a5f;
-            padding: 8px 10px;
-            border-color: #9ca3af;
-        }
-
-        tr.subtotal td {
-            background: #f1f5f9;
-            font-weight: bold;
-            border-top: 2px solid #1e3a5f;
+        tbody tr.baris:nth-child(even) td {
+            background: #fafafa;
         }
 
         .col-no {
-            width: 40px;
+            width: 34px;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        .col-nama {
             font-weight: bold;
         }
 
-        .col-bw {
-            color: #1d4ed8;
-            font-weight: 600;
+        .col-sn {
+            text-align: center;
+            color: #374151;
+            white-space: nowrap;
         }
 
-        .col-color {
-            color: #dc2626;
-            font-weight: 600;
+        .counter {
+            white-space: nowrap;
+        }
+
+        .counter .sep {
+            color: #9ca3af;
+            padding: 0 3px;
         }
 
         .col-total {
-            background: #f0fdf4 !important;
-            font-weight: bold;
-            color: #15803d;
-        }
-
-        .col-avg {
-            background: #1e3a5f !important;
-            color: #ffffff !important;
             font-weight: bold;
         }
 
-        .empty {
+        .col-rata {
+            font-weight: bold;
+            color: #1e3a5f;
+        }
+
+        .kosong {
+            text-align: center;
             color: #9ca3af;
             font-style: italic;
         }
 
+        /* ===== JUDUL RAYON & SUBTOTAL ===== */
+        tr.group-title td {
+            background: #e8edf4;
+            color: #1e3a5f;
+            font-weight: bold;
+            font-size: 11px;
+            padding: 7px 8px;
+            border-top: 1px solid #9ca3af;
+            border-bottom: 1px solid #9ca3af;
+            page-break-after: avoid;
+        }
+
+        tr.subtotal td {
+            font-weight: bold;
+            border-top: 2px solid #1e3a5f;
+            border-bottom: 2px solid #1e3a5f;
+            padding: 6px 8px;
+        }
+
+        tr.subtotal td.label {
+            text-align: right;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* ===== FOOTER ===== */
         .footer {
-            margin-top: 16px;
+            margin-top: 12px;
             display: flex;
             justify-content: space-between;
             font-size: 9px;
-            color: #9ca3af;
-            border-top: 1px solid #e5e7eb;
-            padding-top: 8px;
+            color: #6b7280;
+            border-top: 1px solid #d1d5db;
+            padding-top: 6px;
         }
 
         @media print {
             body {
-                padding: 12px;
+                padding: 0;
             }
 
-            thead tr,
+            thead th,
             tr.group-title td,
             tr.subtotal td,
-            .col-total,
-            .col-avg {
+            tbody tr.baris:nth-child(even) td {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
-            }
-
-            tr.group-title {
-                page-break-after: avoid;
             }
         }
     </style>
@@ -170,9 +203,9 @@
 
     <div class="header">
         <div class="company">DINAMIKA GLOBAL GEMILANG (DGG)</div>
-        <div class="title">Ranking Pemakaian Customer per Rayon</div>
+        <div class="title">RANKING PEMAKAIAN CUSTOMER PER RAYON</div>
         <div class="periode">
-            Periode: {{ strtoupper($bulan) }} {{ $tahun }} &nbsp;|&nbsp;
+            Periode: {{ strtoupper($bulan) }} {{ $tahun }} &nbsp;&bull;&nbsp;
             Dicetak: {{ now()->format('d/m/Y H:i') }}
         </div>
     </div>
@@ -181,50 +214,63 @@
         <thead>
             <tr>
                 <th class="col-no">NO</th>
-                <th class="text-left">NAMA CUSTOMER</th>
+                <th class="left">NAMA CUSTOMER</th>
                 <th>SN MESIN</th>
-                <th>PEMAKAIAN BW</th>
-                <th>PEMAKAIAN COLOR</th>
-                <th>TOTAL PEMAKAIAN</th>
-                <th>RATA-RATA / BULAN</th>
+                <th>COUNTER LALU<br><span style="font-weight: normal; font-size: 8.5px;">BW / COLOR</span></th>
+                <th>COUNTER INI<br><span style="font-weight: normal; font-size: 8.5px;">BW / COLOR</span></th>
+                <th class="num">PEMAKAIAN BW</th>
+                <th class="num">PEMAKAIAN COLOR</th>
+                <th class="num">TOTAL PEMAKAIAN</th>
+                <th class="num">RATA-RATA / BULAN</th>
             </tr>
         </thead>
         <tbody>
             @forelse ($groups as $group)
                 <tr class="group-title">
-                    <td colspan="7">
-                        RAYON: {{ strtoupper($group->nama) }} ({{ $group->baris->count() }} customer)
+                    <td colspan="9">
+                        RAYON {{ strtoupper($group->nama) }} &nbsp;&middot;&nbsp; {{ $group->baris->count() }} customer
                     </td>
                 </tr>
 
                 @foreach ($group->baris as $row)
                     <tr class="baris">
                         <td class="col-no">{{ $loop->iteration }}</td>
-                        <td class="text-left"><strong>{{ $row->nama_customer }}</strong></td>
-                        <td>{{ $row->serial_number }}</td>
-                        <td class="col-bw">
-                            {{ $row->pemakaian_bw !== null ? number_format($row->pemakaian_bw) : '-' }}
-                        </td>
-                        <td class="col-color">
-                            {{ $row->pemakaian_color !== null ? number_format($row->pemakaian_color) : '-' }}
-                        </td>
-                        <td class="col-total">
-                            {{ $row->pemakaian_total !== null ? number_format($row->pemakaian_total) : '-' }}
-                        </td>
-                        <td class="col-avg">{{ number_format($row->rata_rata) }}</td>
+                        <td class="col-nama">{{ $row->nama_customer }}</td>
+                        <td class="col-sn">{{ $row->serial_number }}</td>
+
+                        @if ($row->counter_bw_ini === null)
+                            <td colspan="5" class="kosong">
+                                Belum ada service {{ strtoupper($bulan) }}
+                            </td>
+                        @else
+                            <td class="counter num">
+                                {{ $fmt($row->counter_bw_lalu) }}<span class="sep">/</span><span
+                                    class="warna">{{ $fmt($row->counter_color_lalu) }}</span>
+                            </td>
+                            <td class="counter num">
+                                {{ $fmt($row->counter_bw_ini) }}<span class="sep">/</span><span
+                                    class="warna">{{ $fmt($row->counter_color_ini) }}</span>
+                            </td>
+                            <td class="num">{{ $fmt($row->pemakaian_bw) }}</td>
+                            <td class="num warna">{{ $fmt($row->pemakaian_color) }}</td>
+                            <td class="num col-total">{{ $fmt($row->pemakaian_total) }}</td>
+                        @endif
+
+                        <td class="num col-rata">{{ number_format($row->rata_rata) }}</td>
                     </tr>
                 @endforeach
 
                 <tr class="subtotal">
-                    <td colspan="3" class="text-left">SUBTOTAL RAYON {{ strtoupper($group->nama) }}</td>
-                    <td>{{ number_format($group->sub_bw) }}</td>
-                    <td>{{ number_format($group->sub_color) }}</td>
-                    <td>{{ number_format($group->sub_total) }}</td>
+                    <td colspan="3" class="label">Subtotal rayon {{ strtolower($group->nama) }}</td>
+                    <td colspan="2"></td>
+                    <td class="num">{{ number_format($group->sub_bw) }}</td>
+                    <td class="num warna">{{ number_format($group->sub_color) }}</td>
+                    <td class="num">{{ number_format($group->sub_total) }}</td>
                     <td></td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="empty">Tidak ada data pemakaian.</td>
+                    <td colspan="9" class="kosong">Tidak ada data pemakaian.</td>
                 </tr>
             @endforelse
         </tbody>
@@ -232,7 +278,7 @@
 
     <div class="footer">
         <span>DGG System &copy; {{ date('Y') }} &mdash; Developer RUDIANTO</span>
-        <span>Total Customer: {{ $totalCustomer }}</span>
+        <span>Total customer: {{ $totalCustomer }}</span>
     </div>
 
 </body>
