@@ -115,7 +115,7 @@ class PusatCetak extends Page
                         'icon'  => 'heroicon-o-table-cells'
                     ],
                     [
-                        'label' => 'Rincian Customer',
+                        'label' => 'Rincian Customer & Harga mesin',
                         'desc'  => 'Mesin per customer',
                         'route' => 'cetak.alokasi-customer',
                         'icon'  => 'heroicon-o-users'

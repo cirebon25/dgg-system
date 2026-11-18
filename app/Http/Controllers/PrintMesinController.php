@@ -6,6 +6,7 @@ use App\Exports\StokGudangExport;
 use App\Models\Deployment;
 use App\Models\Machine;
 use App\Models\MachineAirRo;
+use App\Models\MrcContract; // 🌟 Pastikan model MrcContract di-import
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -20,9 +21,18 @@ class PrintMesinController extends Controller
     // Route: /cetak-alokasi-customer -> cetak.alokasi-customer
     public function alokasiCustomer()
     {
-        $data = Deployment::with(['customer', 'machine'])->get();
+        // Ambil data, urutkan per rayon, lalu harga tertinggi, kemudian kelompokkan per rayon
+        $rayons = MrcContract::with(['customer.rayon', 'machine.deployment'])
+            ->where('aktif', true)
+            ->join('customers', 'mrc_contracts.customer_id', '=', 'customers.id')
+            ->join('rayons', 'customers.rayon_id', '=', 'rayons.id')
+            ->orderBy('rayons.nama_rayon', 'asc')
+            ->orderBy('mrc_contracts.harga_sewa', 'desc')
+            ->select('mrc_contracts.*')
+            ->get()
+            ->groupBy(fn($item) => optional($item->customer->rayon)->nama_rayon ?? 'TANPA RAYON');
 
-        return view('print.alokasi-customer', compact('data'));
+        return view('print.alokasi-customer', compact('rayons'));
     }
 
     // Route: /mesin/{id}/cetak-qr -> mesin.cetak-qr
@@ -69,7 +79,7 @@ class PrintMesinController extends Controller
             'machine'     => $machine,
             'deployments' => $deployments,
             'serviceLogs' => $serviceLogs,
-            'autoPrint'   => false, // halaman ini dibuka di HP lewat QR, bukan untuk dicetak
+            'autoPrint'   => false,
         ]);
     }
 
@@ -103,7 +113,6 @@ class PrintMesinController extends Controller
             ->join('customers', 'deployments.customer_id', '=', 'customers.id')
             ->join('rayons', 'customers.rayon_id', '=', 'rayons.id')
             ->where('machines.status', 'Rented')
-            // DB::table() tidak otomatis memfilter soft-delete
             ->whereNull('deployments.deleted_at')
             ->whereNull('customers.deleted_at')
             ->select(
@@ -117,7 +126,6 @@ class PrintMesinController extends Controller
             ->orderBy('customers.kota')
             ->get();
 
-        // Susun struktur rayon -> kota -> tipe, lengkap dengan total & jumlah baris
         $rayons = $rows->groupBy('nama_rayon')->map(function ($itemsRayon, $namaRayon) {
             $kotas = $itemsRayon->groupBy('kota')->map(fn($items, $kota) => [
                 'nama'  => $kota,
@@ -129,7 +137,6 @@ class PrintMesinController extends Controller
                 'nama'  => $namaRayon,
                 'kotas' => $kotas,
                 'total' => $kotas->sum('total'),
-                // 1 baris nama kota + n baris tipe + 1 baris total kota
                 'baris' => $kotas->sum(fn($k) => $k['items']->count() + 2),
             ];
         })->values();
@@ -167,7 +174,6 @@ class PrintMesinController extends Controller
         $machine  = Machine::with('customer')->findOrFail($id);
         $timeline = collect();
 
-        // 1. Semua deployment (aktif maupun sudah ditarik)
         $deployments = DB::table('deployments')
             ->join('customers', 'deployments.customer_id', '=', 'customers.id')
             ->leftJoin('technicians', 'deployments.technician_id', '=', 'technicians.id')
@@ -215,7 +221,6 @@ class PrintMesinController extends Controller
             }
         }
 
-        // 2. Rolling — mesin ini jadi mesin LAMA (diambil dari customer)
         $rollingLama = DB::table('machine_replacements')
             ->join('customers', 'machine_replacements.customer_id', '=', 'customers.id')
             ->join('machines as m_new', 'machine_replacements.new_machine_id', '=', 'm_new.id')
@@ -248,7 +253,6 @@ class PrintMesinController extends Controller
             ]);
         }
 
-        // 3. Rolling — mesin ini jadi mesin BARU (pengganti)
         $rollingBaru = DB::table('machine_replacements')
             ->join('customers', 'machine_replacements.customer_id', '=', 'customers.id')
             ->join('machines as m_old', 'machine_replacements.old_machine_id', '=', 'm_old.id')
@@ -281,12 +285,8 @@ class PrintMesinController extends Controller
         return view('print.tracking-mesin', compact('machine', 'timeline'));
     }
 
-    /**
-     * Data bersama untuk stok gudang (halaman cetak & PDF).
-     */
     private function dataStokGudang(): array
     {
-        // Mesin Photo Copy
         $stocks = Machine::select(
             'tipe_model',
             'status',
@@ -305,7 +305,6 @@ class PrintMesinController extends Controller
             ->orderByRaw("FIELD(status, 'Ready', 'Refurbish') asc")
             ->get();
 
-        // Mesin Air RO (Ready & Perbaikan, belum di-deploy)
         $machineAirRos = MachineAirRo::select(
             'serial_number',
             'tipe_mesin',
